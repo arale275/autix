@@ -28,6 +28,7 @@ import {
   MapPin,
   Shield,
 } from "lucide-react";
+import { Suspense } from "react";
 
 interface RegistrationData {
   accountType: "buyer" | "dealer";
@@ -43,7 +44,7 @@ interface RegistrationData {
   agreeToMarketing: boolean;
 }
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -584,5 +585,13 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <RegisterForm />
+    </Suspense>
   );
 }
