@@ -3,6 +3,9 @@ import express from "express";
 import cors from "cors";
 import pool from "./config/database.config";
 import debugRoutes from "./routes/debug.routes";
+import carRequestRoutes from "./routes/car-request.routes";
+import inquiryRoutes from "./routes/inquiry.routes";
+import profileRoutes from "./routes/profile.routes";
 
 // Import routes
 import authRoutes from "./routes/auth.routes";
@@ -23,7 +26,10 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/cars", carsRoutes);
+app.use("/api/car-requests", carRequestRoutes);
+app.use("/api/inquiries", inquiryRoutes);
 app.use("/api/debug", debugRoutes);
+app.use('/api/profile', profileRoutes);
 
 // Health check endpoints
 app.get("/api/health", (req, res) => {
