@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { AuthRequest, JWTPayload } from "../types/auth.types";
+import { User } from "../types/auth.types";
 
 export const authenticateToken = (
   req: AuthRequest,
@@ -23,10 +24,16 @@ export const authenticateToken = (
 
     // הגדרת המשתמש ב-request
     req.user = {
+      id: decoded.userId,
       userId: decoded.userId,
       email: decoded.email,
+      password: "", // ריק - לא נדרש במידלוור
+      full_name: "", // ריק - לא נדרש במידלוור
+      phone: "",
+      user_type: decoded.userType,
       userType: decoded.userType,
-    };
+      is_verified: true,
+    } as User;
 
     next();
   } catch (error) {
@@ -46,7 +53,7 @@ export const requireRole = (roles: string[]) => {
       });
     }
 
-    if (!roles.includes(req.user.userType)) {
+    if (!req.user?.userType || !roles.includes(req.user.userType)) {
       return res.status(403).json({
         success: false,
         message: "אין לך הרשאה לפעולה זו",
