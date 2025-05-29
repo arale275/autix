@@ -3,14 +3,16 @@ import { Request } from "express";
 
 export interface User {
   id?: number;
+  userId?: number; // 🔥 הוסף את השניים - לתאימות
   email: string;
-  password: string; // 🔥 הוסף
-  full_name: string; // 🔥 הוסף
-  phone?: string; // 🔥 הוסף
-  user_type: "buyer" | "dealer"; // 🔥 שנה מuserType ל-user_type
-  is_verified: boolean; // 🔥 הוסף
-  created_at?: Date; // 🔥 הוסף
-  updated_at?: Date; // 🔥 הוסף
+  password: string;
+  full_name: string;
+  phone?: string;
+  user_type: "buyer" | "dealer";
+  userType?: "buyer" | "dealer"; // 🔥 הוסף גם את זה לתאימות
+  is_verified: boolean;
+  created_at?: Date;
+  updated_at?: Date;
 }
 
 export interface AuthRequest extends Request {
