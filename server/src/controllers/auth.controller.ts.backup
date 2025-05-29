@@ -1,0 +1,199 @@
+import { Request, Response } from "express";
+import { UserModel } from "../models/user.model";
+import { hashPassword, comparePassword } from "../utils/password.util";
+import { generateToken } from "../utils/jwt.util";
+import {
+  RegisterRequest,
+  LoginRequest,
+  AuthResponse,
+} from "../types/auth.types";
+import { AuthRequest } from "../types/auth.types";
+import pool from "../config/database.config";
+
+const userModel = new UserModel();
+
+export const register = async (req: Request, res: Response) => {
+  try {
+    console.log("Request body:", req.body); // לוג זמני לבדיקה
+
+    const { email, password, fullName, phone, userType }: RegisterRequest =
+      req.body;
+
+    // Basic validation
+    if (!email || !password || !fullName || !phone || !userType) {
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
+      });
+    }
+
+    if (!["buyer", "dealer"].includes(userType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user type",
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await userModel.findByEmail(email);
+    if (existingUser) {
+      return res.status(409).json({
+        success: false,
+        message: "User already exists with this email",
+      });
+    }
+
+    // Hash password
+    const hashedPassword = await hashPassword(password);
+
+    // Create user
+    const newUser = await userModel.create(
+      {
+        email,
+        password,
+        fullName,
+        phone,
+        userType,
+      },
+      hashedPassword
+    );
+
+    // אם זה dealer, צור גם רשומה בטבלת dealers
+    if (userType === "dealer") {
+      try {
+        await pool.query(
+          "INSERT INTO dealers (user_id, business_name, address) VALUES ($1, $2, $3)",
+          [newUser.id, fullName, ""]
+        );
+        console.log("Dealer record created successfully");
+      } catch (dealerError) {
+        console.log(
+          "Dealer record creation failed, but continuing...",
+          dealerError
+        );
+        // לא נעצור את התהליך אם יש בעיה עם הטבלה dealers
+      }
+    }
+
+    // Generate JWT token
+    const token = generateToken({
+      userId: newUser.id,
+      email: newUser.email,
+      userType: newUser.user_type,
+    });
+
+    const response: AuthResponse = {
+      success: true,
+      message: "User registered successfully",
+      user: newUser,
+      token,
+    };
+
+    res.status(201).json(response);
+  } catch (error) {
+    console.error("Register error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { email, password }: LoginRequest = req.body;
+
+    // Basic validation
+    if (!email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
+      });
+    }
+
+    // Find user
+    const user = await userModel.findByEmail(email);
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
+    // Get password hash and compare
+    const passwordHash = await userModel.getPasswordHash(email);
+    if (!passwordHash) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
+    const isValidPassword = await comparePassword(password, passwordHash);
+    if (!isValidPassword) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      });
+    }
+
+    console.log("User from DB:", user);
+    console.log("User type:", user.user_type);
+    console.log("About to generate token with:", {
+      userId: user.id,
+      email: user.email,
+      userType: user.user_type,
+    });
+
+    // Generate JWT token
+    const token = generateToken({
+      userId: user.id,
+      email: user.email,
+      userType: user.user_type,
+    });
+
+    const response: AuthResponse = {
+      success: true,
+      message: "Login successful",
+      user,
+      token,
+    };
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
+export const getProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    // User is already attached to request by auth middleware
+    const user = req.user;
+
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not authenticated",
+      });
+    }
+
+    // Return user without password
+    const { password, ...userWithoutPassword } = user;
+
+    res.json({
+      success: true,
+      data: userWithoutPassword,
+    });
+  } catch (error) {
+    console.error("Get profile error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get profile",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};

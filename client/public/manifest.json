@@ -1,0 +1,16 @@
+{
+  "name": "אוטוטיקס - מרקטפלייס לסוחרי רכב",
+  "short_name": "אוטוטיקס",
+  "description": "פלטפורמה ייעודית לסוחרי רכב למכירה, רכישה והחלפת כלי רכב",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}
