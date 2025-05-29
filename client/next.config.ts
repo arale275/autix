@@ -1,17 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // אופטימיזציה לתמונות - הוסף domains לאמפליפיי
+  // אופטימיזציה לתמונות
   images: {
     domains: [
-      "localhost", 
+      "localhost",
+      "3.79.239.100", // הוסף את IP השרת שלך
       "your-domain.com",
-      // הוסף domains של אמפליפיי
-      "d15g18gvoz68b4.amplifyapp.com" // הדומיין הספציפי שלך
+      "d15g18gvoz68b4.amplifyapp.com",
     ],
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '*.amplifyapp.com',
+        protocol: "https",
+        hostname: "*.amplifyapp.com",
+      },
+      {
+        protocol: "http",
+        hostname: "3.79.239.100", // הוסף את IP השרת
       },
     ],
     formats: ["image/webp", "image/avif"],
@@ -25,7 +29,6 @@ const nextConfig = {
   // Bundle Analyzer (רק בפיתוח)
   ...(process.env.ANALYZE === "true" && {
     webpack: (config: any) => {
-      // וודא שהחבילה מותקנת
       try {
         const BundleAnalyzerPlugin = require("@next/bundle-analyzer");
         config.plugins.push(
@@ -42,11 +45,10 @@ const nextConfig = {
 
   // אופטימיזציה נוספת
   experimental: {
-    // optimizeCss: true, // מושבת זמנית בגלל בעיית critters
     optimizePackageImports: ["lucide-react", "@radix-ui/react-icons"],
   },
 
-  // Headers לביצועים
+  // Headers לביצועים ואבטחה
   async headers() {
     return [
       {
@@ -78,18 +80,25 @@ const nextConfig = {
     ];
   },
 
-  // הגדרות נוספות לאמפליפיי
-  output: process.env.NODE_ENV === 'production' ? 'standalone' : undefined,
-  
+  // הגדרות פרודקשן - הסרת standalone
+  // output: 'standalone', // הסרנו את זה כי זה גורם לבעיות
+
   // השבתת ESLint זמנית לdeployment
   eslint: {
     ignoreDuringBuilds: true,
   },
-  
+
   // השבתת TypeScript errors זמנית לdeployment
   typescript: {
     ignoreBuildErrors: true,
   },
+
+  // הגדרות שרת לפרודקשן
+  ...(process.env.NODE_ENV === "production" && {
+    distDir: ".next",
+    generateEtags: false,
+    poweredByHeader: false,
+  }),
 };
 
 module.exports = nextConfig;
