@@ -1,10 +1,16 @@
 // server/src/types/auth.types.ts
-import { Request } from 'express';
+import { Request } from "express";
 
 export interface User {
-  userId: number;
+  id?: number;
   email: string;
-  userType: 'buyer' | 'dealer';
+  password: string; // 🔥 הוסף
+  full_name: string; // 🔥 הוסף
+  phone?: string; // 🔥 הוסף
+  user_type: "buyer" | "dealer"; // 🔥 שנה מuserType ל-user_type
+  is_verified: boolean; // 🔥 הוסף
+  created_at?: Date; // 🔥 הוסף
+  updated_at?: Date; // 🔥 הוסף
 }
 
 export interface AuthRequest extends Request {
@@ -14,10 +20,9 @@ export interface AuthRequest extends Request {
 export interface RegisterRequest {
   email: string;
   password: string;
-  firstName: string;
-  lastName: string;
+  fullName: string; // 🔥 שנה מfirstName+lastName ל-fullName
   phone?: string;
-  userType: 'buyer' | 'dealer';
+  userType: "buyer" | "dealer";
 }
 
 export interface LoginRequest {
@@ -28,5 +33,5 @@ export interface LoginRequest {
 export interface JWTPayload {
   userId: number;
   email: string;
-  userType: 'buyer' | 'dealer';
+  userType: "buyer" | "dealer";
 }
