@@ -1,11 +1,7 @@
-import app from './app';
-import dotenv from 'dotenv';
+import app from "./app";
 
-dotenv.config();
+const PORT = 3001;
 
-const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
-  console.log(`🚗 AUTIX Server running on port ${PORT}`);
-  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log("AUTIX Server running on port " + PORT);
 });
