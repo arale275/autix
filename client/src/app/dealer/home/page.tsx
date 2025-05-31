@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,28 +19,22 @@ import {
   Phone,
   Mail,
 } from "lucide-react";
-
-interface User {
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  businessName?: string;
-  city: string;
-}
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function DealerHomePage() {
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isAuthenticated } = useAuth();
+  const router = useRouter();
 
+  // Redirect if not authenticated or not a dealer
   useEffect(() => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem("user_data");
-    if (userData) {
-      setUser(JSON.parse(userData));
+    if (!isAuthenticated) {
+      router.push("/auth/login");
+    } else if (isAuthenticated && user?.userType !== "dealer") {
+      router.push("/buyer/home");
     }
-  }, []);
+  }, [isAuthenticated, user, router]);
 
-  // Mock data for demo
+  // Mock data for demo - in the future, fetch from API
   const stats = {
     activeCars: 12,
     newInquiries: 5,
@@ -128,7 +123,8 @@ export default function DealerHomePage() {
     },
   ];
 
-  if (!user) {
+  // Loading state
+  if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -146,10 +142,11 @@ export default function DealerHomePage() {
         <div className="mb-8">
           <div className="mb-4">
             <h1 className="text-3xl font-bold text-gray-900">
-              שלום, {user?.name?.split(" ")[0] || "סוחר"}! 👋
+              שלום, {user?.firstName || "סוחר"}! 👋
             </h1>
             <p className="text-gray-600 mt-1">
-              {user?.businessName && `${user.businessName} | `}
+              {user?.dealerProfile?.businessName &&
+                `${user.dealerProfile.businessName} | `}
               ברוך הבא לדף הניהול שלך
             </p>
           </div>
@@ -436,6 +433,16 @@ export default function DealerHomePage() {
             </div>
           </div>
         </div>
+
+        {/* User Debug Info - Remove in production */}
+        {process.env.NODE_ENV === "development" && (
+          <div className="mt-8 p-4 bg-gray-100 rounded-lg">
+            <h3 className="font-semibold mb-2">User Debug Info:</h3>
+            <pre className="text-xs text-gray-600">
+              {JSON.stringify(user, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
     </div>
   );
