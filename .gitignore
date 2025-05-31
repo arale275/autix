@@ -1,3 +1,35 @@
 .env
 .env.local
 .env.production
+server/.env*
+!server/.env.example
+
+dist/
+build/
+.next/
+out/
+server/dist/
+client/dist/
+client/.next/
+client/build/
+
+# Dependencies
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# Production configs
+ecosystem.config.js
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
