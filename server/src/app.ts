@@ -16,10 +16,26 @@ const app = express();
 // Middleware
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    origin: (origin, callback) => {
+      const allowedOrigins = [
+        "https://autix.co.il",
+        "https://www.autix.co.il",
+        "http://localhost:3000",
+      ];
+
+      // Allow requests with no origin (like mobile apps or curl)
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
   })
 );
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -29,7 +45,7 @@ app.use("/api/cars", carsRoutes);
 app.use("/api/car-requests", carRequestRoutes);
 app.use("/api/inquiries", inquiryRoutes);
 app.use("/api/debug", debugRoutes);
-app.use('/api/profile', profileRoutes);
+app.use("/api/profile", profileRoutes);
 
 // Health check endpoints
 app.get("/api/health", (req, res) => {
