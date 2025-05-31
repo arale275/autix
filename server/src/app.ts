@@ -13,6 +13,19 @@ import carsRoutes from "./routes/cars.routes";
 
 const app = express();
 
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://autix.co.il");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
+
 // Middleware
 app.use(
   cors({
