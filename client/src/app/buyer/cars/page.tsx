@@ -13,327 +13,184 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Grid, List, Filter, Eye, Clock } from "lucide-react";
+import {
+  Search,
+  Grid,
+  List,
+  Filter,
+  Eye,
+  Clock,
+  AlertCircle,
+} from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
+// API Car interface (matching backend response)
 interface Car {
   id: number;
-  manufacturer: string;
+  make: string;
   model: string;
   year: number;
   price: number;
   mileage: number;
-  engineSize: number;
+  fuel_type: string;
   transmission: string;
-  fuelType: string;
   color: string;
-  hand: string;
-  location: string;
-  dealerName: string;
-  dealerPhone: string;
-  views: number;
-  inquiries: number;
+  description: string;
+  city: string;
+  engine_size: string;
+  is_available: boolean;
+  is_featured: boolean;
   status: string;
-  createdAt: string;
-  description?: string;
+  created_at: string;
+  updated_at: string;
+  // Dealer info (joined from API)
+  dealer?: {
+    id: number;
+    business_name: string;
+    city: string;
+  };
 }
 
-interface User {
-  name: string;
-  email: string;
-  phone: string;
-  role: string;
-  businessName?: string;
-  city: string;
+interface ApiResponse {
+  success: boolean;
+  message?: string;
+  data: {
+    cars: Car[];
+    pagination: {
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    };
+  };
 }
 
 export default function BuyerCarsPage() {
   const router = useRouter();
+  const { user, isAuthenticated } = useAuth();
+
+  // States
+  const [cars, setCars] = useState<Car[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filters, setFilters] = useState({
-    manufacturer: "",
-    priceRange: "",
-    yearRange: "",
-    location: "",
+    make: "",
+    priceFrom: "",
+    priceTo: "",
+    yearFrom: "",
+    yearTo: "",
+    city: "",
+    fuelType: "",
+    transmission: "",
   });
   const [sortBy, setSortBy] = useState("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  });
 
-  useEffect(() => {
-    // Check if user is logged in as buyer
-    const authToken = localStorage.getItem("auth_token");
-    const userData = localStorage.getItem("user_data");
+  // Fetch cars from API
+  const fetchCars = async () => {
+    setLoading(true);
+    setError(null);
 
-    if (authToken && userData) {
-      try {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.role !== "buyer") {
-          // Redirect non-buyers away from this page
-          router.push("/");
-          return;
-        }
-        setUser(parsedUser);
-      } catch (error) {
-        router.push("/auth/login");
+    try {
+      // Build query params
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
+      });
+
+      // Add search
+      if (searchTerm) {
+        params.append("search", searchTerm);
       }
-    } else {
-      router.push("/auth/login");
-    }
-  }, [router]);
 
-  // Mock data for cars - available cars from dealers
-  const mockCars: Car[] = [
-    {
-      id: 1,
-      manufacturer: "טויוטה",
-      model: "קמרי",
-      year: 2021,
-      price: 185000,
-      mileage: 45000,
-      engineSize: 2.5,
-      transmission: "אוטומט",
-      fuelType: "בנזין",
-      color: "לבן",
-      hand: "יד ראשונה",
-      location: "תל אביב",
-      dealerName: "רכבי פרימיום",
-      dealerPhone: "050-1234567",
-      views: 45,
-      inquiries: 3,
-      status: "active",
-      createdAt: "2024-01-15",
-    },
-    {
-      id: 2,
-      manufacturer: "הונדה",
-      model: "סיוויק",
-      year: 2020,
-      price: 145000,
-      mileage: 58000,
-      engineSize: 1.8,
-      transmission: "אוטומט",
-      fuelType: "בנזין",
-      color: "שחור",
-      hand: "יד ראשונה",
-      location: "פתח תקווה",
-      dealerName: "אוטו דיל",
-      dealerPhone: "052-9876543",
-      views: 38,
-      inquiries: 2,
-      status: "active",
-      createdAt: "2024-01-10",
-    },
-    {
-      id: 3,
-      manufacturer: "מאזדה",
-      model: "3",
-      year: 2019,
-      price: 125000,
-      mileage: 65000,
-      engineSize: 2.0,
-      transmission: "אוטומט",
-      fuelType: "בנזין",
-      color: "אדום",
-      hand: "יד ראשונה",
-      location: "חיפה",
-      dealerName: "כרמל רכב",
-      dealerPhone: "054-5555555",
-      views: 32,
-      inquiries: 1,
-      status: "active",
-      createdAt: "2024-01-08",
-    },
-    {
-      id: 4,
-      manufacturer: "BMW",
-      model: "320i",
-      year: 2020,
-      price: 245000,
-      mileage: 35000,
-      engineSize: 2.0,
-      transmission: "אוטומט",
-      fuelType: "בנזין",
-      color: "שחור",
-      hand: "יד ראשונה",
-      location: "תל אביב",
-      dealerName: "BMW מרכז",
-      dealerPhone: "053-1111111",
-      views: 67,
-      inquiries: 5,
-      status: "active",
-      createdAt: "2024-01-12",
-    },
-    {
-      id: 5,
-      manufacturer: "מרצדס",
-      model: "C200",
-      year: 2019,
-      price: 220000,
-      mileage: 48000,
-      engineSize: 1.5,
-      transmission: "אוטומט",
-      fuelType: "בנזין",
-      color: "לבן",
-      hand: "יד ראשונה",
-      location: "רמת גן",
-      dealerName: "מרצדס ישראל",
-      dealerPhone: "050-2222222",
-      views: 52,
-      inquiries: 4,
-      status: "active",
-      createdAt: "2024-01-05",
-    },
-    {
-      id: 6,
-      manufacturer: "יונדאי",
-      model: "i30",
-      year: 2022,
-      price: 135000,
-      mileage: 28000,
-      engineSize: 1.4,
-      transmission: "אוטומט",
-      fuelType: "בנזין",
-      color: "כחול",
-      hand: "יד ראשונה",
-      location: "באר שבע",
-      dealerName: "יונדאי דרום",
-      dealerPhone: "050-3333333",
-      views: 29,
-      inquiries: 2,
-      status: "active",
-      createdAt: "2024-01-18",
-    },
-    {
-      id: 7,
-      manufacturer: "קיה",
-      model: "ספורטג'",
-      year: 2021,
-      price: 165000,
-      mileage: 38000,
-      engineSize: 1.6,
-      transmission: "אוטומט",
-      fuelType: "בנזין",
-      color: "אפור",
-      hand: "יד ראשונה",
-      location: "נתניה",
-      dealerName: "קיה מרכז",
-      dealerPhone: "050-4444444",
-      views: 41,
-      inquiries: 3,
-      status: "active",
-      createdAt: "2024-01-20",
-    },
-    {
-      id: 8,
-      manufacturer: "פולקסווגן",
-      model: "גולף",
-      year: 2020,
-      price: 155000,
-      mileage: 52000,
-      engineSize: 1.4,
-      transmission: "אוטומט",
-      fuelType: "בנזין",
-      color: "כחול כהה",
-      hand: "יד ראשונה",
-      location: "ירושלים",
-      dealerName: "פולקס ירושלים",
-      dealerPhone: "050-5555555",
-      views: 35,
-      inquiries: 2,
-      status: "active",
-      createdAt: "2024-01-13",
-    },
-  ];
-
-  // Filter and search cars
-  const filteredCars = useMemo(() => {
-    let result = mockCars.filter((car) => car.status === "active");
-
-    // Apply search
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      result = result.filter(
-        (car) =>
-          car.manufacturer.toLowerCase().includes(term) ||
-          car.model.toLowerCase().includes(term) ||
-          car.location.toLowerCase().includes(term) ||
-          car.dealerName.toLowerCase().includes(term)
-      );
-    }
-
-    // Apply filters
-    if (filters.manufacturer) {
-      result = result.filter(
-        (car) => car.manufacturer === filters.manufacturer
-      );
-    }
-
-    if (filters.priceRange) {
-      const [min, max] = filters.priceRange.split("-").map(Number);
-      result = result.filter((car) => {
-        if (max) {
-          return car.price >= min && car.price <= max;
-        } else {
-          return car.price >= min;
+      // Add filters
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) {
+          params.append(key, value);
         }
       });
-    }
 
-    if (filters.yearRange) {
-      const year = parseInt(filters.yearRange);
-      result = result.filter((car) => car.year >= year);
-    }
+      // Add sorting
+      if (sortBy === "priceLow") {
+        params.append("sortBy", "price");
+        params.append("sortOrder", "asc");
+      } else if (sortBy === "priceHigh") {
+        params.append("sortBy", "price");
+        params.append("sortOrder", "desc");
+      } else if (sortBy === "newest") {
+        params.append("sortBy", "created_at");
+        params.append("sortOrder", "desc");
+      } else if (sortBy === "oldest") {
+        params.append("sortBy", "created_at");
+        params.append("sortOrder", "asc");
+      }
 
-    if (filters.location) {
-      result = result.filter((car) => car.location === filters.location);
-    }
+      const API_URL =
+        process.env.NEXT_PUBLIC_API_URL || "https://api.autix.co.il";
+      const response = await fetch(`${API_URL}/api/cars?${params.toString()}`);
 
-    // Apply sorting
-    switch (sortBy) {
-      case "newest":
-        result.sort(
-          (a, b) =>
-            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        );
-        break;
-      case "oldest":
-        result.sort(
-          (a, b) =>
-            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-        );
-        break;
-      case "priceLow":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "priceHigh":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "mileageLow":
-        result.sort((a, b) => a.mileage - b.mileage);
-        break;
-      case "mileageHigh":
-        result.sort((a, b) => b.mileage - a.mileage);
-        break;
-      default:
-        break;
-    }
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-    return result;
-  }, [searchTerm, filters, sortBy]);
+      const data: ApiResponse = await response.json();
+
+      if (data.success) {
+        setCars(data.data.cars);
+        setPagination((prev) => ({
+          ...prev,
+          total: data.data.pagination.total,
+          totalPages: data.data.pagination.totalPages,
+        }));
+      } else {
+        throw new Error(data.message || "Failed to fetch cars");
+      }
+    } catch (error) {
+      console.error("Error fetching cars:", error);
+      setError(error instanceof Error ? error.message : "שגיאה בטעינת הרכבים");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load cars on mount and when filters change
+  useEffect(() => {
+    fetchCars();
+  }, [pagination.page, searchTerm, filters, sortBy]);
+
+  // Auth check
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/auth/login");
+    }
+  }, [isAuthenticated, router]);
 
   const handleFilterChange = (key: string, value: string) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
+    setPagination((prev) => ({ ...prev, page: 1 })); // Reset to first page
   };
 
   const clearFilters = () => {
     setSearchTerm("");
     setFilters({
-      manufacturer: "",
-      priceRange: "",
-      yearRange: "",
-      location: "",
+      make: "",
+      priceFrom: "",
+      priceTo: "",
+      yearFrom: "",
+      yearTo: "",
+      city: "",
+      fuelType: "",
+      transmission: "",
     });
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const handleViewCar = (carId: number) => {
@@ -365,8 +222,15 @@ export default function BuyerCarsPage() {
           </div>
         </div>
         <div className="absolute top-2 right-2">
-          <Badge variant="default" className="bg-green-100 text-green-800">
-            זמין
+          <Badge
+            variant="default"
+            className={
+              car.is_available
+                ? "bg-green-100 text-green-800"
+                : "bg-red-100 text-red-800"
+            }
+          >
+            {car.is_available ? "זמין" : "לא זמין"}
           </Badge>
         </div>
         <div className="absolute top-2 left-2">
@@ -374,10 +238,20 @@ export default function BuyerCarsPage() {
             {car.year}
           </Badge>
         </div>
+        {car.is_featured && (
+          <div className="absolute top-8 left-2">
+            <Badge
+              variant="default"
+              className="bg-yellow-500 text-white text-xs"
+            >
+              מומלץ
+            </Badge>
+          </div>
+        )}
         <div className="absolute bottom-2 right-2">
           <Badge variant="outline" className="bg-black/70 text-white text-xs">
             <Clock className="w-3 h-3 ml-1" />
-            {getTimeAgo(car.createdAt)}
+            {getTimeAgo(car.created_at)}
           </Badge>
         </div>
       </div>
@@ -385,7 +259,7 @@ export default function BuyerCarsPage() {
       <CardContent className="p-4">
         <div className="flex justify-between items-start mb-2">
           <h3 className="text-lg font-bold text-gray-800 group-hover:text-blue-600 transition-colors">
-            {car.manufacturer} {car.model}
+            {car.make} {car.model}
           </h3>
           <span className="text-xl font-bold text-blue-600">
             ₪{car.price.toLocaleString()}
@@ -394,24 +268,22 @@ export default function BuyerCarsPage() {
 
         <div className="space-y-1 text-sm text-gray-600 mb-3">
           <p>
-            🔧 {car.engineSize} ליטר, {car.transmission}
+            🔧 {car.engine_size} ליטר, {car.transmission}
           </p>
           <p>
-            ⛽ {car.fuelType} | 🎨 {car.color}
+            ⛽ {car.fuel_type} | 🎨 {car.color}
           </p>
+          <p>📊 {car.mileage?.toLocaleString()} ק"מ</p>
           <p>
-            📊 {car.mileage.toLocaleString()} ק"מ | 👤 {car.hand}
-          </p>
-          <p>
-            📍 {car.location} | 🏪 {car.dealerName}
+            📍 {car.city} | 🏪 {car.dealer?.business_name || "לא צוין"}
           </p>
         </div>
 
-        <div className="flex justify-between items-center text-xs text-gray-500 mb-3">
-          <span>👀 {car.views} צפיות</span>
-          <span>💬 {car.inquiries} פניות</span>
-          <span>🏪 {car.dealerName}</span>
-        </div>
+        {car.description && (
+          <p className="text-xs text-gray-500 mb-3 line-clamp-2">
+            {car.description}
+          </p>
+        )}
 
         <Button className="w-full bg-blue-600 hover:bg-blue-700">
           <Eye className="w-4 h-4 ml-1" />
@@ -437,16 +309,26 @@ export default function BuyerCarsPage() {
                 variant="outline"
                 className="bg-black/70 text-white text-xs"
               >
-                {getTimeAgo(car.createdAt)}
+                {getTimeAgo(car.created_at)}
               </Badge>
             </div>
           </div>
 
           <div className="flex-1">
             <div className="flex justify-between items-start mb-2">
-              <h3 className="text-lg font-bold text-gray-800">
-                {car.manufacturer} {car.model} ({car.year})
-              </h3>
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-bold text-gray-800">
+                  {car.make} {car.model} ({car.year})
+                </h3>
+                {car.is_featured && (
+                  <Badge
+                    variant="default"
+                    className="bg-yellow-500 text-white text-xs"
+                  >
+                    מומלץ
+                  </Badge>
+                )}
+              </div>
               <span className="text-xl font-bold text-blue-600">
                 ₪{car.price.toLocaleString()}
               </span>
@@ -454,18 +336,24 @@ export default function BuyerCarsPage() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm text-gray-600 mb-2">
               <span>
-                🔧 {car.engineSize}L {car.transmission}
+                🔧 {car.engine_size}L {car.transmission}
               </span>
-              <span>⛽ {car.fuelType}</span>
-              <span>📊 {car.mileage.toLocaleString()} ק"מ</span>
-              <span>📍 {car.location}</span>
+              <span>⛽ {car.fuel_type}</span>
+              <span>📊 {car.mileage?.toLocaleString()} ק"מ</span>
+              <span>📍 {car.city}</span>
             </div>
 
             <div className="flex justify-between items-center">
               <div className="flex gap-4 text-xs text-gray-500">
-                <span>👀 {car.views}</span>
-                <span>💬 {car.inquiries}</span>
-                <span>🏪 {car.dealerName}</span>
+                <span>🏪 {car.dealer?.business_name || "לא צוין"}</span>
+                <Badge
+                  variant="outline"
+                  className={
+                    car.is_available ? "text-green-600" : "text-red-600"
+                  }
+                >
+                  {car.is_available ? "זמין" : "לא זמין"}
+                </Badge>
               </div>
 
               <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
@@ -479,13 +367,31 @@ export default function BuyerCarsPage() {
     </Card>
   );
 
-  // Don't render until we verify user
-  if (!user) {
+  // Loading state
+  if (loading && cars.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">טוען...</p>
+          <p className="text-gray-600">טוען רכבים...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-xl font-bold text-gray-800 mb-2">
+            שגיאה בטעינת הרכבים
+          </h2>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={fetchCars} variant="outline">
+            נסה שוב
+          </Button>
         </div>
       </div>
     );
@@ -497,8 +403,7 @@ export default function BuyerCarsPage() {
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-800">חיפוש רכבים</h1>
         <p className="text-gray-600 mt-1">
-          שלום {user.name?.split(" ")[0]}, נמצאו {filteredCars.length} רכבים
-          מתוך {mockCars.length}
+          שלום {user?.firstName}, נמצאו {pagination.total} רכבים
         </p>
       </div>
 
@@ -509,7 +414,7 @@ export default function BuyerCarsPage() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
           <Input
             type="text"
-            placeholder="חפש לפי יצרן, דגם, מיקום או סוחר..."
+            placeholder="חפש לפי יצרן, דגם, מיקום או תיאור..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 pr-4 py-2 w-full"
@@ -544,8 +449,6 @@ export default function BuyerCarsPage() {
                 <SelectItem value="oldest">הישנים ביותר</SelectItem>
                 <SelectItem value="priceLow">מחיר: נמוך לגבוה</SelectItem>
                 <SelectItem value="priceHigh">מחיר: גבוה לנמוך</SelectItem>
-                <SelectItem value="mileageLow">ק"מ: נמוך לגבוה</SelectItem>
-                <SelectItem value="mileageHigh">ק"מ: גבוה לנמוך</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -579,107 +482,50 @@ export default function BuyerCarsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   יצרן
                 </label>
-                <Select
-                  value={filters.manufacturer}
-                  onValueChange={(value) =>
-                    handleFilterChange("manufacturer", value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="כל היצרנים" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">כל היצרנים</SelectItem>
-                    <SelectItem value="טויוטה">טויוטה</SelectItem>
-                    <SelectItem value="הונדה">הונדה</SelectItem>
-                    <SelectItem value="מאזדה">מאזדה</SelectItem>
-                    <SelectItem value="BMW">BMW</SelectItem>
-                    <SelectItem value="מרצדס">מרצדס</SelectItem>
-                    <SelectItem value="יונדאי">יונדאי</SelectItem>
-                    <SelectItem value="קיה">קיה</SelectItem>
-                    <SelectItem value="פולקסווגן">פולקסווגן</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  placeholder="טויוטה, הונדה..."
+                  value={filters.make}
+                  onChange={(e) => handleFilterChange("make", e.target.value)}
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  טווח מחירים
+                  מחיר מינימלי
                 </label>
-                <Select
-                  value={filters.priceRange}
-                  onValueChange={(value) =>
-                    handleFilterChange("priceRange", value)
+                <Input
+                  type="number"
+                  placeholder="50000"
+                  value={filters.priceFrom}
+                  onChange={(e) =>
+                    handleFilterChange("priceFrom", e.target.value)
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="כל המחירים" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">כל המחירים</SelectItem>
-                    <SelectItem value="0-100000">עד 100,000 ₪</SelectItem>
-                    <SelectItem value="100000-150000">
-                      100,000-150,000 ₪
-                    </SelectItem>
-                    <SelectItem value="150000-200000">
-                      150,000-200,000 ₪
-                    </SelectItem>
-                    <SelectItem value="200000-300000">
-                      200,000-300,000 ₪
-                    </SelectItem>
-                    <SelectItem value="300000">מעל 300,000 ₪</SelectItem>
-                  </SelectContent>
-                </Select>
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  שנת ייצור
+                  מחיר מקסימלי
                 </label>
-                <Select
-                  value={filters.yearRange}
-                  onValueChange={(value) =>
-                    handleFilterChange("yearRange", value)
+                <Input
+                  type="number"
+                  placeholder="200000"
+                  value={filters.priceTo}
+                  onChange={(e) =>
+                    handleFilterChange("priceTo", e.target.value)
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="כל השנים" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">כל השנים</SelectItem>
-                    <SelectItem value="2023">מ-2023</SelectItem>
-                    <SelectItem value="2022">מ-2022</SelectItem>
-                    <SelectItem value="2021">מ-2021</SelectItem>
-                    <SelectItem value="2020">מ-2020</SelectItem>
-                    <SelectItem value="2019">מ-2019</SelectItem>
-                  </SelectContent>
-                </Select>
+                />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  מיקום
+                  עיר
                 </label>
-                <Select
-                  value={filters.location}
-                  onValueChange={(value) =>
-                    handleFilterChange("location", value)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="כל המיקומים" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">כל המיקומים</SelectItem>
-                    <SelectItem value="תל אביב">תל אביב</SelectItem>
-                    <SelectItem value="פתח תקווה">פתח תקווה</SelectItem>
-                    <SelectItem value="חיפה">חיפה</SelectItem>
-                    <SelectItem value="רמת גן">רמת גן</SelectItem>
-                    <SelectItem value="באר שבע">באר שבע</SelectItem>
-                    <SelectItem value="נתניה">נתניה</SelectItem>
-                    <SelectItem value="ירושלים">ירושלים</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Input
+                  placeholder="תל אביב, חיפה..."
+                  value={filters.city}
+                  onChange={(e) => handleFilterChange("city", e.target.value)}
+                />
               </div>
             </div>
 
@@ -693,7 +539,7 @@ export default function BuyerCarsPage() {
       )}
 
       {/* Results */}
-      {filteredCars.length === 0 ? (
+      {cars.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-6xl mb-4">🔍</div>
           <h3 className="text-xl font-bold text-gray-800 mb-2">
@@ -707,20 +553,61 @@ export default function BuyerCarsPage() {
           </Button>
         </div>
       ) : (
-        <div
-          className={
-            viewMode === "grid"
-              ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-              : "space-y-4"
-          }
-        >
-          {filteredCars.map((car) =>
-            viewMode === "grid" ? (
-              <CarCard key={car.id} car={car} />
-            ) : (
-              <CarListItem key={car.id} car={car} />
-            )
+        <>
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                : "space-y-4"
+            }
+          >
+            {cars.map((car) =>
+              viewMode === "grid" ? (
+                <CarCard key={car.id} car={car} />
+              ) : (
+                <CarListItem key={car.id} car={car} />
+              )
+            )}
+          </div>
+
+          {/* Pagination */}
+          {pagination.totalPages > 1 && (
+            <div className="flex justify-center mt-8 gap-2">
+              <Button
+                variant="outline"
+                disabled={pagination.page === 1}
+                onClick={() =>
+                  setPagination((prev) => ({ ...prev, page: prev.page - 1 }))
+                }
+              >
+                הקודם
+              </Button>
+
+              <span className="px-4 py-2 text-sm text-gray-600">
+                עמוד {pagination.page} מתוך {pagination.totalPages}
+              </span>
+
+              <Button
+                variant="outline"
+                disabled={pagination.page === pagination.totalPages}
+                onClick={() =>
+                  setPagination((prev) => ({ ...prev, page: prev.page + 1 }))
+                }
+              >
+                הבא
+              </Button>
+            </div>
           )}
+        </>
+      )}
+
+      {/* Loading overlay during API calls */}
+      {loading && cars.length > 0 && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg shadow-lg">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-sm text-gray-600">מעדכן...</p>
+          </div>
         </div>
       )}
     </div>
