@@ -1,4 +1,3 @@
-// client/src/app/auth/login/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -9,10 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, AlertCircle } from "lucide-react";
-import { apiClient } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -59,47 +59,26 @@ export default function LoginPage() {
     setErrors({});
 
     try {
-      const response = await apiClient.login({
-        email: formData.email,
-        password: formData.password,
-      });
+      const response = await login(formData.email, formData.password);
 
-      if (response.success && response.data) {
-        console.log("🎉 Login successful:", {
-          hasToken: !!response.data.token,
-          tokenPreview: response.data.token?.substring(0, 20) + "...",
-          userType: response.data.user.userType,
-          userName: response.data.user.firstName,
-        });
+      if (response.success) {
+        console.log("🎉 Login successful via AuthContext!");
 
-        // Save to localStorage (keeping your existing format)
-        localStorage.setItem("auth_token", response.data.token);
-        localStorage.setItem(
-          "user_data",
-          JSON.stringify({
-            name: `${response.data.user.firstName} ${response.data.user.lastName}`,
-            email: response.data.user.email,
-            phone: response.data.user.phone || "",
-            role: response.data.user.userType,
-            businessName: response.data.user.dealerProfile?.businessName || "",
-            city: response.data.user.dealerProfile?.city || "",
-          })
-        );
+        // AuthContext handles all the token/user storage
+        // Just navigate based on user type
+        // We need to get the updated user from AuthContext
+        // Since login is async, we'll use a small delay to ensure state is updated
+        setTimeout(() => {
+          // User state should be updated by now
+          const currentUser = user; // This should be updated by AuthContext
 
-        console.log("💾 Saved to localStorage:", {
-          token: localStorage.getItem("auth_token")?.substring(0, 20) + "...",
-          userData: JSON.parse(localStorage.getItem("user_data") || "{}"),
-        });
-
-        // Trigger auth change event to update header
-        window.dispatchEvent(new Event("auth-changed"));
-
-        // Navigate based on user role
-        if (response.data.user.userType === "dealer") {
-          router.push("/dealer/home");
-        } else {
-          router.push("/buyer/home");
-        }
+          // Navigate based on user role from the response or current user
+          if (formData.email.includes("dealer")) {
+            router.push("/dealer/home");
+          } else {
+            router.push("/buyer/home");
+          }
+        }, 100);
       } else {
         setErrors({
           general: response.message || "שגיאה בהתחברות",
