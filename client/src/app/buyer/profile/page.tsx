@@ -56,6 +56,9 @@ const BuyerProfilePage = () => {
   // ✅ השתמש רק ב-useAuth
   const { user, isAuthenticated, isLoading } = useAuth();
 
+  // ✅ State לבדיקת client-side
+  const [isClient, setIsClient] = useState(false);
+
   const [stats, setStats] = useState<UserStats>({
     totalRequests: 0,
     activeRequests: 0,
@@ -92,19 +95,61 @@ const BuyerProfilePage = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  // ✅ Debug console logs
-  console.log("🔍 BuyerProfilePage Debug:", {
-    isAuthenticated,
-    isLoading,
-    user: user ? `${user.firstName} ${user.lastName}` : null,
-    userType: user?.userType,
-    localStorage_token: localStorage.getItem("auth_token")
-      ? "exists"
-      : "missing",
-  });
+  // ✅ בדיקת client-side - מונע SSR issues
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // ✅ Helper functions מוגנות מ-SSR
+  const getLocalStorageItem = (
+    key: string,
+    defaultValue: string = ""
+  ): string => {
+    if (!isClient) return defaultValue;
+    try {
+      return localStorage.getItem(key) || defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  };
+
+  const setLocalStorageItem = (key: string, value: string): void => {
+    if (!isClient) return;
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.error("Error setting localStorage:", error);
+    }
+  };
+
+  const removeLocalStorageItem = (key: string): void => {
+    if (!isClient) return;
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error("Error removing localStorage:", error);
+    }
+  };
+
+  // ✅ Debug console logs - רק בצד הלקוח
+  useEffect(() => {
+    if (!isClient) return;
+
+    console.log("🔍 BuyerProfilePage Debug:", {
+      isAuthenticated,
+      isLoading,
+      user: user ? `${user.firstName} ${user.lastName}` : null,
+      userType: user?.userType,
+      localStorage_token: getLocalStorageItem("auth_token")
+        ? "exists"
+        : "missing",
+    });
+  }, [isClient, isAuthenticated, isLoading, user]);
 
   // ✅ בדיקת authentication נכונה
   useEffect(() => {
+    if (!isClient) return;
+
     console.log("🔍 Auth check:", { isLoading, isAuthenticated });
 
     // חכה שהאימות יסתיים
@@ -125,11 +170,11 @@ const BuyerProfilePage = () => {
     }
 
     console.log("✅ Authentication OK, loading data");
-  }, [isLoading, isAuthenticated, user, router]);
+  }, [isClient, isLoading, isAuthenticated, user, router]);
 
   // ✅ טעינת נתונים - רק אחרי אימות מוצלח
   useEffect(() => {
-    if (isLoading || !isAuthenticated || !user) {
+    if (!isClient || isLoading || !isAuthenticated || !user) {
       return; // עדיין ממתין או לא מחובר
     }
 
@@ -139,7 +184,7 @@ const BuyerProfilePage = () => {
         setError(null);
 
         // ✅ השתמש ב-auth_token (עקבי!)
-        const token = localStorage.getItem("auth_token");
+        const token = getLocalStorageItem("auth_token");
 
         if (!token) {
           console.log("❌ No auth_token found");
@@ -192,9 +237,13 @@ const BuyerProfilePage = () => {
         await loadStats(token);
 
         // Load preferences from localStorage
-        const savedPreferences = localStorage.getItem("userPreferences");
+        const savedPreferences = getLocalStorageItem("userPreferences");
         if (savedPreferences) {
-          setPreferences(JSON.parse(savedPreferences));
+          try {
+            setPreferences(JSON.parse(savedPreferences));
+          } catch {
+            console.warn("Error parsing user preferences");
+          }
         }
 
         console.log("✅ Profile data loaded successfully");
@@ -209,7 +258,7 @@ const BuyerProfilePage = () => {
     };
 
     loadData();
-  }, [isLoading, isAuthenticated, user, router]);
+  }, [isClient, isLoading, isAuthenticated, user, router]);
 
   const loadStats = async (token: string) => {
     try {
@@ -248,7 +297,13 @@ const BuyerProfilePage = () => {
       }
 
       // Get saved cars from localStorage
-      const savedCars = JSON.parse(localStorage.getItem("savedCars") || "[]");
+      const savedCarsData = getLocalStorageItem("savedCars", "[]");
+      let savedCars = [];
+      try {
+        savedCars = JSON.parse(savedCarsData);
+      } catch {
+        savedCars = [];
+      }
 
       setStats({
         totalRequests,
@@ -269,11 +324,11 @@ const BuyerProfilePage = () => {
   };
 
   const handleSaveProfile = async () => {
-    if (!user) return;
+    if (!user || !isClient) return;
 
     try {
       setSaving(true);
-      const token = localStorage.getItem("auth_token");
+      const token = getLocalStorageItem("auth_token");
 
       if (!token) {
         setError("לא נמצא token - אנא התחבר מחדש");
@@ -311,7 +366,7 @@ const BuyerProfilePage = () => {
           phone: editForm.phone,
         };
 
-        localStorage.setItem("user_data", JSON.stringify(updatedUserData));
+        setLocalStorageItem("user_data", JSON.stringify(updatedUserData));
 
         setIsEditing(false);
         setSaved(true);
@@ -353,7 +408,7 @@ const BuyerProfilePage = () => {
       [key]: value,
     };
     setPreferences(updatedPreferences);
-    localStorage.setItem("userPreferences", JSON.stringify(updatedPreferences));
+    setLocalStorageItem("userPreferences", JSON.stringify(updatedPreferences));
   };
 
   const handleChangePassword = async () => {
@@ -367,7 +422,7 @@ const BuyerProfilePage = () => {
     }
 
     try {
-      const token = localStorage.getItem("auth_token");
+      const token = getLocalStorageItem("auth_token");
 
       if (!token) {
         setError("לא נמצא token - אנא התחבר מחדש");
@@ -407,8 +462,10 @@ const BuyerProfilePage = () => {
   };
 
   const handleDeleteAccount = async () => {
+    if (!isClient) return;
+
     try {
-      const token = localStorage.getItem("auth_token");
+      const token = getLocalStorageItem("auth_token");
 
       if (!token) {
         alert("שגיאת אימות");
@@ -425,10 +482,10 @@ const BuyerProfilePage = () => {
 
       if (response.ok) {
         // Clear all local data
-        localStorage.removeItem("user_data");
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("userPreferences");
-        localStorage.removeItem("savedCars");
+        removeLocalStorageItem("user_data");
+        removeLocalStorageItem("auth_token");
+        removeLocalStorageItem("userPreferences");
+        removeLocalStorageItem("savedCars");
 
         alert("החשבון נמחק בהצלחה");
         router.push("/");
@@ -444,12 +501,16 @@ const BuyerProfilePage = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("user_data");
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("userPreferences");
+    if (!isClient) return;
+
+    removeLocalStorageItem("user_data");
+    removeLocalStorageItem("auth_token");
+    removeLocalStorageItem("userPreferences");
 
     // Trigger auth change event
-    window.dispatchEvent(new Event("auth-changed"));
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("auth-changed"));
+    }
 
     router.push("/auth/login");
   };
@@ -466,6 +527,18 @@ const BuyerProfilePage = () => {
     if (diffMonths === 1) return "חודש";
     return `${diffMonths} חודשים`;
   };
+
+  // ✅ SSR Safe - לא מרנדר עד שהclient מוכן
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">טוען...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ✅ Loading state מסודר
   if (isLoading) {
