@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -35,135 +35,268 @@ import {
   MessageSquare,
   Car,
   Search,
+  Loader2,
+  ArrowLeft,
 } from "lucide-react";
 
-// ממשק משתמש
-interface UserProfile {
+// API Base URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.autix.co.il";
+
+// Types
+interface User {
   id: number;
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  phone: string;
-  location: string;
-  joinedAt: string;
-  preferences: {
-    emailNotifications: boolean;
-    smsNotifications: boolean;
-    marketingEmails: boolean;
-  };
-  stats: {
-    totalRequests: number;
-    totalInquiries: number;
-    savedCars: number;
-    activeRequests: number;
-  };
+  phone?: string;
+  userType: string;
+  createdAt: string;
 }
 
-// נתוני דמו של הקונה
-const sampleProfile: UserProfile = {
-  id: 1,
-  name: "אליה כהן",
-  email: "eliya.cohen@example.com",
-  phone: "052-9876543",
-  location: "תל אביב",
-  joinedAt: "2024-01-15",
-  preferences: {
+interface UserStats {
+  totalRequests: number;
+  activeRequests: number;
+  totalInquiries: number;
+  savedCars: number;
+}
+
+interface UserPreferences {
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  marketingEmails: boolean;
+}
+
+const BuyerProfilePage = () => {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [stats, setStats] = useState<UserStats>({
+    totalRequests: 0,
+    activeRequests: 0,
+    totalInquiries: 0,
+    savedCars: 0,
+  });
+  const [preferences, setPreferences] = useState<UserPreferences>({
     emailNotifications: true,
     smsNotifications: false,
     marketingEmails: true,
-  },
-  stats: {
-    totalRequests: 3,
-    totalInquiries: 8,
-    savedCars: 5,
-    activeRequests: 2,
-  },
-};
+  });
 
-const locations = [
-  "תל אביב",
-  "ירושלים",
-  "חיפה",
-  "באר שבע",
-  "נתניה",
-  "פתח תקווה",
-  "אשדוד",
-  "ראשון לציון",
-  "אשקלון",
-  "רחובות",
-  "בת ים",
-  "הרצליה",
-  "רמת גן",
-  "בני ברק",
-  "חולון",
-  "רמלה",
-  "לוד",
-  "נס ציונה",
-];
-
-const BuyerProfilePage = () => {
-  const [profile, setProfile] = useState<UserProfile>(sampleProfile);
+  const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
   const [editForm, setEditForm] = useState({
-    name: profile.name,
-    email: profile.email,
-    phone: profile.phone,
-    location: profile.location,
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
   });
+
   const [passwordForm, setPasswordForm] = useState({
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
+
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [saved, setSaved] = useState(false);
 
-  const handleSaveProfile = () => {
-    const updatedProfile = {
-      ...profile,
-      name: editForm.name,
-      email: editForm.email,
-      phone: editForm.phone,
-      location: editForm.location,
+  // Load user data and stats
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+
+        // Load user data
+        const userData = localStorage.getItem("user");
+        const token = localStorage.getItem("token");
+
+        if (!userData || !token) {
+          router.push("/auth/login");
+          return;
+        }
+
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+
+        setEditForm({
+          firstName: parsedUser.firstName || "",
+          lastName: parsedUser.lastName || "",
+          email: parsedUser.email || "",
+          phone: parsedUser.phone || "",
+        });
+
+        // Load user profile from API to get most recent data
+        try {
+          const response = await fetch(`${API_URL}/api/auth/profile`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success) {
+              setUser(data.data);
+              setEditForm({
+                firstName: data.data.firstName || "",
+                lastName: data.data.lastName || "",
+                email: data.data.email || "",
+                phone: data.data.phone || "",
+              });
+            }
+          }
+        } catch (apiError) {
+          console.error("Error fetching profile from API:", apiError);
+        }
+
+        // Load statistics
+        await loadStats(token);
+
+        // Load preferences from localStorage
+        const savedPreferences = localStorage.getItem("userPreferences");
+        if (savedPreferences) {
+          setPreferences(JSON.parse(savedPreferences));
+        }
+      } catch (error) {
+        console.error("Error loading data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    setProfile(updatedProfile);
-    // כאן ישלח לשרת
-    localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
+    loadData();
+  }, [router]);
 
-    setIsEditing(false);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  const loadStats = async (token: string) => {
+    try {
+      // Load stats from various APIs
+      const [requestsResponse, inquiriesResponse] = await Promise.all([
+        fetch(`${API_URL}/api/car-requests/my-requests`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/inquiries/sent`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+      ]);
+
+      let totalRequests = 0;
+      let activeRequests = 0;
+      let totalInquiries = 0;
+
+      // Process requests
+      if (requestsResponse.ok) {
+        const requestsData = await requestsResponse.json();
+        if (requestsData.success) {
+          const requests = requestsData.data.requests || [];
+          totalRequests = requests.length;
+          activeRequests = requests.filter(
+            (r: any) => r.status === "active"
+          ).length;
+        }
+      }
+
+      // Process inquiries
+      if (inquiriesResponse.ok) {
+        const inquiriesData = await inquiriesResponse.json();
+        if (inquiriesData.success) {
+          totalInquiries = inquiriesData.data.inquiries?.length || 0;
+        }
+      }
+
+      // Get saved cars from localStorage
+      const savedCars = JSON.parse(localStorage.getItem("savedCars") || "[]");
+
+      setStats({
+        totalRequests,
+        activeRequests,
+        totalInquiries,
+        savedCars: savedCars.length,
+      });
+    } catch (error) {
+      console.error("Error loading stats:", error);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    try {
+      setSaving(true);
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`${API_URL}/api/profile`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstName: editForm.firstName,
+          lastName: editForm.lastName,
+          email: editForm.email,
+          phone: editForm.phone,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Update local user data
+        const updatedUser = {
+          ...user,
+          firstName: editForm.firstName,
+          lastName: editForm.lastName,
+          email: editForm.email,
+          phone: editForm.phone,
+        };
+
+        setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+
+        setIsEditing(false);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+      } else {
+        alert("שגיאה בשמירת הפרטים: " + (data.message || "שגיאה לא ידועה"));
+      }
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      alert("שגיאה בשמירת הפרטים");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancelEdit = () => {
-    setEditForm({
-      name: profile.name,
-      email: profile.email,
-      phone: profile.phone,
-      location: profile.location,
-    });
+    if (user) {
+      setEditForm({
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        phone: user.phone || "",
+      });
+    }
     setIsEditing(false);
   };
 
   const handlePreferenceChange = (
-    key: keyof typeof profile.preferences,
+    key: keyof UserPreferences,
     value: boolean
   ) => {
-    const updatedProfile = {
-      ...profile,
-      preferences: {
-        ...profile.preferences,
-        [key]: value,
-      },
+    const updatedPreferences = {
+      ...preferences,
+      [key]: value,
     };
-    setProfile(updatedProfile);
-    localStorage.setItem("userProfile", JSON.stringify(updatedProfile));
+    setPreferences(updatedPreferences);
+    localStorage.setItem("userPreferences", JSON.stringify(updatedPreferences));
   };
 
-  const handleChangePassword = () => {
+  const handleChangePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
       alert("הסיסמאות לא תואמות");
       return;
@@ -173,34 +306,83 @@ const BuyerProfilePage = () => {
       return;
     }
 
-    // כאן ישלח לשרת
-    alert("הסיסמה שונתה בהצלחה");
-    setShowChangePassword(false);
-    setPasswordForm({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: "",
-    });
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`${API_URL}/api/auth/change-password`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          currentPassword: passwordForm.currentPassword,
+          newPassword: passwordForm.newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        alert("הסיסמה שונתה בהצלחה");
+        setShowChangePassword(false);
+        setPasswordForm({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        alert("שגיאה בשינוי הסיסמה: " + (data.message || "שגיאה לא ידועה"));
+      }
+    } catch (error) {
+      console.error("Error changing password:", error);
+      alert("שגיאה בשינוי הסיסמה");
+    }
   };
 
-  const handleDeleteAccount = () => {
-    // כאן ישלח בקשה לשרת למחיקת החשבון
-    alert("החשבון נמחק בהצלחה");
+  const handleDeleteAccount = async () => {
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await fetch(`${API_URL}/api/auth/delete-account`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        // Clear all local data
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
+        localStorage.removeItem("userPreferences");
+        localStorage.removeItem("savedCars");
+
+        alert("החשבון נמחק בהצלחה");
+        router.push("/");
+      } else {
+        alert("שגיאה במחיקת החשבון");
+      }
+    } catch (error) {
+      console.error("Error deleting account:", error);
+      alert("שגיאה במחיקת החשבון");
+    }
+
     setShowDeleteModal(false);
-    // הפניה לדף הבית או התחברות
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("userProfile");
-    localStorage.removeItem("userRequests");
-    localStorage.removeItem("userInquiries");
-    localStorage.removeItem("savedCars");
-    alert("התנתקת בהצלחה");
-    // הפניה לדף התחברות
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userPreferences");
+    router.push("/auth/login");
   };
 
   const getJoinedTime = () => {
-    const joinDate = new Date(profile.joinedAt);
+    if (!user?.createdAt) return "לא ידוע";
+
+    const joinDate = new Date(user.createdAt);
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - joinDate.getTime());
     const diffMonths = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 30));
@@ -210,11 +392,51 @@ const BuyerProfilePage = () => {
     return `${diffMonths} חודשים`;
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">טוען פרטי פרופיל...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <User className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+            נדרשת התחברות
+          </h1>
+          <p className="text-gray-600 mb-4">
+            אנא התחבר כדי לראות את הפרופיל שלך
+          </p>
+          <Button onClick={() => router.push("/auth/login")}>התחבר</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-4xl mx-auto px-4 py-6">
+          <div className="flex items-center gap-4 mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="flex items-center gap-2"
+              onClick={() => router.push("/buyer/home")}
+            >
+              <ArrowLeft className="h-4 w-4" />
+              חזרה לדף הבית
+            </Button>
+          </div>
+
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -268,30 +490,32 @@ const BuyerProfilePage = () => {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-sm text-gray-600">שם מלא</Label>
+                        <Label className="text-sm text-gray-600">שם פרטי</Label>
                         <div className="font-medium text-gray-900 mt-1">
-                          {profile.name}
+                          {user.firstName || "לא צוין"}
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm text-gray-600">
+                          שם משפחה
+                        </Label>
+                        <div className="font-medium text-gray-900 mt-1">
+                          {user.lastName || "לא צוין"}
                         </div>
                       </div>
 
                       <div>
                         <Label className="text-sm text-gray-600">מייל</Label>
                         <div className="font-medium text-gray-900 mt-1">
-                          {profile.email}
+                          {user.email}
                         </div>
                       </div>
 
                       <div>
                         <Label className="text-sm text-gray-600">טלפון</Label>
                         <div className="font-medium text-gray-900 mt-1">
-                          {profile.phone}
-                        </div>
-                      </div>
-
-                      <div>
-                        <Label className="text-sm text-gray-600">מיקום</Label>
-                        <div className="font-medium text-gray-900 mt-1">
-                          {profile.location}
+                          {user.phone || "לא צוין"}
                         </div>
                       </div>
                     </div>
@@ -308,12 +532,30 @@ const BuyerProfilePage = () => {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <Label htmlFor="name">שם מלא *</Label>
+                        <Label htmlFor="firstName">שם פרטי *</Label>
                         <Input
-                          id="name"
-                          value={editForm.name}
+                          id="firstName"
+                          value={editForm.firstName}
                           onChange={(e) =>
-                            setEditForm({ ...editForm, name: e.target.value })
+                            setEditForm({
+                              ...editForm,
+                              firstName: e.target.value,
+                            })
+                          }
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="lastName">שם משפחה *</Label>
+                        <Input
+                          id="lastName"
+                          value={editForm.lastName}
+                          onChange={(e) =>
+                            setEditForm({
+                              ...editForm,
+                              lastName: e.target.value,
+                            })
                           }
                           className="mt-1"
                         />
@@ -333,7 +575,7 @@ const BuyerProfilePage = () => {
                       </div>
 
                       <div>
-                        <Label htmlFor="phone">טלפון *</Label>
+                        <Label htmlFor="phone">טלפון</Label>
                         <Input
                           id="phone"
                           value={editForm.phone}
@@ -341,42 +583,28 @@ const BuyerProfilePage = () => {
                             setEditForm({ ...editForm, phone: e.target.value })
                           }
                           className="mt-1"
+                          placeholder="050-1234567"
                         />
-                      </div>
-
-                      <div>
-                        <Label htmlFor="location">מיקום *</Label>
-                        <Select
-                          value={editForm.location}
-                          onValueChange={(value) =>
-                            setEditForm({ ...editForm, location: value })
-                          }
-                        >
-                          <SelectTrigger className="mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {locations.map((location) => (
-                              <SelectItem key={location} value={location}>
-                                {location}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
                       </div>
                     </div>
 
                     <div className="flex gap-3 pt-4">
                       <Button
                         onClick={handleSaveProfile}
+                        disabled={saving}
                         className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2"
                       >
-                        <Save className="h-4 w-4" />
-                        שמור שינויים
+                        {saving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                        {saving ? "שומר..." : "שמור שינויים"}
                       </Button>
                       <Button
                         variant="outline"
                         onClick={handleCancelEdit}
+                        disabled={saving}
                         className="flex items-center gap-2"
                       >
                         <X className="h-4 w-4" />
@@ -406,19 +634,17 @@ const BuyerProfilePage = () => {
                   </div>
                   <Button
                     variant={
-                      profile.preferences.emailNotifications
-                        ? "default"
-                        : "outline"
+                      preferences.emailNotifications ? "default" : "outline"
                     }
                     size="sm"
                     onClick={() =>
                       handlePreferenceChange(
                         "emailNotifications",
-                        !profile.preferences.emailNotifications
+                        !preferences.emailNotifications
                       )
                     }
                   >
-                    {profile.preferences.emailNotifications ? "פעיל" : "כבוי"}
+                    {preferences.emailNotifications ? "פעיל" : "כבוי"}
                   </Button>
                 </div>
 
@@ -431,19 +657,17 @@ const BuyerProfilePage = () => {
                   </div>
                   <Button
                     variant={
-                      profile.preferences.smsNotifications
-                        ? "default"
-                        : "outline"
+                      preferences.smsNotifications ? "default" : "outline"
                     }
                     size="sm"
                     onClick={() =>
                       handlePreferenceChange(
                         "smsNotifications",
-                        !profile.preferences.smsNotifications
+                        !preferences.smsNotifications
                       )
                     }
                   >
-                    {profile.preferences.smsNotifications ? "פעיל" : "כבוי"}
+                    {preferences.smsNotifications ? "פעיל" : "כבוי"}
                   </Button>
                 </div>
 
@@ -456,19 +680,17 @@ const BuyerProfilePage = () => {
                   </div>
                   <Button
                     variant={
-                      profile.preferences.marketingEmails
-                        ? "default"
-                        : "outline"
+                      preferences.marketingEmails ? "default" : "outline"
                     }
                     size="sm"
                     onClick={() =>
                       handlePreferenceChange(
                         "marketingEmails",
-                        !profile.preferences.marketingEmails
+                        !preferences.marketingEmails
                       )
                     }
                   >
-                    {profile.preferences.marketingEmails ? "פעיל" : "כבוי"}
+                    {preferences.marketingEmails ? "פעיל" : "כבוי"}
                   </Button>
                 </div>
               </CardContent>
@@ -669,7 +891,7 @@ const BuyerProfilePage = () => {
                     <Search className="h-4 w-4 text-blue-600" />
                     <span className="text-sm">בקשות ששלחתי</span>
                   </div>
-                  <Badge variant="outline">{profile.stats.totalRequests}</Badge>
+                  <Badge variant="outline">{stats.totalRequests}</Badge>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -677,9 +899,7 @@ const BuyerProfilePage = () => {
                     <MessageSquare className="h-4 w-4 text-purple-600" />
                     <span className="text-sm">פניות ששלחתי</span>
                   </div>
-                  <Badge variant="outline">
-                    {profile.stats.totalInquiries}
-                  </Badge>
+                  <Badge variant="outline">{stats.totalInquiries}</Badge>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -687,7 +907,7 @@ const BuyerProfilePage = () => {
                     <Car className="h-4 w-4 text-green-600" />
                     <span className="text-sm">מודעות ששמרתי</span>
                   </div>
-                  <Badge variant="outline">{profile.stats.savedCars}</Badge>
+                  <Badge variant="outline">{stats.savedCars}</Badge>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -696,8 +916,19 @@ const BuyerProfilePage = () => {
                     <span className="text-sm">בקשות פעילות</span>
                   </div>
                   <Badge className="bg-orange-100 text-orange-800">
-                    {profile.stats.activeRequests}
+                    {stats.activeRequests}
                   </Badge>
+                </div>
+
+                <div className="pt-3 border-t">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                    onClick={() => router.push("/buyer/requests")}
+                  >
+                    צפה בפעילות המלאה
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -730,13 +961,21 @@ const BuyerProfilePage = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => router.push("/info/contact")}
+                  >
                     <MessageSquare className="h-4 w-4 ml-2" />
                     צור קשר עם התמיכה
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => router.push("/info/about-autix")}
+                  >
                     <AlertCircle className="h-4 w-4 ml-2" />
-                    מרכז עזרה
+                    מידע על AUTIX
                   </Button>
                 </div>
               </CardContent>

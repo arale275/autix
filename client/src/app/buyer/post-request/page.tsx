@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,122 +28,129 @@ import {
   Zap,
   Users,
   ArrowLeft,
+  Loader2,
 } from "lucide-react";
 
-// ממשקים
-interface PurchaseRequest {
+// API Base URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.autix.co.il";
+
+// Types
+interface User {
   id: number;
-  buyerName: string;
-  buyerPhone: string;
-  buyerEmail: string;
-  manufacturer: string;
-  model?: string;
-  yearFrom?: number;
-  yearTo?: number;
-  priceFrom?: number;
-  priceTo?: number;
-  mileageMax?: number;
-  transmission?: string;
-  fuelType?: string;
-  location: string;
-  description: string;
-  interestedInFinancing: boolean;
-  urgency: "low" | "medium" | "high";
-  createdAt: string;
-  status: "active" | "paused" | "fulfilled";
-  views: number;
-  responses: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  userType: string;
 }
 
-// נתוני דמו
-const currentUser = {
-  name: "אליה כהן",
-  phone: "052-9876543",
-  email: "eliya.cohen@example.com",
-};
-
 const manufacturers = [
-  "טויוטה",
-  "הונדה",
-  "מזדה",
-  "ניסאן",
-  "היונדאי",
-  "קיה",
-  "סקודה",
-  "פולקסווגן",
+  "Toyota",
+  "Honda",
+  "Mazda",
+  "Nissan",
+  "Hyundai",
+  "Kia",
+  "Skoda",
+  "Volkswagen",
   "BMW",
-  "מרצדס",
-  "אאודי",
-  "וולוו",
+  "Mercedes",
+  "Audi",
+  "Volvo",
+  "Ford",
+  "Chevrolet",
+  "Peugeot",
+  "Renault",
 ];
 
 const PostRequestPage = () => {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(true);
+
   const [formData, setFormData] = useState({
-    manufacturer: "",
+    make: "",
     model: "",
-    yearFrom: "",
-    yearTo: "",
-    priceFrom: "",
-    priceTo: "",
-    mileageMax: "",
-    transmission: "none",
-    fuelType: "none",
-    location: "",
-    description:
+    yearMin: "",
+    yearMax: "",
+    priceMax: "",
+    requirements:
       "אני מחפש רכב אמין ובמצב טוב. אשמח לקבל הצעות מסוחרים מקצועיים.",
-    interestedInFinancing: false,
-    urgency: "medium" as "low" | "medium" | "high",
   });
 
-  const handleSubmit = () => {
-    // יצירת בקשת רכישה חדשה
-    const newRequest: PurchaseRequest = {
-      id: Date.now(),
-      buyerName: currentUser.name,
-      buyerPhone: currentUser.phone,
-      buyerEmail: currentUser.email,
-      manufacturer: formData.manufacturer,
-      model: formData.model || undefined,
-      yearFrom: formData.yearFrom ? parseInt(formData.yearFrom) : undefined,
-      yearTo: formData.yearTo ? parseInt(formData.yearTo) : undefined,
-      priceFrom: formData.priceFrom ? parseInt(formData.priceFrom) : undefined,
-      priceTo: formData.priceTo ? parseInt(formData.priceTo) : undefined,
-      mileageMax: formData.mileageMax
-        ? parseInt(formData.mileageMax)
-        : undefined,
-      transmission:
-        formData.transmission === "none" ? undefined : formData.transmission,
-      fuelType: formData.fuelType === "none" ? undefined : formData.fuelType,
-      location: formData.location,
-      description: formData.description,
-      interestedInFinancing: formData.interestedInFinancing,
-      urgency: formData.urgency,
-      createdAt: new Date().toISOString().split("T")[0],
-      status: "active",
-      views: 0,
-      responses: 0,
+  // Load user data
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const userData = localStorage.getItem("user");
+        const token = localStorage.getItem("token");
+
+        if (userData && token) {
+          setUser(JSON.parse(userData));
+        } else {
+          // Redirect to login if not authenticated
+          router.push("/auth/login");
+          return;
+        }
+      } catch (error) {
+        console.error("Error loading user:", error);
+        router.push("/auth/login");
+      } finally {
+        setLoading(false);
+      }
     };
 
-    // שמירה ב-localStorage
-    const existingRequests = JSON.parse(
-      localStorage.getItem("userRequests") || "[]"
-    );
-    localStorage.setItem(
-      "userRequests",
-      JSON.stringify([...existingRequests, newRequest])
-    );
+    loadUser();
+  }, [router]);
 
-    // גם שמירה ברשימה הכללית לסוחרים
-    const allRequests = JSON.parse(
-      localStorage.getItem("purchaseRequests") || "[]"
-    );
-    localStorage.setItem(
-      "purchaseRequests",
-      JSON.stringify([...allRequests, newRequest])
-    );
+  const handleSubmit = async () => {
+    if (!user) {
+      alert("אנא התחבר כדי לפרסם בקשה");
+      return;
+    }
 
-    setIsSubmitted(true);
+    if (!formData.make) {
+      alert("יש לבחור לפחות יצרן");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const token = localStorage.getItem("token");
+
+      const requestData = {
+        make: formData.make,
+        model: formData.model || null,
+        year_min: formData.yearMin ? parseInt(formData.yearMin) : null,
+        year_max: formData.yearMax ? parseInt(formData.yearMax) : null,
+        price_max: formData.priceMax ? parseInt(formData.priceMax) : null,
+        requirements: formData.requirements,
+      };
+
+      const response = await fetch(`${API_URL}/api/car-requests`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestData),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setIsSubmitted(true);
+      } else {
+        alert("שגיאה ביצירת הבקשה: " + (data.message || "שגיאה לא ידועה"));
+      }
+    } catch (error) {
+      console.error("Error submitting request:", error);
+      alert("שגיאה ביצירת הבקשה");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const formatPrice = (price: string): string => {
@@ -150,31 +158,31 @@ const PostRequestPage = () => {
     return new Intl.NumberFormat("he-IL").format(parseInt(price)) + " ₪";
   };
 
-  const getUrgencyColor = (urgency: string): string => {
-    switch (urgency) {
-      case "high":
-        return "bg-red-100 text-red-800";
-      case "medium":
-        return "bg-yellow-100 text-yellow-800";
-      case "low":
-        return "bg-green-100 text-green-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">טוען...</p>
+        </div>
+      </div>
+    );
+  }
 
-  const getUrgencyText = (urgency: string): string => {
-    switch (urgency) {
-      case "high":
-        return "דחוף - צריך רכב בהקדם";
-      case "medium":
-        return "רגיל - תוך חודש-חודשיים";
-      case "low":
-        return "לא דחוף - אחפש את הרכב המתאים";
-      default:
-        return "רגיל";
-    }
-  };
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Car className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+            נדרשת התחברות
+          </h1>
+          <p className="text-gray-600 mb-4">אנא התחבר כדי לפרסם בקשת רכב</p>
+          <Button onClick={() => router.push("/auth/login")}>התחבר</Button>
+        </div>
+      </div>
+    );
+  }
 
   if (isSubmitted) {
     return (
@@ -187,7 +195,7 @@ const PostRequestPage = () => {
                 הבקשה נפרסמה בהצלחה!
               </h1>
               <p className="text-gray-600 mb-8">
-                הבקשה שלך פורסמה ותופיע בפני כל הסוחרים ברשת.
+                הבקשה שלך נשמרה במערכת ותופיע בפני כל הסוחרים ברשת.
                 <br />
                 סוחרים מתאימים יוכלו ליצור איתך קשר ישירות.
               </p>
@@ -203,20 +211,30 @@ const PostRequestPage = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                    <span>סוחרים עם רכבים מתאימים יתקשרו אליך</span>
+                    <span>
+                      סוחרים עם רכבים מתאימים יכולים לראות את הפרטים שלך
+                    </span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                    <span>תוכל לעקוב אחר הבקשה ב"המודעות שלי"</span>
+                    <span>תוכל לעקוב אחר הבקשה ב"הבקשות שלי"</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex gap-4 justify-center">
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  המודעות שלי
+                <Button
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={() => router.push("/buyer/requests")}
+                >
+                  הבקשות שלי
                 </Button>
-                <Button variant="outline">חזרה לדף הבית</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => router.push("/buyer/home")}
+                >
+                  חזרה לדף הבית
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -235,6 +253,7 @@ const PostRequestPage = () => {
               variant="ghost"
               size="sm"
               className="flex items-center gap-2"
+              onClick={() => router.push("/buyer/home")}
             >
               <ArrowLeft className="h-4 w-4" />
               חזרה
@@ -266,11 +285,11 @@ const PostRequestPage = () => {
               <CardContent className="space-y-4">
                 {/* יצרן - חובה */}
                 <div>
-                  <Label htmlFor="manufacturer">יצרן *</Label>
+                  <Label htmlFor="make">יצרן *</Label>
                   <Select
-                    value={formData.manufacturer}
+                    value={formData.make}
                     onValueChange={(value) =>
-                      setFormData({ ...formData, manufacturer: value })
+                      setFormData({ ...formData, make: value })
                     }
                   >
                     <SelectTrigger className="mt-1">
@@ -291,7 +310,7 @@ const PostRequestPage = () => {
                   <Label htmlFor="model">דגם (אופציונלי)</Label>
                   <Input
                     id="model"
-                    placeholder="למשל: קמרי, סיוויק, גולף..."
+                    placeholder="למשל: Camry, Civic, Golf..."
                     value={formData.model}
                     onChange={(e) =>
                       setFormData({ ...formData, model: e.target.value })
@@ -303,171 +322,66 @@ const PostRequestPage = () => {
                 {/* טווח שנים */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="yearFrom">שנה מ-</Label>
+                    <Label htmlFor="yearMin">שנה מ-</Label>
                     <Input
-                      id="yearFrom"
+                      id="yearMin"
                       type="number"
                       placeholder="2018"
-                      value={formData.yearFrom}
+                      min="1990"
+                      max="2025"
+                      value={formData.yearMin}
                       onChange={(e) =>
-                        setFormData({ ...formData, yearFrom: e.target.value })
+                        setFormData({ ...formData, yearMin: e.target.value })
                       }
                       className="mt-1"
                     />
                   </div>
                   <div>
-                    <Label htmlFor="yearTo">שנה עד</Label>
+                    <Label htmlFor="yearMax">שנה עד</Label>
                     <Input
-                      id="yearTo"
+                      id="yearMax"
                       type="number"
                       placeholder="2023"
-                      value={formData.yearTo}
+                      min="1990"
+                      max="2025"
+                      value={formData.yearMax}
                       onChange={(e) =>
-                        setFormData({ ...formData, yearTo: e.target.value })
+                        setFormData({ ...formData, yearMax: e.target.value })
                       }
                       className="mt-1"
                     />
                   </div>
                 </div>
 
-                {/* טווח מחירים */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="priceFrom">מחיר מ- (₪)</Label>
-                    <Input
-                      id="priceFrom"
-                      type="number"
-                      placeholder="150000"
-                      value={formData.priceFrom}
-                      onChange={(e) =>
-                        setFormData({ ...formData, priceFrom: e.target.value })
-                      }
-                      className="mt-1"
-                    />
-                    {formData.priceFrom && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        {formatPrice(formData.priceFrom)}
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <Label htmlFor="priceTo">מחיר עד (₪)</Label>
-                    <Input
-                      id="priceTo"
-                      type="number"
-                      placeholder="200000"
-                      value={formData.priceTo}
-                      onChange={(e) =>
-                        setFormData({ ...formData, priceTo: e.target.value })
-                      }
-                      className="mt-1"
-                    />
-                    {formData.priceTo && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        {formatPrice(formData.priceTo)}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* קילומטרים מקסימום */}
+                {/* מחיר מקסימלי */}
                 <div>
-                  <Label htmlFor="mileageMax">קילומטרים מקסימום</Label>
+                  <Label htmlFor="priceMax">מחיר מקסימלי (₪)</Label>
                   <Input
-                    id="mileageMax"
+                    id="priceMax"
                     type="number"
-                    placeholder="80000"
-                    value={formData.mileageMax}
+                    placeholder="200000"
+                    value={formData.priceMax}
                     onChange={(e) =>
-                      setFormData({ ...formData, mileageMax: e.target.value })
+                      setFormData({ ...formData, priceMax: e.target.value })
                     }
                     className="mt-1"
                   />
-                </div>
-
-                {/* העדפות נוספות */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="transmission">תיבת הילוכים</Label>
-                    <Select
-                      value={formData.transmission}
-                      onValueChange={(value) =>
-                        setFormData({
-                          ...formData,
-                          transmission: value === "none" ? "" : value,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="לא משנה" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">לא משנה</SelectItem>
-                        <SelectItem value="אוטומט">אוטומט</SelectItem>
-                        <SelectItem value="ידני">ידני</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="fuelType">סוג דלק</Label>
-                    <Select
-                      value={formData.fuelType}
-                      onValueChange={(value) =>
-                        setFormData({
-                          ...formData,
-                          fuelType: value === "none" ? "" : value,
-                        })
-                      }
-                    >
-                      <SelectTrigger className="mt-1">
-                        <SelectValue placeholder="לא משנה" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">לא משנה</SelectItem>
-                        <SelectItem value="בנזין">בנזין</SelectItem>
-                        <SelectItem value="דיזל">דיזל</SelectItem>
-                        <SelectItem value="היברידי">היברידי</SelectItem>
-                        <SelectItem value="חשמלי">חשמלי</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* פרטים נוספים */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Info className="h-5 w-5" />
-                  פרטים נוספים
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* מיקום */}
-                <div>
-                  <Label htmlFor="location">איזור מגורים *</Label>
-                  <Input
-                    id="location"
-                    placeholder="תל אביב, חיפה, ירושלים..."
-                    value={formData.location}
-                    onChange={(e) =>
-                      setFormData({ ...formData, location: e.target.value })
-                    }
-                    className="mt-1"
-                  />
+                  {formData.priceMax && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {formatPrice(formData.priceMax)}
+                    </div>
+                  )}
                 </div>
 
                 {/* תיאור */}
                 <div>
-                  <Label htmlFor="description">תיאור הבקשה</Label>
+                  <Label htmlFor="requirements">דרישות ותיאור הבקשה</Label>
                   <Textarea
-                    id="description"
+                    id="requirements"
                     rows={4}
-                    value={formData.description}
+                    value={formData.requirements}
                     onChange={(e) =>
-                      setFormData({ ...formData, description: e.target.value })
+                      setFormData({ ...formData, requirements: e.target.value })
                     }
                     className="mt-1"
                   />
@@ -475,51 +389,32 @@ const PostRequestPage = () => {
                     ספר לסוחרים מה חשוב לך ברכב, איזה שימוש תעשה בו וכל פרט נוסף
                   </div>
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* מימון */}
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id="financing"
-                    checked={formData.interestedInFinancing}
-                    onCheckedChange={(checked) =>
-                      setFormData({
-                        ...formData,
-                        interestedInFinancing: checked as boolean,
-                      })
-                    }
-                  />
-                  <Label htmlFor="financing" className="text-sm">
-                    מעוניין במימון
-                  </Label>
-                </div>
-
-                {/* דחיפות */}
-                <div>
-                  <Label htmlFor="urgency">רמת דחיפות</Label>
-                  <Select
-                    value={formData.urgency}
-                    onValueChange={(value) =>
-                      setFormData({
-                        ...formData,
-                        urgency: value as "low" | "medium" | "high",
-                      })
-                    }
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">
-                        לא דחוף - אחפש את הרכב המתאים
-                      </SelectItem>
-                      <SelectItem value="medium">
-                        רגיל - תוך חודש-חודשיים
-                      </SelectItem>
-                      <SelectItem value="high">
-                        דחוף - צריך רכב בהקדם
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+            {/* מידע על המשתמש */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5" />
+                  הפרטים שיישלחו לסוחרים
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="font-semibold text-blue-900 mb-2">
+                    פרטי הקשר שלך:
+                  </div>
+                  <div className="text-blue-700 space-y-1">
+                    <div>
+                      {user.firstName} {user.lastName}
+                    </div>
+                    <div>{user.email}</div>
+                    {user.phone && <div>{user.phone}</div>}
+                  </div>
+                  <div className="text-xs text-blue-600 mt-2">
+                    הפרטים האלה יהיו זמינים לסוחרים כדי שיוכלו ליצור איתך קשר
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -530,15 +425,24 @@ const PostRequestPage = () => {
                 <Button
                   onClick={handleSubmit}
                   className="w-full bg-blue-600 hover:bg-blue-700 py-3 text-lg"
-                  disabled={!formData.manufacturer || !formData.location}
+                  disabled={!formData.make || isSubmitting}
                 >
-                  <Zap className="h-5 w-5 ml-2" />
-                  פרסם בקשה
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin ml-2" />
+                      פורסם בקשה...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="h-5 w-5 ml-2" />
+                      פרסם בקשה
+                    </>
+                  )}
                 </Button>
 
-                {(!formData.manufacturer || !formData.location) && (
+                {!formData.make && (
                   <div className="text-sm text-red-600 mt-2 text-center">
-                    יש למלא לפחות יצרן ואיזור מגורים
+                    יש לבחור לפחות יצרן
                   </div>
                 )}
               </CardContent>
@@ -571,9 +475,9 @@ const PostRequestPage = () => {
                       2
                     </div>
                     <div>
-                      <div className="font-semibold">נפרסם את הבקשה</div>
+                      <div className="font-semibold">נשמור במערכת</div>
                       <div className="text-gray-600">
-                        הבקשה תופיע בפני סוחרים רלוונטיים
+                        הבקשה תישמר ותופיע בפני סוחרים
                       </div>
                     </div>
                   </div>
@@ -583,9 +487,9 @@ const PostRequestPage = () => {
                       3
                     </div>
                     <div>
-                      <div className="font-semibold">סוחרים יתקשרו אליך</div>
+                      <div className="font-semibold">סוחרים יראו את הבקשה</div>
                       <div className="text-gray-600">
-                        תקבל הצעות ישירות מסוחרים מתאימים
+                        סוחרים עם רכבים מתאימים יכולים לראות את הפרטים שלך
                       </div>
                     </div>
                   </div>
@@ -594,7 +498,7 @@ const PostRequestPage = () => {
             </Card>
 
             {/* תצוגה מקדימה */}
-            {formData.manufacturer && (
+            {formData.make && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-lg">תצוגה מקדימה</CardTitle>
@@ -604,84 +508,38 @@ const PostRequestPage = () => {
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <h3 className="font-semibold">
-                          מחפש {formData.manufacturer} {formData.model}
+                          מחפש {formData.make} {formData.model}
                         </h3>
                         <div className="text-sm text-gray-600">
-                          {formData.location}
+                          {user.firstName} {user.lastName}
                         </div>
                       </div>
-                      <Badge className={getUrgencyColor(formData.urgency)}>
-                        {formData.urgency === "high"
-                          ? "דחוף"
-                          : formData.urgency === "medium"
-                          ? "רגיל"
-                          : "לא דחוף"}
+                      <Badge className="bg-green-100 text-green-800">
+                        פעיל
                       </Badge>
                     </div>
 
                     <div className="text-sm text-gray-700 space-y-1">
-                      {(formData.yearFrom || formData.yearTo) && (
+                      {(formData.yearMin || formData.yearMax) && (
                         <div>
-                          שנים: {formData.yearFrom || "..."} -{" "}
-                          {formData.yearTo || "..."}
+                          שנים: {formData.yearMin || "..."} -{" "}
+                          {formData.yearMax || "..."}
                         </div>
                       )}
-                      {(formData.priceFrom || formData.priceTo) && (
+                      {formData.priceMax && (
                         <div>
-                          מחיר:{" "}
-                          {formData.priceFrom
-                            ? formatPrice(formData.priceFrom)
-                            : "..."}{" "}
-                          -{" "}
-                          {formData.priceTo
-                            ? formatPrice(formData.priceTo)
-                            : "..."}
-                        </div>
-                      )}
-                      {formData.mileageMax && (
-                        <div>
-                          עד{" "}
-                          {new Intl.NumberFormat("he-IL").format(
-                            parseInt(formData.mileageMax)
-                          )}{" "}
-                          ק"מ
+                          מחיר מקסימלי: {formatPrice(formData.priceMax)}
                         </div>
                       )}
                     </div>
 
                     <div className="text-sm text-gray-600 mt-3 line-clamp-2">
-                      {formData.description}
+                      {formData.requirements}
                     </div>
                   </div>
                 </CardContent>
               </Card>
             )}
-
-            {/* סטטיסטיקות */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  הסוחרים שלנו
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">סוחרים פעילים</span>
-                    <span className="font-semibold">150+</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">בקשות השבוע</span>
-                    <span className="font-semibold">45</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">זמן תגובה ממוצע</span>
-                    <span className="font-semibold">4 שעות</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             {/* טיפים */}
             <Card>
@@ -695,15 +553,14 @@ const PostRequestPage = () => {
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-2"></div>
                   <span>
-                    היה ספציפי כמה שיותר - ככל שתתן יותר פרטים, ההצעות יהיו
-                    מדויקות יותר
+                    היה ספציפי כמה שיותר - ככל שתתן יותר פרטים, הסוחרים יבינו
+                    טוב יותר מה אתה מחפש
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1.5 h-1.5 bg-blue-600 rounded-full mt-2"></div>
                   <span>
-                    ציין את טווח המחירים שלך - זה יעזור לסוחרים להציע רכבים
-                    מתאימים
+                    ציין מחיר מקסימלי - זה יעזור לסוחרים להכין הצעות מתאימות
                   </span>
                 </div>
                 <div className="flex items-start gap-2">
