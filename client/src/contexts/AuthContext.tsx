@@ -34,7 +34,10 @@ interface RegisterData {
   userType: "buyer" | "dealer";
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// ✅ הוסף export כאן!
+export const AuthContext = createContext<AuthContextType | undefined>(
+  undefined
+);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

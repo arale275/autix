@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -28,20 +29,6 @@ import {
 // API Base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.autix.co.il";
 
-// Types
-interface User {
-  id?: number;
-  name?: string; // מה שבאמת יש בlocalStorage
-  firstName?: string; // למקרה שיש
-  lastName?: string; // למקרה שיש
-  email: string;
-  phone?: string;
-  role?: string; // מה שבאמת יש בlocalStorage
-  userType?: string; // למקרה שיש
-  businessName?: string;
-  city?: string;
-}
-
 const manufacturers = [
   "Toyota",
   "Honda",
@@ -63,10 +50,12 @@ const manufacturers = [
 
 const PostRequestPage = () => {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+
+  // השתמש ב-useAuth
+  const { user, isLoading, isAuthenticated } = useAuth();
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [loading, setLoading] = useState(true);
 
   const [formData, setFormData] = useState({
     make: "",
@@ -78,45 +67,15 @@ const PostRequestPage = () => {
       "אני מחפש רכב אמין ובמצב טוב. אשמח לקבל הצעות מסוחרים מקצועיים.",
   });
 
-  // Load user data
-  useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const userData = localStorage.getItem("user");
-
-        if (userData) {
-          const parsedUser = JSON.parse(userData);
-
-          // בדיקה גמישה לסוג משתמש
-          const userRole = parsedUser.role || parsedUser.userType;
-
-          console.log("🔍 User role found:", userRole);
-
-          if (userRole === "buyer") {
-            setUser(parsedUser);
-          } else {
-            console.log("User is not a buyer, role:", userRole);
-            // אל תפנה מיד - תן לדף להיטען
-          }
-        }
-      } catch (error) {
-        console.error("Error loading user:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadUser();
-  }, [router]);
-
   const handleSubmit = async () => {
-    if (!user) {
+    if (!user || !isAuthenticated) {
       router.push("/auth/login");
       return;
     }
 
-    // בדיקה גמישה לסוג משתמש
-    const userRole = user.role || user.userType;
+    // בדיקה גמישה לסוג משתמש - בטוח מTypeScript
+    const userRole =
+      (user as any).role || (user as any).userType || user.userType;
 
     if (userRole !== "buyer") {
       alert("רק קונים יכולים לפרסם בקשות רכב");
@@ -130,6 +89,8 @@ const PostRequestPage = () => {
 
     try {
       setIsSubmitting(true);
+
+      // קבל token מlocalStorage
       const token = localStorage.getItem("token");
 
       const requestData = {
@@ -145,7 +106,7 @@ const PostRequestPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify(requestData),
       });
@@ -170,17 +131,20 @@ const PostRequestPage = () => {
     return new Intl.NumberFormat("he-IL").format(parseInt(price)) + " ₪";
   };
 
-  // Helper function to get user name
+  // Helper function to get user name - בטוח מTypeScript
   const getUserName = () => {
     if (!user) return "";
-    return (
-      user.name ||
-      `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-      "משתמש"
-    );
+
+    const userAny = user as any;
+
+    if (userAny.name) return userAny.name;
+    if (user.firstName && user.lastName)
+      return `${user.firstName} ${user.lastName}`;
+    if (user.firstName) return user.firstName;
+    return user.email || "משתמש";
   };
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -191,8 +155,7 @@ const PostRequestPage = () => {
     );
   }
 
-  // אם אין משתמש או שהוא לא buyer
-  if (!user) {
+  if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -207,8 +170,9 @@ const PostRequestPage = () => {
     );
   }
 
-  // אם המשתמש לא buyer
-  const userRole = user.role || user.userType;
+  // אם המשתמש לא buyer - בטוח מTypeScript
+  const userRole =
+    (user as any).role || (user as any).userType || user.userType;
   if (userRole !== "buyer") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
