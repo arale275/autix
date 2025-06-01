@@ -474,7 +474,7 @@ const PrivacyPolicyPage = () => {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => router.push("/info/terms of use")}
+                onClick={() => router.push("/info/terms%20of%20use")}
               >
                 <FileText className="h-4 w-4 ml-2" />
                 תנאי שימוש

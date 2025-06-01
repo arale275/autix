@@ -185,7 +185,7 @@ export default function Footer() {
               צור קשר
             </Link>
             <Link
-              href="/about"
+              href="/info/about"
               className="block text-gray-400 hover:text-white transition-colors text-sm"
             >
               אודות Autix

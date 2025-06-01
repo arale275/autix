@@ -607,7 +607,7 @@ const TermsOfUsePage = () => {
               </Button>
               <Button
                 variant="outline"
-                onClick={() => router.push("/info/privacy policy")}
+                onClick={() => router.push("/info/privacy%20policy")}
               >
                 <Shield className="h-4 w-4 ml-2" />
                 מדיניות פרטיות

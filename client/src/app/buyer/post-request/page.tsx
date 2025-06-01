@@ -85,18 +85,13 @@ const PostRequestPage = () => {
     const loadUser = async () => {
       try {
         const userData = localStorage.getItem("user");
-        const token = localStorage.getItem("token");
 
-        if (userData && token) {
-          setUser(JSON.parse(userData));
-        } else {
-          // Redirect to login if not authenticated
-          router.push("/auth/login");
-          return;
+        if (userData) {
+          const parsedUser = JSON.parse(userData);
+          setUser(parsedUser);
         }
       } catch (error) {
         console.error("Error loading user:", error);
-        router.push("/auth/login");
       } finally {
         setLoading(false);
       }
