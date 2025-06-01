@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -23,176 +22,271 @@ import {
   Clock,
   Car,
   FileText,
-  PhoneCall,
   CheckCircle,
   AlertCircle,
 } from "lucide-react";
 
+// Types
 interface User {
-  name: string;
+  id: number;
+  firstName?: string;
+  lastName?: string;
+  name?: string;
   email: string;
-  phone: string;
-  role: string;
-  businessName?: string;
-  city: string;
+  phone?: string;
+  userType: string;
 }
+
+interface Car {
+  id: number;
+  make: string;
+  model: string;
+  year: number;
+  price: number;
+  mileage?: number;
+  city?: string;
+  color?: string;
+  fuelType?: string;
+  transmission?: string;
+}
+
+interface CarRequest {
+  id: number;
+  make?: string;
+  model?: string;
+  yearMin?: number;
+  yearMax?: number;
+  priceMax?: number;
+  requirements?: string;
+  status: string;
+  createdAt: string;
+}
+
+interface Dealer {
+  businessName?: string;
+  phone?: string;
+}
+
+interface Inquiry {
+  id: number;
+  car?: Car;
+  dealer?: Dealer;
+  message: string;
+  status: string;
+  createdAt: string;
+}
+
+// API Base URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.autix.co.il";
+
+// API Helper Functions
+const api = {
+  getFeaturedCars: async (): Promise<Car[]> => {
+    try {
+      const response = await fetch(`${API_URL}/api/cars?limit=3`);
+      const data = await response.json();
+      return data.success ? data.data.cars : [];
+    } catch (error) {
+      console.error("Error fetching featured cars:", error);
+      return [];
+    }
+  },
+
+  getMyRequests: async (token: string): Promise<CarRequest[]> => {
+    try {
+      const response = await fetch(
+        `${API_URL}/api/car-requests/my-requests?limit=3`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      const data = await response.json();
+      return data.success ? data.data.requests : [];
+    } catch (error) {
+      console.error("Error fetching my requests:", error);
+      return [];
+    }
+  },
+
+  getSentInquiries: async (token: string): Promise<Inquiry[]> => {
+    try {
+      const response = await fetch(`${API_URL}/api/inquiries/sent?limit=4`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await response.json();
+      return data.success ? data.data.inquiries : [];
+    } catch (error) {
+      console.error("Error fetching sent inquiries:", error);
+      return [];
+    }
+  },
+};
+
+// Helper Functions
+const formatPrice = (price: number): string => {
+  return new Intl.NumberFormat("he-IL", {
+    style: "currency",
+    currency: "ILS",
+    minimumFractionDigits: 0,
+  }).format(price);
+};
+
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffTime = Math.abs(now.getTime() - date.getTime());
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "היום";
+  if (diffDays === 1) return "אתמול";
+  if (diffDays < 7) return `לפני ${diffDays} ימים`;
+  if (diffDays < 30) return `לפני ${Math.floor(diffDays / 7)} שבועות`;
+  return date.toLocaleDateString("he-IL");
+};
+
+const getTransmissionText = (transmission: string): string => {
+  switch (transmission) {
+    case "automatic":
+      return "אוטומטית";
+    case "manual":
+      return "ידנית";
+    case "cvt":
+      return "CVT";
+    default:
+      return transmission || "";
+  }
+};
+
+const getFuelTypeText = (fuelType: string): string => {
+  switch (fuelType) {
+    case "gasoline":
+      return "בנזין";
+    case "diesel":
+      return "דיזל";
+    case "hybrid":
+      return "היברידי";
+    case "electric":
+      return "חשמלי";
+    default:
+      return fuelType || "";
+  }
+};
 
 export default function BuyerHomePage() {
   const [user, setUser] = useState<User | null>(null);
+  const [featuredCars, setFeaturedCars] = useState<Car[]>([]);
+  const [myRequests, setMyRequests] = useState<CarRequest[]>([]);
+  const [sentInquiries, setSentInquiries] = useState<Inquiry[]>([]);
+  const [stats, setStats] = useState({
+    sentInquiries: 0,
+    myActiveRequests: 0,
+    totalRequests: 0,
+  });
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Get user data from localStorage
-    const userData = localStorage.getItem("user_data");
-    if (userData) {
-      setUser(JSON.parse(userData));
-    }
+    const loadData = async () => {
+      try {
+        // Get user data from localStorage
+        const userData = localStorage.getItem("user");
+        const token = localStorage.getItem("token");
+
+        if (userData) {
+          const parsedUser: User = JSON.parse(userData);
+          setUser(parsedUser);
+
+          if (token) {
+            // Load all data in parallel
+            const [cars, requests, inquiries] = await Promise.all([
+              api.getFeaturedCars(),
+              api.getMyRequests(token),
+              api.getSentInquiries(token),
+            ]);
+
+            setFeaturedCars(cars);
+            setMyRequests(requests);
+            setSentInquiries(inquiries);
+
+            // Calculate stats
+            setStats({
+              sentInquiries: inquiries.length,
+              myActiveRequests: requests.filter(
+                (r: CarRequest) => r.status === "active"
+              ).length,
+              totalRequests: requests.length,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Error loading data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, []);
-
-  // Mock data for demo
-  const stats = {
-    sentInquiries: 8,
-    viewedByDealers: 5,
-    callsReceived: 2,
-  };
-
-  const myRequests = [
-    {
-      id: 1,
-      title: "מחפש טויוטה קמרי 2020-2023",
-      details: "אוטומט | תקציב: 150,000-200,000 ₪ | תל אביב",
-      createdAt: "לפני 3 ימים",
-      status: "פעיל",
-      views: 12,
-      responses: 3,
-    },
-    {
-      id: 2,
-      title: "רכב משפחתי עד 180,000 ₪",
-      details: "7 מקומות | יצרן: הונדה/מאזדה/טויוטה",
-      createdAt: "לפני שבוע",
-      status: "פעיל",
-      views: 8,
-      responses: 1,
-    },
-    {
-      id: 3,
-      title: "BMW סדרה 3 2019-2022",
-      details: "צבע: לבן/שחור | תקציב: 220,000-280,000 ₪",
-      createdAt: "לפני שבועיים",
-      status: "סגור",
-      views: 15,
-      responses: 5,
-    },
-  ];
-
-  const sentInquiries = [
-    {
-      id: 1,
-      carModel: "טויוטה קמרי 2021",
-      price: "185,000 ₪",
-      dealerName: "רכבי פרימיום",
-      dealerPhone: "050-1234567",
-      sentAt: "לפני 2 שעות",
-      status: "sent", // sent, viewed, contacted
-    },
-    {
-      id: 2,
-      carModel: "הונדה סיוויק 2020",
-      price: "145,000 ₪",
-      dealerName: "אוטו דיל",
-      dealerPhone: "052-9876543",
-      sentAt: "אתמול",
-      status: "viewed",
-    },
-    {
-      id: 3,
-      carModel: "מאזדה 3 2019",
-      price: "125,000 ₪",
-      dealerName: "כרמל רכב",
-      dealerPhone: "054-5555555",
-      sentAt: "לפני 3 ימים",
-      status: "contacted",
-    },
-    {
-      id: 4,
-      carModel: "BMW 320i 2020",
-      price: "245,000 ₪",
-      dealerName: "BMW מרכז",
-      dealerPhone: "053-1111111",
-      sentAt: "לפני שבוע",
-      status: "sent",
-    },
-  ];
-
-  const recommendedCars = [
-    {
-      id: 1,
-      model: "טויוטה קמרי 2022",
-      price: "195,000 ₪",
-      year: 2022,
-      mileage: 25000,
-      location: "תל אביב",
-      dealerName: "טויוטה מרכז",
-      matchReason: "מתאים לבקשה שלך",
-    },
-    {
-      id: 2,
-      model: "הונדה אקורד 2021",
-      price: "175,000 ₪",
-      year: 2021,
-      mileage: 35000,
-      location: "פתח תקווה",
-      dealerName: "הונדה ישראל",
-      matchReason: "במחיר שהגדרת",
-    },
-    {
-      id: 3,
-      model: "מאזדה 6 2020",
-      price: "155,000 ₪",
-      year: 2020,
-      mileage: 45000,
-      location: "חיפה",
-      dealerName: "מאזדה צפון",
-      matchReason: "רכב משפחתי",
-    },
-  ];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "sent":
-        return <Badge className="bg-blue-100 text-blue-800">נשלח</Badge>;
-      case "viewed":
-        return <Badge className="bg-yellow-100 text-yellow-800">נצפה</Badge>;
-      case "contacted":
-        return <Badge className="bg-green-100 text-green-800">התקשרו</Badge>;
+      case "new":
+        return <Badge className="bg-blue-100 text-blue-800">חדש</Badge>;
+      case "responded":
+        return <Badge className="bg-yellow-100 text-yellow-800">נענה</Badge>;
+      case "closed":
+        return <Badge className="bg-green-100 text-green-800">סגור</Badge>;
+      case "active":
+        return <Badge className="bg-green-100 text-green-800">פעיל</Badge>;
       default:
-        return <Badge variant="outline">לא ידוע</Badge>;
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "sent":
+      case "new":
         return <Clock className="w-4 h-4 text-blue-600" />;
-      case "viewed":
+      case "responded":
         return <Eye className="w-4 h-4 text-yellow-600" />;
-      case "contacted":
+      case "closed":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       default:
         return <AlertCircle className="w-4 h-4 text-gray-600" />;
     }
   };
 
-  if (!user) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">טוען...</p>
+          <p className="text-gray-600">טוען נתונים...</p>
         </div>
       </div>
     );
   }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <p className="text-gray-600">אנא התחבר כדי לראות את הדף</p>
+          <Link href="/auth/login">
+            <Button className="mt-4">התחבר</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const userName = user.firstName || user.name?.split(" ")[0] || "קונה";
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -200,7 +294,7 @@ export default function BuyerHomePage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            שלום, {user?.name?.split(" ")[0] || "קונה"}! 👋
+            שלום, {userName}! 👋
           </h1>
           <p className="text-gray-600 mt-1">
             מוכן למצוא את הרכב המושלם? בואו נתחיל לחפש
@@ -224,11 +318,13 @@ export default function BuyerHomePage() {
                     <SelectValue placeholder="בחר יצרן" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="toyota">טויוטה</SelectItem>
-                    <SelectItem value="honda">הונדה</SelectItem>
-                    <SelectItem value="mazda">מאזדה</SelectItem>
-                    <SelectItem value="bmw">BMW</SelectItem>
-                    <SelectItem value="mercedes">מרצדס</SelectItem>
+                    <SelectItem value="Toyota">טויוטה</SelectItem>
+                    <SelectItem value="Honda">הונדה</SelectItem>
+                    <SelectItem value="Mazda">מאזדה</SelectItem>
+                    <SelectItem value="BMW">BMW</SelectItem>
+                    <SelectItem value="Mercedes">מרצדס</SelectItem>
+                    <SelectItem value="Hyundai">יונדאי</SelectItem>
+                    <SelectItem value="Volkswagen">פולקסווגן</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -239,7 +335,10 @@ export default function BuyerHomePage() {
                     <SelectValue placeholder="בחר מחיר" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="0-100000">עד 100,000 ₪</SelectItem>
+                    <SelectItem value="0-50000">עד 50,000 ₪</SelectItem>
+                    <SelectItem value="50000-100000">
+                      50,000-100,000 ₪
+                    </SelectItem>
                     <SelectItem value="100000-150000">
                       100,000-150,000 ₪
                     </SelectItem>
@@ -257,6 +356,7 @@ export default function BuyerHomePage() {
                     <SelectValue placeholder="בחר שנה" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="2024">2024</SelectItem>
                     <SelectItem value="2023">2023</SelectItem>
                     <SelectItem value="2022">2022</SelectItem>
                     <SelectItem value="2021">2021</SelectItem>
@@ -296,12 +396,12 @@ export default function BuyerHomePage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">נצפו ע"י סוחרים</p>
+                  <p className="text-sm text-gray-600">בקשות פעילות</p>
                   <p className="text-2xl font-bold text-purple-600">
-                    {stats.viewedByDealers}
+                    {stats.myActiveRequests}
                   </p>
                 </div>
-                <Eye className="w-8 h-8 text-purple-600" />
+                <FileText className="w-8 h-8 text-purple-600" />
               </div>
             </CardContent>
           </Card>
@@ -310,58 +410,69 @@ export default function BuyerHomePage() {
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-600">שיחות התקבלו</p>
+                  <p className="text-sm text-gray-600">סה״כ בקשות</p>
                   <p className="text-2xl font-bold text-orange-600">
-                    {stats.callsReceived}
+                    {stats.totalRequests}
                   </p>
                 </div>
-                <PhoneCall className="w-8 h-8 text-orange-600" />
+                <Car className="w-8 h-8 text-orange-600" />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Recommended Cars */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            רכבים מומלצים עבורך
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {recommendedCars.map((car) => (
-              <Card key={car.id} className="border-l-4 border-l-blue-500">
-                <CardContent className="p-4">
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      {car.model}
-                    </h3>
-                    <p className="text-lg font-bold text-blue-600 mb-2">
-                      {car.price}
-                    </p>
-                    <div className="text-sm text-gray-600 mb-2">
-                      {car.year} | {car.mileage.toLocaleString()} ק"מ
+        {/* Featured Cars */}
+        {featuredCars.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">
+              רכבים זמינים במערכת
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {featuredCars.map((car: Car) => (
+                <Card key={car.id} className="border-l-4 border-l-blue-500">
+                  <CardContent className="p-4">
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">
+                        {car.make} {car.model}
+                      </h3>
+                      <p className="text-lg font-bold text-blue-600 mb-2">
+                        {formatPrice(car.price)}
+                      </p>
+                      <div className="text-sm text-gray-600 mb-2">
+                        {car.year} |{" "}
+                        {car.mileage
+                          ? `${car.mileage.toLocaleString()} ק״מ`
+                          : "ק״מ לא צוין"}
+                      </div>
+                      {car.transmission && (
+                        <div className="text-sm text-gray-600 mb-2">
+                          {getTransmissionText(car.transmission)} |{" "}
+                          {getFuelTypeText(car.fuelType || "")}
+                        </div>
+                      )}
+                      <div className="text-sm text-gray-500 mb-2">
+                        📍 {car.city || "מיקום לא צוין"}
+                      </div>
+                      <Badge className="bg-blue-100 text-blue-800 text-xs mb-3">
+                        זמין כעת
+                      </Badge>
                     </div>
-                    <div className="text-sm text-gray-500 mb-2">
-                      📍 {car.location} | {car.dealerName}
-                    </div>
-                    <Badge className="bg-blue-100 text-blue-800 text-xs mb-3">
-                      {car.matchReason}
-                    </Badge>
-                  </div>
 
-                  <Link href={`/buyer/cars/${car.id}`}>
-                    <Button
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700 w-full"
-                    >
-                      <Eye className="w-4 h-4 ml-1" />
-                      צפה בפרטים ושלח פניה
-                    </Button>
-                  </Link>
-                </CardContent>
-              </Card>
-            ))}
+                    <Link href={`/buyer/cars/${car.id}`}>
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700 w-full"
+                      >
+                        <Eye className="w-4 h-4 ml-1" />
+                        צפה בפרטים ושלח פניה
+                      </Button>
+                    </Link>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Quick Actions */}
         <div className="mb-8">
@@ -376,7 +487,7 @@ export default function BuyerHomePage() {
                     <Plus className="w-8 h-8 text-green-600 ml-3" />
                     <div>
                       <h3 className="font-semibold text-gray-900">
-                        פרסם "אני מחפש"
+                        פרסם &quot;אני מחפש&quot;
                       </h3>
                       <p className="text-sm text-gray-600">
                         תן לסוחרים לפנות אליך עם הצעות
@@ -422,109 +533,138 @@ export default function BuyerHomePage() {
             </div>
 
             <div className="space-y-4">
-              {sentInquiries.slice(0, 4).map((inquiry) => (
-                <Card key={inquiry.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-semibold text-gray-900">
-                            {inquiry.carModel}
-                          </h3>
-                          {getStatusBadge(inquiry.status)}
-                        </div>
-                        <p className="text-lg font-bold text-blue-600 mb-1">
-                          {inquiry.price}
-                        </p>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {inquiry.dealerName}
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span className="flex items-center">
-                            {getStatusIcon(inquiry.status)}
-                            <span className="mr-1">{inquiry.sentAt}</span>
-                          </span>
+              {sentInquiries.length > 0 ? (
+                sentInquiries.slice(0, 4).map((inquiry: Inquiry) => (
+                  <Card key={inquiry.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-gray-900">
+                              {inquiry.car
+                                ? `${inquiry.car.make} ${inquiry.car.model}`
+                                : "פנייה לסוחר"}
+                            </h3>
+                            {getStatusBadge(inquiry.status)}
+                          </div>
+                          {inquiry.car && (
+                            <p className="text-lg font-bold text-blue-600 mb-1">
+                              {formatPrice(inquiry.car.price)}
+                            </p>
+                          )}
+                          <p className="text-sm text-gray-600 mb-2">
+                            {inquiry.dealer?.businessName || "סוחר"}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span className="flex items-center">
+                              {getStatusIcon(inquiry.status)}
+                              <span className="mr-1">
+                                {formatDate(inquiry.createdAt)}
+                              </span>
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="flex gap-2">
-                      <a href={`tel:${inquiry.dealerPhone}`}>
-                        <Button
-                          size="sm"
-                          className="bg-blue-600 hover:bg-blue-700"
-                        >
-                          <Phone className="w-4 h-4 ml-1" />
-                          {inquiry.dealerPhone}
-                        </Button>
-                      </a>
-                      {inquiry.status === "contacted" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="text-green-600"
-                        >
-                          <CheckCircle className="w-4 h-4 ml-1" />
-                          בטיפול
-                        </Button>
-                      )}
-                    </div>
+                      <div className="flex gap-2">
+                        {inquiry.dealer?.phone && (
+                          <a href={`tel:${inquiry.dealer.phone}`}>
+                            <Button
+                              size="sm"
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              <Phone className="w-4 h-4 ml-1" />
+                              {inquiry.dealer.phone}
+                            </Button>
+                          </a>
+                        )}
+                        {inquiry.status === "responded" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-green-600"
+                          >
+                            <CheckCircle className="w-4 h-4 ml-1" />
+                            נענה
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">עדיין לא שלחת פניות לסוחרים</p>
+                    <Link href="/buyer/cars">
+                      <Button className="mt-4" size="sm">
+                        התחל לחפש רכבים
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
-              ))}
+              )}
             </div>
           </div>
 
           {/* My Requests */}
           <div>
             <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              המודעות שלי
+              הבקשות שלי
             </h2>
             <div className="space-y-3">
-              {myRequests.slice(0, 3).map((request) => (
-                <Card key={request.id}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-gray-900 mb-1">
-                          {request.title}
-                        </h3>
-                        <p className="text-sm text-gray-600 mb-2">
-                          {request.details}
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span>{request.createdAt}</span>
-                          <span className="flex items-center">
-                            <Eye className="w-3 h-3 ml-1" />
-                            {request.views} צפיות
-                          </span>
-                          <span className="flex items-center">
-                            <MessageSquare className="w-3 h-3 ml-1" />
-                            {request.responses} תגובות
-                          </span>
+              {myRequests.length > 0 ? (
+                myRequests.slice(0, 3).map((request: CarRequest) => (
+                  <Card key={request.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-gray-900 mb-1">
+                            {request.make && request.model
+                              ? `מחפש ${request.make} ${request.model}`
+                              : "בקשת רכב"}
+                          </h3>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {request.yearMin && request.yearMax
+                              ? `${request.yearMin}-${request.yearMax} | `
+                              : ""}
+                            {request.priceMax
+                              ? `תקציב: עד ${formatPrice(request.priceMax)}`
+                              : ""}
+                          </p>
+                          {request.requirements && (
+                            <p className="text-sm text-gray-600 mb-2">
+                              {request.requirements}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span>{formatDate(request.createdAt)}</span>
+                          </div>
                         </div>
+                        {getStatusBadge(request.status)}
                       </div>
-                      <Badge
-                        variant={
-                          request.status === "פעיל" ? "default" : "outline"
-                        }
-                        className={
-                          request.status === "פעיל"
-                            ? "bg-green-100 text-green-800"
-                            : ""
-                        }
-                      >
-                        {request.status}
-                      </Badge>
-                    </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <Card>
+                  <CardContent className="p-6 text-center">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">עדיין לא יצרת בקשות רכב</p>
+                    <Link href="/buyer/post-request">
+                      <Button className="mt-4" size="sm">
+                        צור בקשה חדשה
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
-              ))}
+              )}
             </div>
             <div className="mt-4">
               <Link href="/buyer/requests">
                 <Button variant="outline" size="sm" className="w-full">
-                  ניהול מודעות
+                  ניהול בקשות
                 </Button>
               </Link>
             </div>
