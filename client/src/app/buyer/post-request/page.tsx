@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -51,11 +51,15 @@ const manufacturers = [
 const PostRequestPage = () => {
   const router = useRouter();
 
-  // השתמש ב-useAuth
+  // ✅ השתמש ב-useAuth
   const { user, isLoading, isAuthenticated } = useAuth();
-  console.log("🔍 Full user object:", user);
+
+  // ✅ State לבדיקת client-side
+  const [isClient, setIsClient] = useState(false);
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     make: "",
@@ -67,31 +71,91 @@ const PostRequestPage = () => {
       "אני מחפש רכב אמין ובמצב טוב. אשמח לקבל הצעות מסוחרים מקצועיים.",
   });
 
+  // ✅ בדיקת client-side - מונע SSR issues
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // ✅ Helper functions מוגנות מ-SSR
+  const getLocalStorageItem = (
+    key: string,
+    defaultValue: string = ""
+  ): string => {
+    if (!isClient) return defaultValue;
+    try {
+      return localStorage.getItem(key) || defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  };
+
+  const setLocalStorageItem = (key: string, value: string): void => {
+    if (!isClient) return;
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.error("Error setting localStorage:", error);
+    }
+  };
+
+  const removeLocalStorageItem = (key: string): void => {
+    if (!isClient) return;
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error("Error removing localStorage:", error);
+    }
+  };
+
+  // ✅ בדיקת authentication נכונה
+  useEffect(() => {
+    if (!isClient) return;
+
+    // חכה שהאימות יסתיים
+    if (isLoading) return;
+
+    // אם לא מחובר - הפנה להתחברות
+    if (!isAuthenticated) {
+      router.push("/auth/login");
+      return;
+    }
+
+    // בדיקת סוג משתמש
+    if (user?.userType !== "buyer") {
+      router.push("/dealer/home");
+      return;
+    }
+  }, [isClient, isLoading, isAuthenticated, user, router]);
+
   const handleSubmit = async () => {
     if (!user || !isAuthenticated) {
       router.push("/auth/login");
       return;
     }
 
-    // בדיקה גמישה לסוג משתמש - בטוח מTypeScript
-    const userRole =
-      (user as any).role || (user as any).userType || user.userType;
-
-    if (userRole !== "buyer") {
-      alert("רק קונים יכולים לפרסם בקשות רכב");
+    // ✅ בדיקה נכונה לסוג משתמש
+    if (user.userType !== "buyer") {
+      setError("רק קונים יכולים לפרסם בקשות רכב");
       return;
     }
 
     if (!formData.make) {
-      alert("יש לבחור לפחות יצרן");
+      setError("יש לבחור לפחות יצרן");
       return;
     }
 
     try {
       setIsSubmitting(true);
+      setError(null);
 
-      // קבל token מlocalStorage
-      const token = localStorage.getItem("token");
+      // ✅ קבל token מlocalStorage בצורה בטוחה
+      const token = getLocalStorageItem("auth_token");
+
+      if (!token) {
+        setError("לא נמצא token - אנא התחבר מחדש");
+        router.push("/auth/login");
+        return;
+      }
 
       const requestData = {
         make: formData.make,
@@ -106,21 +170,27 @@ const PostRequestPage = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(token && { Authorization: `Bearer ${token}` }),
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(requestData),
       });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
       const data = await response.json();
 
       if (data.success) {
         setIsSubmitted(true);
       } else {
-        alert("שגיאה ביצירת הבקשה: " + (data.message || "שגיאה לא ידועה"));
+        throw new Error(data.message || "שגיאה לא ידועה");
       }
     } catch (error) {
       console.error("Error submitting request:", error);
-      alert("שגיאה ביצירת הבקשה");
+      const errorMessage =
+        error instanceof Error ? error.message : "שגיאה ביצירת הבקשה";
+      setError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -131,20 +201,18 @@ const PostRequestPage = () => {
     return new Intl.NumberFormat("he-IL").format(parseInt(price)) + " ₪";
   };
 
-  // Helper function to get user name - בטוח מTypeScript
-  const getUserName = () => {
+  // ✅ Helper function נכונה לשם משתמש
+  const getUserName = (): string => {
     if (!user) return "";
 
-    const userAny = user as any;
-
-    if (userAny.name) return userAny.name;
     if (user.firstName && user.lastName)
       return `${user.firstName} ${user.lastName}`;
     if (user.firstName) return user.firstName;
     return user.email || "משתמש";
   };
 
-  if (isLoading) {
+  // ✅ SSR Safe - לא מרנדר עד שהclient מוכן
+  if (!isClient) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -155,6 +223,41 @@ const PostRequestPage = () => {
     );
   }
 
+  // ✅ Loading state מסודר
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">בודק אימות...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Error state
+  if (error && !isSubmitting) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">שגיאה</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <div className="flex gap-3 justify-center">
+            <Button onClick={() => setError(null)}>נסה שוב</Button>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/buyer/home")}
+            >
+              חזרה לדף הבית
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ רק אחרי שהאימות הסתיים
   if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -170,10 +273,8 @@ const PostRequestPage = () => {
     );
   }
 
-  // אם המשתמש לא buyer - בטוח מTypeScript
-  const userRole =
-    (user as any).role || (user as any).userType || user.userType;
-  if (userRole !== "buyer") {
+  // ✅ בדיקת סוג משתמש נכונה
+  if (user.userType !== "buyer") {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -275,6 +376,19 @@ const PostRequestPage = () => {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6">
+        {/* ✅ הצגת שגיאות במקום המתאים */}
+        {error && (
+          <div className="mb-6">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <div className="text-red-700 font-medium">שגיאה</div>
+              </div>
+              <div className="text-red-600 text-sm mt-1">{error}</div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* טופס ראשי */}
           <div className="lg:col-span-2 space-y-6">

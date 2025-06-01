@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useAuth } from "@/contexts/AuthContext"; // ✅ הוסף את זה
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +29,7 @@ import {
   Loader2,
 } from "lucide-react";
 
+// Types
 interface Car {
   id: number;
   make: string;
@@ -70,109 +72,12 @@ interface Inquiry {
 // API Base URL
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.autix.co.il";
 
-// API Helper Functions
-const api = {
-  getFeaturedCars: async (): Promise<Car[]> => {
-    try {
-      const response = await fetch(`${API_URL}/api/cars?limit=3`);
-      const data = await response.json();
-      return data.success ? data.data.cars : [];
-    } catch (error) {
-      console.error("Error fetching featured cars:", error);
-      return [];
-    }
-  },
-
-  getMyRequests: async (token: string): Promise<CarRequest[]> => {
-    try {
-      const response = await fetch(
-        `${API_URL}/api/car-requests/my-requests?limit=3`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      const data = await response.json();
-      return data.success ? data.data.requests : [];
-    } catch (error) {
-      console.error("Error fetching my requests:", error);
-      return [];
-    }
-  },
-
-  getSentInquiries: async (token: string): Promise<Inquiry[]> => {
-    try {
-      const response = await fetch(`${API_URL}/api/inquiries/sent?limit=4`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-      const data = await response.json();
-      return data.success ? data.data.inquiries : [];
-    } catch (error) {
-      console.error("Error fetching sent inquiries:", error);
-      return [];
-    }
-  },
-};
-
-// Helper Functions
-const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat("he-IL", {
-    style: "currency",
-    currency: "ILS",
-    minimumFractionDigits: 0,
-  }).format(price);
-};
-
-const formatDate = (dateString: string): string => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffTime = Math.abs(now.getTime() - date.getTime());
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return "היום";
-  if (diffDays === 1) return "אתמול";
-  if (diffDays < 7) return `לפני ${diffDays} ימים`;
-  if (diffDays < 30) return `לפני ${Math.floor(diffDays / 7)} שבועות`;
-  return date.toLocaleDateString("he-IL");
-};
-
-const getTransmissionText = (transmission: string): string => {
-  switch (transmission) {
-    case "automatic":
-      return "אוטומטית";
-    case "manual":
-      return "ידנית";
-    case "cvt":
-      return "CVT";
-    default:
-      return transmission || "";
-  }
-};
-
-const getFuelTypeText = (fuelType: string): string => {
-  switch (fuelType) {
-    case "gasoline":
-      return "בנזין";
-    case "diesel":
-      return "דיזל";
-    case "hybrid":
-      return "היברידי";
-    case "electric":
-      return "חשמלי";
-    default:
-      return fuelType || "";
-  }
-};
-
 export default function BuyerHomePage() {
-  // ✅ השתמש ב-useAuth במקום state מקומי
+  const router = useRouter();
   const { user, isLoading, isAuthenticated } = useAuth();
 
+  // State management
+  const [isClient, setIsClient] = useState(false);
   const [featuredCars, setFeaturedCars] = useState<Car[]>([]);
   const [myRequests, setMyRequests] = useState<CarRequest[]>([]);
   const [sentInquiries, setSentInquiries] = useState<Inquiry[]>([]);
@@ -181,59 +86,195 @@ export default function BuyerHomePage() {
     myActiveRequests: 0,
     totalRequests: 0,
   });
-  const [dataLoading, setDataLoading] = useState<boolean>(true); // שינוי שם כדי לא להתנגש עם isLoading
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
+  // ✅ Client-side check
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // ✅ Safe localStorage helpers
+  const getLocalStorageItem = (
+    key: string,
+    defaultValue: string = ""
+  ): string => {
+    if (!isClient) return defaultValue;
+    try {
+      return localStorage.getItem(key) || defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  };
+
+  // ✅ Authentication check
+  useEffect(() => {
+    if (!isClient) return;
+
+    if (isLoading) return;
+
+    if (!isAuthenticated) {
+      router.push("/auth/login");
+      return;
+    }
+
+    if (user?.userType !== "buyer") {
+      router.push("/dealer/home");
+      return;
+    }
+  }, [isClient, isLoading, isAuthenticated, user, router]);
+
+  // ✅ API Helper Functions
+  const api = {
+    getFeaturedCars: async (): Promise<Car[]> => {
+      try {
+        const response = await fetch(`${API_URL}/api/cars?limit=3`);
+        const data = await response.json();
+        return data.success ? data.data.cars : [];
+      } catch (error) {
+        console.error("Error fetching featured cars:", error);
+        return [];
+      }
+    },
+
+    getMyRequests: async (token: string): Promise<CarRequest[]> => {
+      try {
+        const response = await fetch(
+          `${API_URL}/api/car-requests/my-requests?limit=3`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        const data = await response.json();
+        return data.success ? data.data.requests : [];
+      } catch (error) {
+        console.error("Error fetching my requests:", error);
+        return [];
+      }
+    },
+
+    getSentInquiries: async (token: string): Promise<Inquiry[]> => {
+      try {
+        const response = await fetch(`${API_URL}/api/inquiries/sent?limit=4`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        const data = await response.json();
+        return data.success ? data.data.inquiries : [];
+      } catch (error) {
+        console.error("Error fetching sent inquiries:", error);
+        return [];
+      }
+    },
+  };
+
+  // ✅ Load data after authentication
+  useEffect(() => {
+    if (!isClient || isLoading || !isAuthenticated || !user) {
+      return;
+    }
+
     const loadData = async () => {
       try {
-        // ✅ אם יש user ו-token, טען נתונים
-        if (user && isAuthenticated) {
-          const token = localStorage.getItem("token");
+        setLoading(true);
+        setError(null);
 
-          if (token) {
-            // Load all data in parallel
-            const [cars, requests, inquiries] = await Promise.all([
-              api.getFeaturedCars(),
-              api.getMyRequests(token),
-              api.getSentInquiries(token),
-            ]);
+        const token = getLocalStorageItem("auth_token");
 
-            setFeaturedCars(cars);
-            setMyRequests(requests);
-            setSentInquiries(inquiries);
-
-            // Calculate stats
-            setStats({
-              sentInquiries: inquiries.length,
-              myActiveRequests: requests.filter(
-                (r: CarRequest) => r.status === "active"
-              ).length,
-              totalRequests: requests.length,
-            });
-          } else {
-            console.log("No token found, loading public data only");
-            // Load public data without token
-            const cars = await api.getFeaturedCars();
-            setFeaturedCars(cars);
-          }
-        } else if (!isLoading) {
-          // ✅ אם אין user והטעינה הסתיימה, טען רק נתונים ציבוריים
-          console.log("No user found, loading public data only");
-          const cars = await api.getFeaturedCars();
-          setFeaturedCars(cars);
+        if (!token) {
+          console.log("❌ No auth_token found");
+          router.push("/auth/login");
+          return;
         }
+
+        // Load all data in parallel
+        const [cars, requests, inquiries] = await Promise.all([
+          api.getFeaturedCars(),
+          api.getMyRequests(token),
+          api.getSentInquiries(token),
+        ]);
+
+        setFeaturedCars(cars);
+        setMyRequests(requests);
+        setSentInquiries(inquiries);
+
+        // Calculate stats
+        setStats({
+          sentInquiries: inquiries.length,
+          myActiveRequests: requests.filter(
+            (r: CarRequest) => r.status === "active"
+          ).length,
+          totalRequests: requests.length,
+        });
+
+        console.log("✅ Data loaded successfully");
       } catch (error) {
-        console.error("Error loading data:", error);
+        console.error("❌ Error loading data:", error);
+        setError(
+          error instanceof Error ? error.message : "שגיאה בטעינת הנתונים"
+        );
       } finally {
-        setDataLoading(false);
+        setLoading(false);
       }
     };
 
-    // ✅ רק אם הטעינה הסתיימה, טען נתונים
-    if (!isLoading) {
-      loadData();
+    loadData();
+  }, [isClient, isLoading, isAuthenticated, user, router]);
+
+  // Helper Functions
+  const formatPrice = (price: number): string => {
+    return new Intl.NumberFormat("he-IL", {
+      style: "currency",
+      currency: "ILS",
+      minimumFractionDigits: 0,
+    }).format(price);
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "היום";
+    if (diffDays === 1) return "אתמול";
+    if (diffDays < 7) return `לפני ${diffDays} ימים`;
+    if (diffDays < 30) return `לפני ${Math.floor(diffDays / 7)} שבועות`;
+    return date.toLocaleDateString("he-IL");
+  };
+
+  const getTransmissionText = (transmission: string): string => {
+    switch (transmission) {
+      case "automatic":
+        return "אוטומטית";
+      case "manual":
+        return "ידנית";
+      case "cvt":
+        return "CVT";
+      default:
+        return transmission || "";
     }
-  }, [user, isAuthenticated, isLoading]); // ✅ תלוי בuseAuth states
+  };
+
+  const getFuelTypeText = (fuelType: string): string => {
+    switch (fuelType) {
+      case "gasoline":
+        return "בנזין";
+      case "diesel":
+        return "דיזל";
+      case "hybrid":
+        return "היברידי";
+      case "electric":
+        return "חשמלי";
+      default:
+        return fuelType || "";
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -263,8 +304,80 @@ export default function BuyerHomePage() {
     }
   };
 
-  // ✅ השתמש ב-isLoading מ-useAuth
-  if (isLoading || dataLoading) {
+  const getUserName = (): string => {
+    if (!user) return "קונה";
+    if (user.firstName) return user.firstName;
+    if (user.email) return user.email.split("@")[0];
+    return "קונה";
+  };
+
+  // Loading states
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">טוען...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">בודק אימות...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">שגיאה</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>נסה שוב</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Car className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+            נדרשת התחברות
+          </h1>
+          <p className="text-gray-600 mb-4">אנא התחבר כדי לראות את הדף</p>
+          <Button onClick={() => router.push("/auth/login")}>התחבר</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (user.userType !== "buyer") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-orange-400 mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+            גישה מוגבלת
+          </h1>
+          <p className="text-gray-600 mb-4">דף זה מיועד לקונים בלבד</p>
+          <Button onClick={() => router.push("/dealer/home")}>לדף הסוחר</Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -275,35 +388,9 @@ export default function BuyerHomePage() {
     );
   }
 
-  // ✅ השתמש ב-isAuthenticated מ-useAuth
-  if (!isAuthenticated || !user) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Car className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-600">אנא התחבר כדי לראות את הדף</p>
-          <Link href="/auth/login">
-            <Button className="mt-4">התחבר</Button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // ✅ Helper function מתוקן לעבוד עם useAuth
-  const getUserName = () => {
-    if (!user) return "קונה";
-
-    const userAny = user as any;
-
-    if (user.firstName) return user.firstName;
-    if (userAny.name) return userAny.name.split(" ")[0];
-    if (user.email) return user.email.split("@")[0];
-    return "קונה";
-  };
-
+  // Main content
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50" dir="rtl">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -532,6 +619,7 @@ export default function BuyerHomePage() {
           </div>
         </div>
 
+        {/* Bottom Section: Sent Inquiries & My Requests */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Sent Inquiries */}
           <div>
@@ -624,9 +712,17 @@ export default function BuyerHomePage() {
 
           {/* My Requests */}
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              הבקשות שלי
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">
+                הבקשות שלי
+              </h2>
+              <Link href="/buyer/requests">
+                <Button variant="outline" size="sm">
+                  ניהול בקשות
+                </Button>
+              </Link>
+            </div>
+
             <div className="space-y-3">
               {myRequests.length > 0 ? (
                 myRequests.slice(0, 3).map((request: CarRequest) => (
@@ -674,13 +770,6 @@ export default function BuyerHomePage() {
                   </CardContent>
                 </Card>
               )}
-            </div>
-            <div className="mt-4">
-              <Link href="/buyer/requests">
-                <Button variant="outline" size="sm" className="w-full">
-                  ניהול בקשות
-                </Button>
-              </Link>
             </div>
           </div>
         </div>
