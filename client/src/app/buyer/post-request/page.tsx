@@ -53,7 +53,7 @@ const PostRequestPage = () => {
 
   // השתמש ב-useAuth
   const { user, isLoading, isAuthenticated } = useAuth();
-
+  console.log("🔍 Full user object:", user);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 

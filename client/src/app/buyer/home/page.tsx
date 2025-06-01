@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext"; // ✅ הוסף את זה
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -24,18 +25,8 @@ import {
   FileText,
   CheckCircle,
   AlertCircle,
+  Loader2,
 } from "lucide-react";
-
-// Types
-interface User {
-  id: number;
-  firstName?: string;
-  lastName?: string;
-  name?: string;
-  email: string;
-  phone?: string;
-  userType: string;
-}
 
 interface Car {
   id: number;
@@ -179,7 +170,9 @@ const getFuelTypeText = (fuelType: string): string => {
 };
 
 export default function BuyerHomePage() {
-  const [user, setUser] = useState<User | null>(null);
+  // ✅ השתמש ב-useAuth במקום state מקומי
+  const { user, isLoading, isAuthenticated } = useAuth();
+
   const [featuredCars, setFeaturedCars] = useState<Car[]>([]);
   const [myRequests, setMyRequests] = useState<CarRequest[]>([]);
   const [sentInquiries, setSentInquiries] = useState<Inquiry[]>([]);
@@ -188,99 +181,59 @@ export default function BuyerHomePage() {
     myActiveRequests: 0,
     totalRequests: 0,
   });
-  const [loading, setLoading] = useState<boolean>(true);
+  const [dataLoading, setDataLoading] = useState<boolean>(true); // שינוי שם כדי לא להתנגש עם isLoading
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Try different possible keys for user data
-        let userData =
-          localStorage.getItem("user") ||
-          localStorage.getItem("user_data") ||
-          localStorage.getItem("userData");
+        // ✅ אם יש user ו-token, טען נתונים
+        if (user && isAuthenticated) {
+          const token = localStorage.getItem("token");
 
-        // Try different possible keys for token
-        let token =
-          localStorage.getItem("token") ||
-          localStorage.getItem("authToken") ||
-          localStorage.getItem("access_token");
+          if (token) {
+            // Load all data in parallel
+            const [cars, requests, inquiries] = await Promise.all([
+              api.getFeaturedCars(),
+              api.getMyRequests(token),
+              api.getSentInquiries(token),
+            ]);
 
-        console.log("Debug - userData:", userData);
-        console.log("Debug - token:", token);
+            setFeaturedCars(cars);
+            setMyRequests(requests);
+            setSentInquiries(inquiries);
 
-        // If we have a token but no user data, fetch it from API
-        if (token && !userData) {
-          console.log(
-            "Debug - Token found but no user data, fetching from API..."
-          );
-          try {
-            const response = await fetch(`${API_URL}/api/auth/profile`, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                "Content-Type": "application/json",
-              },
+            // Calculate stats
+            setStats({
+              sentInquiries: inquiries.length,
+              myActiveRequests: requests.filter(
+                (r: CarRequest) => r.status === "active"
+              ).length,
+              totalRequests: requests.length,
             });
-            const data = await response.json();
-
-            if (data.success && data.data) {
-              console.log("Debug - Fetched user from API:", data.data);
-              setUser(data.data);
-              // Save to localStorage for next time
-              localStorage.setItem("user", JSON.stringify(data.data));
-              userData = JSON.stringify(data.data);
-            }
-          } catch (apiError) {
-            console.error("Error fetching user from API:", apiError);
+          } else {
+            console.log("No token found, loading public data only");
+            // Load public data without token
+            const cars = await api.getFeaturedCars();
+            setFeaturedCars(cars);
           }
-        }
-
-        if (userData) {
-          try {
-            const parsedUser: User = JSON.parse(userData);
-            console.log("Debug - parsedUser:", parsedUser);
-            setUser(parsedUser);
-
-            if (token) {
-              // Load all data in parallel
-              const [cars, requests, inquiries] = await Promise.all([
-                api.getFeaturedCars(),
-                api.getMyRequests(token),
-                api.getSentInquiries(token),
-              ]);
-
-              setFeaturedCars(cars);
-              setMyRequests(requests);
-              setSentInquiries(inquiries);
-
-              // Calculate stats
-              setStats({
-                sentInquiries: inquiries.length,
-                myActiveRequests: requests.filter(
-                  (r: CarRequest) => r.status === "active"
-                ).length,
-                totalRequests: requests.length,
-              });
-            } else {
-              console.log("Debug - No token found, loading public data only");
-              // Load public data without token
-              const cars = await api.getFeaturedCars();
-              setFeaturedCars(cars);
-            }
-          } catch (parseError) {
-            console.error("Error parsing user data:", parseError);
-          }
-        } else {
-          console.log("Debug - No user data found in localStorage");
+        } else if (!isLoading) {
+          // ✅ אם אין user והטעינה הסתיימה, טען רק נתונים ציבוריים
+          console.log("No user found, loading public data only");
+          const cars = await api.getFeaturedCars();
+          setFeaturedCars(cars);
         }
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
-        setLoading(false);
+        setDataLoading(false);
       }
     };
 
-    loadData();
-  }, []);
+    // ✅ רק אם הטעינה הסתיימה, טען נתונים
+    if (!isLoading) {
+      loadData();
+    }
+  }, [user, isAuthenticated, isLoading]); // ✅ תלוי בuseAuth states
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -310,18 +263,20 @@ export default function BuyerHomePage() {
     }
   };
 
-  if (loading) {
+  // ✅ השתמש ב-isLoading מ-useAuth
+  if (isLoading || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">טוען נתונים...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
+  // ✅ השתמש ב-isAuthenticated מ-useAuth
+  if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -335,11 +290,17 @@ export default function BuyerHomePage() {
     );
   }
 
-  const userName =
-    user?.firstName ||
-    user?.name?.split(" ")[0] ||
-    user?.email?.split("@")[0] ||
-    "קונה";
+  // ✅ Helper function מתוקן לעבוד עם useAuth
+  const getUserName = () => {
+    if (!user) return "קונה";
+
+    const userAny = user as any;
+
+    if (user.firstName) return user.firstName;
+    if (userAny.name) return userAny.name.split(" ")[0];
+    if (user.email) return user.email.split("@")[0];
+    return "קונה";
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -347,7 +308,7 @@ export default function BuyerHomePage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">
-            שלום, {userName}! 👋
+            שלום, {getUserName()}! 👋
           </h1>
           <p className="text-gray-600 mt-1">
             מוכן למצוא את הרכב המושלם? בואו נתחיל לחפש
@@ -578,7 +539,7 @@ export default function BuyerHomePage() {
               <h2 className="text-xl font-semibold text-gray-900">
                 הפניות ששלחתי
               </h2>
-              <Link href="/buyer/messages">
+              <Link href="/buyer/requests">
                 <Button variant="outline" size="sm">
                   צפה בכל הפניות
                 </Button>
