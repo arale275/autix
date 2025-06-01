@@ -1,6 +1,10 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+const [isClient, setIsClient] = useState(false);
+useEffect(() => {
+  setIsClient(true);
+}, []);
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -89,15 +93,50 @@ const BuyerRequestsPage = () => {
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
 
   // ✅ Debug console logs (הסר אחרי התיקון)
-  console.log("🔍 BuyerRequestsPage Debug:", {
-    isAuthenticated,
-    isLoading,
-    user: user ? `${user.firstName} ${user.lastName}` : null,
-    userType: user?.userType,
-    localStorage_token: localStorage.getItem("auth_token")
-      ? "exists"
-      : "missing",
-  });
+  useEffect(() => {
+    if (!isClient) return;
+
+    console.log("🔍 BuyerRequestsPage Debug:", {
+      isAuthenticated,
+      isLoading,
+      user: user ? `${user.firstName} ${user.lastName}` : null,
+      userType: user?.userType,
+      localStorage_token: getLocalStorageItem("auth_token")
+        ? "exists"
+        : "missing",
+    });
+  }, [isClient, isAuthenticated, isLoading, user]);
+
+  // ✅ Helper functions מוגנות מ-SSR
+  const getLocalStorageItem = (
+    key: string,
+    defaultValue: string = ""
+  ): string => {
+    if (!isClient) return defaultValue;
+    try {
+      return localStorage.getItem(key) || defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  };
+
+  const setLocalStorageItem = (key: string, value: string): void => {
+    if (!isClient) return;
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.error("Error setting localStorage:", error);
+    }
+  };
+
+  const removeLocalStorageItem = (key: string): void => {
+    if (!isClient) return;
+    try {
+      localStorage.removeItem(key);
+    } catch (error) {
+      console.error("Error removing localStorage:", error);
+    }
+  };
 
   // ✅ בדיקת authentication נכונה
   useEffect(() => {
@@ -135,7 +174,7 @@ const BuyerRequestsPage = () => {
         setError(null);
 
         // ✅ השתמש ב-auth_token (עקבי!)
-        const token = localStorage.getItem("auth_token");
+        const token = getLocalStorageItem("auth_token");
 
         if (!token) {
           console.log("❌ No auth_token found");
@@ -405,9 +444,10 @@ const BuyerRequestsPage = () => {
   };
 
   const removeSavedCar = (carId: number) => {
+    if (!isClient) return; // ✅ הוסף את השורה הזאת
     const updatedCars = savedCars.filter((car) => car.id !== carId);
     setSavedCars(updatedCars);
-    localStorage.setItem("savedCars", JSON.stringify(updatedCars));
+    setLocalStorageItem("savedCars", JSON.stringify(updatedCars));
   };
 
   // ✅ Loading state מסודר
@@ -455,6 +495,18 @@ const BuyerRequestsPage = () => {
   }
 
   // ✅ Loading של נתונים (אחרי אימות מוצלח)
+  // ✅ SSR Safe - לא מרנדר עד שהclient מוכן
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">טוען...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
