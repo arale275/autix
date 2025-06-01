@@ -72,11 +72,13 @@ interface SavedCar {
 }
 
 const BuyerRequestsPage = () => {
-  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
   // ✅ השתמש רק ב-useAuth
   const { user, isAuthenticated, isLoading } = useAuth();
+
+  // ✅ State לבדיקת client-side
+  const [isClient, setIsClient] = useState(false);
 
   // States
   const [requests, setRequests] = useState<CarRequest[]>([]);
@@ -89,23 +91,10 @@ const BuyerRequestsPage = () => {
   );
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
 
-  // ✅ Debug console logs (הסר אחרי התיקון)
+  // ✅ בדיקת client-side - מונע SSR issues
   useEffect(() => {
     setIsClient(true);
   }, []);
-  useEffect(() => {
-    if (!isClient) return;
-
-    console.log("🔍 BuyerRequestsPage Debug:", {
-      isAuthenticated,
-      isLoading,
-      user: user ? `${user.firstName} ${user.lastName}` : null,
-      userType: user?.userType,
-      localStorage_token: getLocalStorageItem("auth_token")
-        ? "exists"
-        : "missing",
-    });
-  }, [isClient, isAuthenticated, isLoading, user]);
 
   // ✅ Helper functions מוגנות מ-SSR
   const getLocalStorageItem = (
@@ -138,8 +127,25 @@ const BuyerRequestsPage = () => {
     }
   };
 
+  // ✅ Debug console logs - רק בצד הלקוח
+  useEffect(() => {
+    if (!isClient) return;
+
+    console.log("🔍 BuyerRequestsPage Debug:", {
+      isAuthenticated,
+      isLoading,
+      user: user ? `${user.firstName} ${user.lastName}` : null,
+      userType: user?.userType,
+      localStorage_token: getLocalStorageItem("auth_token")
+        ? "exists"
+        : "missing",
+    });
+  }, [isClient, isAuthenticated, isLoading, user]);
+
   // ✅ בדיקת authentication נכונה
   useEffect(() => {
+    if (!isClient) return; // ✅ תיקון - הוסף בתחילת useEffect
+
     console.log("🔍 Auth check:", { isLoading, isAuthenticated });
 
     // חכה שהאימות יסתיים
@@ -160,11 +166,12 @@ const BuyerRequestsPage = () => {
     }
 
     console.log("✅ Authentication OK, loading data");
-  }, [isLoading, isAuthenticated, user, router]);
+  }, [isClient, isLoading, isAuthenticated, user, router]); // ✅ תיקון - הוסף isClient
 
   // ✅ טעינת נתונים - רק אחרי אימות מוצלח
   useEffect(() => {
-    if (isLoading || !isAuthenticated || !user) {
+    if (!isClient || isLoading || !isAuthenticated || !user) {
+      // ✅ תיקון - הוסף !isClient
       return; // עדיין ממתין או לא מחובר
     }
 
@@ -231,7 +238,7 @@ const BuyerRequestsPage = () => {
 
         // Load saved cars from localStorage
         const savedCarsData = JSON.parse(
-          localStorage.getItem("savedCars") || "[]"
+          getLocalStorageItem("savedCars", "[]")
         );
         setSavedCars(savedCarsData);
 
@@ -247,7 +254,7 @@ const BuyerRequestsPage = () => {
     };
 
     loadData();
-  }, [isLoading, isAuthenticated, user, router]);
+  }, [isClient, isLoading, isAuthenticated, user, router]); // ✅ תיקון - הוסף isClient
 
   // Helper functions
   const formatPrice = (price: number): string => {
@@ -390,7 +397,7 @@ const BuyerRequestsPage = () => {
 
     try {
       setUpdatingStatus(request.id);
-      const token = localStorage.getItem("auth_token");
+      const token = getLocalStorageItem("auth_token");
 
       if (!token) {
         setError("לא נמצא token - אנא התחבר מחדש");
@@ -444,11 +451,23 @@ const BuyerRequestsPage = () => {
   };
 
   const removeSavedCar = (carId: number) => {
-    if (!isClient) return; // ✅ הוסף את השורה הזאת
+    if (!isClient) return;
     const updatedCars = savedCars.filter((car) => car.id !== carId);
     setSavedCars(updatedCars);
     setLocalStorageItem("savedCars", JSON.stringify(updatedCars));
   };
+
+  // ✅ SSR Safe - לא מרנדר עד שהclient מוכן
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">טוען...</p>
+        </div>
+      </div>
+    );
+  }
 
   // ✅ Loading state מסודר
   if (isLoading) {
@@ -495,18 +514,6 @@ const BuyerRequestsPage = () => {
   }
 
   // ✅ Loading של נתונים (אחרי אימות מוצלח)
-  // ✅ SSR Safe - לא מרנדר עד שהclient מוכן
-  if (!isClient) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">טוען...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
