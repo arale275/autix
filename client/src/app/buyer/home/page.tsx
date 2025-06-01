@@ -124,13 +124,19 @@ export default function BuyerHomePage() {
     }
   }, [isClient, isLoading, isAuthenticated, user, router]);
 
-  // ✅ API Helper Functions
+  // ✅ API Helper Functions - מתוקן עם error handling
   const api = {
     getFeaturedCars: async (): Promise<Car[]> => {
       try {
         const response = await fetch(`${API_URL}/api/cars?limit=3`);
+        if (!response.ok) {
+          console.error(`Featured cars API error: ${response.status}`);
+          return [];
+        }
         const data = await response.json();
-        return data.success ? data.data.cars : [];
+        return data.success && data.data && Array.isArray(data.data.cars)
+          ? data.data.cars
+          : [];
       } catch (error) {
         console.error("Error fetching featured cars:", error);
         return [];
@@ -139,6 +145,11 @@ export default function BuyerHomePage() {
 
     getMyRequests: async (token: string): Promise<CarRequest[]> => {
       try {
+        if (!token) {
+          console.error("No token provided for my requests");
+          return [];
+        }
+
         const response = await fetch(
           `${API_URL}/api/car-requests/my-requests?limit=3`,
           {
@@ -148,8 +159,22 @@ export default function BuyerHomePage() {
             },
           }
         );
+
+        if (!response.ok) {
+          console.error(
+            `My requests API error: ${response.status} ${response.statusText}`
+          );
+          // אם 400, ייתכן שאין buyer profile
+          if (response.status === 400) {
+            console.log("Buyer profile might not exist, returning empty array");
+          }
+          return [];
+        }
+
         const data = await response.json();
-        return data.success ? data.data.requests : [];
+        return data.success && data.data && Array.isArray(data.data.requests)
+          ? data.data.requests
+          : [];
       } catch (error) {
         console.error("Error fetching my requests:", error);
         return [];
@@ -158,14 +183,29 @@ export default function BuyerHomePage() {
 
     getSentInquiries: async (token: string): Promise<Inquiry[]> => {
       try {
+        if (!token) {
+          console.error("No token provided for sent inquiries");
+          return [];
+        }
+
         const response = await fetch(`${API_URL}/api/inquiries/sent?limit=4`, {
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
         });
+
+        if (!response.ok) {
+          console.error(
+            `Sent inquiries API error: ${response.status} ${response.statusText}`
+          );
+          return [];
+        }
+
         const data = await response.json();
-        return data.success ? data.data.inquiries : [];
+        return data.success && data.data && Array.isArray(data.data.inquiries)
+          ? data.data.inquiries
+          : [];
       } catch (error) {
         console.error("Error fetching sent inquiries:", error);
         return [];
@@ -203,13 +243,16 @@ export default function BuyerHomePage() {
         setMyRequests(requests);
         setSentInquiries(inquiries);
 
-        // Calculate stats
+        // Calculate stats - עם null safety
+        const safeRequests = Array.isArray(requests) ? requests : [];
+        const safeInquiries = Array.isArray(inquiries) ? inquiries : [];
+
         setStats({
-          sentInquiries: inquiries.length,
-          myActiveRequests: requests.filter(
-            (r: CarRequest) => r.status === "active"
+          sentInquiries: safeInquiries.length,
+          myActiveRequests: safeRequests.filter(
+            (r: CarRequest) => r && r.status === "active"
           ).length,
-          totalRequests: requests.length,
+          totalRequests: safeRequests.length,
         });
 
         console.log("✅ Data loaded successfully");
