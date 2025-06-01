@@ -218,13 +218,13 @@ export default function Footer() {
 
             <div className="flex space-x-4 space-x-reverse text-xs">
               <Link
-                href="/terms"
+                href="/info/terms"
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 תנאי שימוש
               </Link>
               <Link
-                href="/privacy"
+                href="/info/privacy"
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 מדיניות פרטיות
