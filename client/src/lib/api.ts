@@ -251,29 +251,29 @@ export const apiClient = new ApiClient();
 export const tokenManager = {
   setToken: (token: string) => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("auth_token", token); // שינוי מ-"token"
+      localStorage.setItem("auth_token", token);
     }
   },
   getToken: () => {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("auth_token"); // שינוי מ-"token"
+      return localStorage.getItem("auth_token");
     }
     return null;
   },
   removeToken: () => {
     if (typeof window !== "undefined") {
-      localStorage.removeItem("auth_token"); // שינוי מ-"token"
-      localStorage.removeItem("user_data"); // שינוי מ-"user"
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user_data");
     }
   },
   setUser: (user: User) => {
     if (typeof window !== "undefined") {
-      localStorage.setItem("user_data", JSON.stringify(user)); // שינוי מ-"user"
+      localStorage.setItem("user_data", JSON.stringify(user));
     }
   },
   getUser: (): User | null => {
     if (typeof window !== "undefined") {
-      const userData = localStorage.getItem("user_data"); // שינוי מ-"user"
+      const userData = localStorage.getItem("user_data");
       return userData ? JSON.parse(userData) : null;
     }
     return null;
