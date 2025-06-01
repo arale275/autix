@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -17,16 +16,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Search,
   Car,
-  Calendar,
-  DollarSign,
-  MapPin,
   CheckCircle,
   AlertCircle,
   Info,
   Zap,
-  Users,
   ArrowLeft,
   Loader2,
 } from "lucide-react";
@@ -36,12 +30,16 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.autix.co.il";
 
 // Types
 interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
+  id?: number;
+  name?: string; // מה שבאמת יש בlocalStorage
+  firstName?: string; // למקרה שיש
+  lastName?: string; // למקרה שיש
   email: string;
   phone?: string;
-  userType: string;
+  role?: string; // מה שבאמת יש בlocalStorage
+  userType?: string; // למקרה שיש
+  businessName?: string;
+  city?: string;
 }
 
 const manufacturers = [
@@ -88,7 +86,18 @@ const PostRequestPage = () => {
 
         if (userData) {
           const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
+
+          // בדיקה גמישה לסוג משתמש
+          const userRole = parsedUser.role || parsedUser.userType;
+
+          console.log("🔍 User role found:", userRole);
+
+          if (userRole === "buyer") {
+            setUser(parsedUser);
+          } else {
+            console.log("User is not a buyer, role:", userRole);
+            // אל תפנה מיד - תן לדף להיטען
+          }
         }
       } catch (error) {
         console.error("Error loading user:", error);
@@ -103,6 +112,14 @@ const PostRequestPage = () => {
   const handleSubmit = async () => {
     if (!user) {
       router.push("/auth/login");
+      return;
+    }
+
+    // בדיקה גמישה לסוג משתמש
+    const userRole = user.role || user.userType;
+
+    if (userRole !== "buyer") {
+      alert("רק קונים יכולים לפרסם בקשות רכב");
       return;
     }
 
@@ -153,6 +170,16 @@ const PostRequestPage = () => {
     return new Intl.NumberFormat("he-IL").format(parseInt(price)) + " ₪";
   };
 
+  // Helper function to get user name
+  const getUserName = () => {
+    if (!user) return "";
+    return (
+      user.name ||
+      `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
+      "משתמש"
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -164,6 +191,7 @@ const PostRequestPage = () => {
     );
   }
 
+  // אם אין משתמש או שהוא לא buyer
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -174,6 +202,23 @@ const PostRequestPage = () => {
           </h1>
           <p className="text-gray-600 mb-4">אנא התחבר כדי לפרסם בקשת רכב</p>
           <Button onClick={() => router.push("/auth/login")}>התחבר</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // אם המשתמש לא buyer
+  const userRole = user.role || user.userType;
+  if (userRole !== "buyer") {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-orange-400 mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">
+            גישה מוגבלת
+          </h1>
+          <p className="text-gray-600 mb-4">רק קונים יכולים לפרסם בקשות רכב</p>
+          <Button onClick={() => router.push("/dealer/home")}>לדף הסוחר</Button>
         </div>
       </div>
     );
@@ -401,9 +446,7 @@ const PostRequestPage = () => {
                     פרטי הקשר שלך:
                   </div>
                   <div className="text-blue-700 space-y-1">
-                    <div>
-                      {user.firstName} {user.lastName}
-                    </div>
+                    <div>{getUserName()}</div>
                     <div>{user.email}</div>
                     {user.phone && <div>{user.phone}</div>}
                   </div>
@@ -420,11 +463,9 @@ const PostRequestPage = () => {
                 <Button
                   onClick={handleSubmit}
                   className="w-full bg-blue-600 hover:bg-blue-700 py-3 text-lg"
-                  disabled={!formData.make || isSubmitting || !user} // ←← הוסף !user
+                  disabled={!formData.make || isSubmitting}
                 >
-                  {!user ? (
-                    "התחבר כדי לפרסם"
-                  ) : isSubmitting ? (
+                  {isSubmitting ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin ml-2" />
                       פורסם בקשה...
@@ -436,6 +477,7 @@ const PostRequestPage = () => {
                     </>
                   )}
                 </Button>
+
                 {!formData.make && (
                   <div className="text-sm text-red-600 mt-2 text-center">
                     יש לבחור לפחות יצרן
@@ -507,7 +549,7 @@ const PostRequestPage = () => {
                           מחפש {formData.make} {formData.model}
                         </h3>
                         <div className="text-sm text-gray-600">
-                          {user.firstName} {user.lastName}
+                          {getUserName()}
                         </div>
                       </div>
                       <Badge className="bg-green-100 text-green-800">
