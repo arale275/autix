@@ -193,35 +193,84 @@ export default function BuyerHomePage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Get user data from localStorage
-        const userData = localStorage.getItem("user");
-        const token = localStorage.getItem("token");
+        // Try different possible keys for user data
+        let userData =
+          localStorage.getItem("user") ||
+          localStorage.getItem("user_data") ||
+          localStorage.getItem("userData");
+
+        // Try different possible keys for token
+        let token =
+          localStorage.getItem("token") ||
+          localStorage.getItem("authToken") ||
+          localStorage.getItem("access_token");
+
+        console.log("Debug - userData:", userData);
+        console.log("Debug - token:", token);
+
+        // If we have a token but no user data, fetch it from API
+        if (token && !userData) {
+          console.log(
+            "Debug - Token found but no user data, fetching from API..."
+          );
+          try {
+            const response = await fetch(`${API_URL}/api/auth/profile`, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+              },
+            });
+            const data = await response.json();
+
+            if (data.success && data.data) {
+              console.log("Debug - Fetched user from API:", data.data);
+              setUser(data.data);
+              // Save to localStorage for next time
+              localStorage.setItem("user", JSON.stringify(data.data));
+              userData = JSON.stringify(data.data);
+            }
+          } catch (apiError) {
+            console.error("Error fetching user from API:", apiError);
+          }
+        }
 
         if (userData) {
-          const parsedUser: User = JSON.parse(userData);
-          setUser(parsedUser);
+          try {
+            const parsedUser: User = JSON.parse(userData);
+            console.log("Debug - parsedUser:", parsedUser);
+            setUser(parsedUser);
 
-          if (token) {
-            // Load all data in parallel
-            const [cars, requests, inquiries] = await Promise.all([
-              api.getFeaturedCars(),
-              api.getMyRequests(token),
-              api.getSentInquiries(token),
-            ]);
+            if (token) {
+              // Load all data in parallel
+              const [cars, requests, inquiries] = await Promise.all([
+                api.getFeaturedCars(),
+                api.getMyRequests(token),
+                api.getSentInquiries(token),
+              ]);
 
-            setFeaturedCars(cars);
-            setMyRequests(requests);
-            setSentInquiries(inquiries);
+              setFeaturedCars(cars);
+              setMyRequests(requests);
+              setSentInquiries(inquiries);
 
-            // Calculate stats
-            setStats({
-              sentInquiries: inquiries.length,
-              myActiveRequests: requests.filter(
-                (r: CarRequest) => r.status === "active"
-              ).length,
-              totalRequests: requests.length,
-            });
+              // Calculate stats
+              setStats({
+                sentInquiries: inquiries.length,
+                myActiveRequests: requests.filter(
+                  (r: CarRequest) => r.status === "active"
+                ).length,
+                totalRequests: requests.length,
+              });
+            } else {
+              console.log("Debug - No token found, loading public data only");
+              // Load public data without token
+              const cars = await api.getFeaturedCars();
+              setFeaturedCars(cars);
+            }
+          } catch (parseError) {
+            console.error("Error parsing user data:", parseError);
           }
+        } else {
+          console.log("Debug - No user data found in localStorage");
         }
       } catch (error) {
         console.error("Error loading data:", error);
@@ -286,7 +335,11 @@ export default function BuyerHomePage() {
     );
   }
 
-  const userName = user.firstName || user.name?.split(" ")[0] || "קונה";
+  const userName =
+    user?.firstName ||
+    user?.name?.split(" ")[0] ||
+    user?.email?.split("@")[0] ||
+    "קונה";
 
   return (
     <div className="min-h-screen bg-gray-50">
