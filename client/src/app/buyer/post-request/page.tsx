@@ -102,7 +102,7 @@ const PostRequestPage = () => {
 
   const handleSubmit = async () => {
     if (!user) {
-      alert("אנא התחבר כדי לפרסם בקשה");
+      router.push("/auth/login");
       return;
     }
 
@@ -420,9 +420,11 @@ const PostRequestPage = () => {
                 <Button
                   onClick={handleSubmit}
                   className="w-full bg-blue-600 hover:bg-blue-700 py-3 text-lg"
-                  disabled={!formData.make || isSubmitting}
+                  disabled={!formData.make || isSubmitting || !user} // ←← הוסף !user
                 >
-                  {isSubmitting ? (
+                  {!user ? (
+                    "התחבר כדי לפרסם"
+                  ) : isSubmitting ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin ml-2" />
                       פורסם בקשה...
@@ -434,7 +436,6 @@ const PostRequestPage = () => {
                     </>
                   )}
                 </Button>
-
                 {!formData.make && (
                   <div className="text-sm text-red-600 mt-2 text-center">
                     יש לבחור לפחות יצרן
