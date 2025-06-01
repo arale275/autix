@@ -1,4 +1,3 @@
-// client/src/components/layout/header.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -133,6 +132,23 @@ export default function Header() {
     }
   };
 
+  // Smart home URL based on user status
+  const getHomeUrl = () => {
+    if (!isLoggedIn || !user) {
+      return "/";
+    }
+
+    if (user.userType === "dealer") {
+      return "/dealer/home";
+    }
+
+    if (user.userType === "buyer") {
+      return "/buyer/home";
+    }
+
+    return "/";
+  };
+
   // Navigation for different user types
   const getNavigation = () => {
     if (!isLoggedIn || !user) {
@@ -200,7 +216,7 @@ export default function Header() {
     // Trigger auth change event
     window.dispatchEvent(new Event("auth-changed"));
 
-    // Redirect to home page
+    // Redirect to main home page
     router.push("/");
   };
 
@@ -246,11 +262,11 @@ export default function Header() {
     <header className="bg-white shadow-md sticky top-0 z-50">
       <nav className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
-          {/* Logo */}
+          {/* Smart Logo - routes to appropriate home */}
           <div className="flex items-center space-x-2 space-x-reverse">
             <Link
-              href="/"
-              className="flex items-center space-x-2 space-x-reverse"
+              href={getHomeUrl()}
+              className="flex items-center space-x-2 space-x-reverse hover:opacity-80 transition-opacity"
             >
               <div className="w-10 h-10 flex items-center justify-center">
                 <img

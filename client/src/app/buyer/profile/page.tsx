@@ -2,18 +2,12 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   User,
   Mail,
@@ -43,16 +37,6 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.autix.co.il";
 
 // Types
-interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  userType: string;
-  createdAt: string;
-}
-
 interface UserStats {
   totalRequests: number;
   activeRequests: number;
@@ -68,7 +52,10 @@ interface UserPreferences {
 
 const BuyerProfilePage = () => {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+
+  // ✅ השתמש רק ב-useAuth
+  const { user, isAuthenticated, isLoading } = useAuth();
+
   const [stats, setStats] = useState<UserStats>({
     totalRequests: 0,
     activeRequests: 0,
@@ -82,6 +69,7 @@ const BuyerProfilePage = () => {
   });
 
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -104,32 +92,75 @@ const BuyerProfilePage = () => {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  // Load user data and stats
+  // ✅ Debug console logs
+  console.log("🔍 BuyerProfilePage Debug:", {
+    isAuthenticated,
+    isLoading,
+    user: user ? `${user.firstName} ${user.lastName}` : null,
+    userType: user?.userType,
+    localStorage_token: localStorage.getItem("auth_token")
+      ? "exists"
+      : "missing",
+  });
+
+  // ✅ בדיקת authentication נכונה
   useEffect(() => {
+    console.log("🔍 Auth check:", { isLoading, isAuthenticated });
+
+    // חכה שהאימות יסתיים
+    if (isLoading) return;
+
+    // אם לא מחובר - הפנה להתחברות
+    if (!isAuthenticated) {
+      console.log("❌ Not authenticated, redirecting to login");
+      router.push("/auth/login");
+      return;
+    }
+
+    // בדיקת סוג משתמש
+    if (user?.userType !== "buyer") {
+      console.log("❌ Not a buyer, redirecting");
+      router.push("/dealer/home");
+      return;
+    }
+
+    console.log("✅ Authentication OK, loading data");
+  }, [isLoading, isAuthenticated, user, router]);
+
+  // ✅ טעינת נתונים - רק אחרי אימות מוצלח
+  useEffect(() => {
+    if (isLoading || !isAuthenticated || !user) {
+      return; // עדיין ממתין או לא מחובר
+    }
+
     const loadData = async () => {
       try {
         setLoading(true);
+        setError(null);
 
-        // Load user data
-        const userData = localStorage.getItem("user");
-        const token = localStorage.getItem("token");
+        // ✅ השתמש ב-auth_token (עקבי!)
+        const token = localStorage.getItem("auth_token");
 
-        if (!userData || !token) {
+        if (!token) {
+          console.log("❌ No auth_token found");
           router.push("/auth/login");
           return;
         }
 
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
+        console.log(
+          "🔄 Loading profile data with token:",
+          token.substring(0, 20) + "..."
+        );
 
+        // Set initial form data from AuthContext user
         setEditForm({
-          firstName: parsedUser.firstName || "",
-          lastName: parsedUser.lastName || "",
-          email: parsedUser.email || "",
-          phone: parsedUser.phone || "",
+          firstName: user.firstName || "",
+          lastName: user.lastName || "",
+          email: user.email || "",
+          phone: user.phone || "",
         });
 
-        // Load user profile from API to get most recent data
+        // Load fresh profile data from API (optional - for most recent data)
         try {
           const response = await fetch(`${API_URL}/api/auth/profile`, {
             headers: {
@@ -140,8 +171,9 @@ const BuyerProfilePage = () => {
 
           if (response.ok) {
             const data = await response.json();
+            console.log("👤 Fresh profile data:", data);
             if (data.success) {
-              setUser(data.data);
+              // Update form with fresh data if available
               setEditForm({
                 firstName: data.data.firstName || "",
                 lastName: data.data.lastName || "",
@@ -149,9 +181,11 @@ const BuyerProfilePage = () => {
                 phone: data.data.phone || "",
               });
             }
+          } else {
+            console.warn("❌ Profile API failed:", response.status);
           }
         } catch (apiError) {
-          console.error("Error fetching profile from API:", apiError);
+          console.error("Error fetching fresh profile:", apiError);
         }
 
         // Load statistics
@@ -162,15 +196,20 @@ const BuyerProfilePage = () => {
         if (savedPreferences) {
           setPreferences(JSON.parse(savedPreferences));
         }
+
+        console.log("✅ Profile data loaded successfully");
       } catch (error) {
-        console.error("Error loading data:", error);
+        console.error("❌ Error loading profile data:", error);
+        setError(
+          error instanceof Error ? error.message : "שגיאה בטעינת הנתונים"
+        );
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-  }, [router]);
+  }, [isLoading, isAuthenticated, user, router]);
 
   const loadStats = async (token: string) => {
     try {
@@ -217,6 +256,13 @@ const BuyerProfilePage = () => {
         totalInquiries,
         savedCars: savedCars.length,
       });
+
+      console.log("📊 Stats loaded:", {
+        totalRequests,
+        activeRequests,
+        totalInquiries,
+        savedCars: savedCars.length,
+      });
     } catch (error) {
       console.error("Error loading stats:", error);
     }
@@ -227,7 +273,13 @@ const BuyerProfilePage = () => {
 
     try {
       setSaving(true);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("auth_token");
+
+      if (!token) {
+        setError("לא נמצא token - אנא התחבר מחדש");
+        router.push("/auth/login");
+        return;
+      }
 
       const response = await fetch(`${API_URL}/api/profile`, {
         method: "PUT",
@@ -243,11 +295,15 @@ const BuyerProfilePage = () => {
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.success) {
-        // Update local user data
-        const updatedUser = {
+        // Update localStorage user data
+        const updatedUserData = {
           ...user,
           firstName: editForm.firstName,
           lastName: editForm.lastName,
@@ -255,18 +311,22 @@ const BuyerProfilePage = () => {
           phone: editForm.phone,
         };
 
-        setUser(updatedUser);
-        localStorage.setItem("user", JSON.stringify(updatedUser));
+        localStorage.setItem("user_data", JSON.stringify(updatedUserData));
 
         setIsEditing(false);
         setSaved(true);
         setTimeout(() => setSaved(false), 3000);
+
+        console.log("✅ Profile updated successfully");
       } else {
-        alert("שגיאה בשמירת הפרטים: " + (data.message || "שגיאה לא ידועה"));
+        throw new Error(data.message || "שגיאה לא ידועה");
       }
     } catch (error) {
       console.error("Error saving profile:", error);
-      alert("שגיאה בשמירת הפרטים");
+      const errorMessage =
+        error instanceof Error ? error.message : "שגיאה בשמירת הפרטים";
+      setError(errorMessage);
+      alert(errorMessage);
     } finally {
       setSaving(false);
     }
@@ -307,7 +367,13 @@ const BuyerProfilePage = () => {
     }
 
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("auth_token");
+
+      if (!token) {
+        setError("לא נמצא token - אנא התחבר מחדש");
+        router.push("/auth/login");
+        return;
+      }
 
       const response = await fetch(`${API_URL}/api/auth/change-password`, {
         method: "POST",
@@ -342,7 +408,12 @@ const BuyerProfilePage = () => {
 
   const handleDeleteAccount = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("auth_token");
+
+      if (!token) {
+        alert("שגיאת אימות");
+        return;
+      }
 
       const response = await fetch(`${API_URL}/api/auth/delete-account`, {
         method: "DELETE",
@@ -354,8 +425,8 @@ const BuyerProfilePage = () => {
 
       if (response.ok) {
         // Clear all local data
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
+        localStorage.removeItem("user_data");
+        localStorage.removeItem("auth_token");
         localStorage.removeItem("userPreferences");
         localStorage.removeItem("savedCars");
 
@@ -373,9 +444,13 @@ const BuyerProfilePage = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem("token");
+    localStorage.removeItem("user_data");
+    localStorage.removeItem("auth_token");
     localStorage.removeItem("userPreferences");
+
+    // Trigger auth change event
+    window.dispatchEvent(new Event("auth-changed"));
+
     router.push("/auth/login");
   };
 
@@ -392,18 +467,34 @@ const BuyerProfilePage = () => {
     return `${diffMonths} חודשים`;
   };
 
-  if (loading) {
+  // ✅ Loading state מסודר
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">טוען פרטי פרופיל...</p>
+          <p className="text-gray-600">בודק אימות...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
+  // ✅ Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">שגיאה</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>נסה שוב</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ רק אחרי שהאימות הסתיים
+  if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -415,6 +506,18 @@ const BuyerProfilePage = () => {
             אנא התחבר כדי לראות את הפרופיל שלך
           </p>
           <Button onClick={() => router.push("/auth/login")}>התחבר</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Loading של נתונים (אחרי אימות מוצלח)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">טוען פרטי פרופיל...</p>
         </div>
       </div>
     );
@@ -972,7 +1075,7 @@ const BuyerProfilePage = () => {
                   <Button
                     variant="outline"
                     className="w-full justify-start"
-                    onClick={() => router.push("/info/about-autix")}
+                    onClick={() => router.push("/info/about")}
                   >
                     <AlertCircle className="h-4 w-4 ml-2" />
                     מידע על AUTIX

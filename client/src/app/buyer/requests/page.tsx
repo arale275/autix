@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -26,15 +27,6 @@ import {
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.autix.co.il";
 
 // Types
-interface User {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone?: string;
-  userType: string;
-}
-
 interface CarRequest {
   id: number;
   make?: string;
@@ -81,35 +73,82 @@ interface SavedCar {
 
 const BuyerRequestsPage = () => {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+
+  // ✅ השתמש רק ב-useAuth
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  // States
   const [requests, setRequests] = useState<CarRequest[]>([]);
   const [savedCars, setSavedCars] = useState<SavedCar[]>([]);
   const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showInactiveModal, setShowInactiveModal] = useState<CarRequest | null>(
     null
   );
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
 
-  // Load all data
+  // ✅ Debug console logs (הסר אחרי התיקון)
+  console.log("🔍 BuyerRequestsPage Debug:", {
+    isAuthenticated,
+    isLoading,
+    user: user ? `${user.firstName} ${user.lastName}` : null,
+    userType: user?.userType,
+    localStorage_token: localStorage.getItem("auth_token")
+      ? "exists"
+      : "missing",
+  });
+
+  // ✅ בדיקת authentication נכונה
   useEffect(() => {
+    console.log("🔍 Auth check:", { isLoading, isAuthenticated });
+
+    // חכה שהאימות יסתיים
+    if (isLoading) return;
+
+    // אם לא מחובר - הפנה להתחברות
+    if (!isAuthenticated) {
+      console.log("❌ Not authenticated, redirecting to login");
+      router.push("/auth/login");
+      return;
+    }
+
+    // בדיקת סוג משתמש
+    if (user?.userType !== "buyer") {
+      console.log("❌ Not a buyer, redirecting");
+      router.push("/dealer/home");
+      return;
+    }
+
+    console.log("✅ Authentication OK, loading data");
+  }, [isLoading, isAuthenticated, user, router]);
+
+  // ✅ טעינת נתונים - רק אחרי אימות מוצלח
+  useEffect(() => {
+    if (isLoading || !isAuthenticated || !user) {
+      return; // עדיין ממתין או לא מחובר
+    }
+
     const loadData = async () => {
       try {
         setLoading(true);
+        setError(null);
 
-        // Load user data
-        const userData = localStorage.getItem("user");
-        const token = localStorage.getItem("token");
+        // ✅ השתמש ב-auth_token (עקבי!)
+        const token = localStorage.getItem("auth_token");
 
-        if (!userData || !token) {
+        if (!token) {
+          console.log("❌ No auth_token found");
           router.push("/auth/login");
           return;
         }
 
-        const parsedUser = JSON.parse(userData);
-        setUser(parsedUser);
+        console.log(
+          "🔄 Loading data with token:",
+          token.substring(0, 20) + "..."
+        );
 
-        // Load data in parallel
+        // API calls
         const [requestsResponse, inquiriesResponse] = await Promise.all([
           fetch(`${API_URL}/api/car-requests/my-requests`, {
             headers: {
@@ -125,20 +164,30 @@ const BuyerRequestsPage = () => {
           }),
         ]);
 
-        // Process car requests
+        console.log("📡 API Responses:", {
+          requests: requestsResponse.status,
+          inquiries: inquiriesResponse.status,
+        });
+
+        // Process responses
         if (requestsResponse.ok) {
           const requestsData = await requestsResponse.json();
+          console.log("📋 Requests data:", requestsData);
           if (requestsData.success) {
             setRequests(requestsData.data.requests || []);
           }
+        } else {
+          console.warn("❌ Car requests API failed:", requestsResponse.status);
         }
 
-        // Process inquiries
         if (inquiriesResponse.ok) {
           const inquiriesData = await inquiriesResponse.json();
+          console.log("💬 Inquiries data:", inquiriesData);
           if (inquiriesData.success) {
             setInquiries(inquiriesData.data.inquiries || []);
           }
+        } else {
+          console.warn("❌ Inquiries API failed:", inquiriesResponse.status);
         }
 
         // Load saved cars from localStorage
@@ -146,15 +195,20 @@ const BuyerRequestsPage = () => {
           localStorage.getItem("savedCars") || "[]"
         );
         setSavedCars(savedCarsData);
+
+        console.log("✅ Data loaded successfully");
       } catch (error) {
-        console.error("Error loading data:", error);
+        console.error("❌ Error loading data:", error);
+        setError(
+          error instanceof Error ? error.message : "שגיאה בטעינת הנתונים"
+        );
       } finally {
         setLoading(false);
       }
     };
 
     loadData();
-  }, [router]);
+  }, [isLoading, isAuthenticated, user, router]);
 
   // Helper functions
   const formatPrice = (price: number): string => {
@@ -297,7 +351,13 @@ const BuyerRequestsPage = () => {
 
     try {
       setUpdatingStatus(request.id);
-      const token = localStorage.getItem("token");
+      const token = localStorage.getItem("auth_token");
+
+      if (!token) {
+        setError("לא נמצא token - אנא התחבר מחדש");
+        router.push("/auth/login");
+        return;
+      }
 
       const response = await fetch(
         `${API_URL}/api/car-requests/${request.id}`,
@@ -311,6 +371,10 @@ const BuyerRequestsPage = () => {
         }
       );
 
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.success) {
@@ -320,11 +384,14 @@ const BuyerRequestsPage = () => {
           )
         );
       } else {
-        alert("שגיאה בעדכון הסטטוס: " + (data.message || "שגיאה לא ידועה"));
+        throw new Error(data.message || "שגיאה לא ידועה");
       }
     } catch (error) {
       console.error("Error updating request status:", error);
-      alert("שגיאה בעדכון הסטטוס");
+      const errorMessage =
+        error instanceof Error ? error.message : "שגיאה בעדכון הסטטוס";
+      setError(errorMessage);
+      alert(errorMessage);
     } finally {
       setUpdatingStatus(null);
     }
@@ -343,18 +410,34 @@ const BuyerRequestsPage = () => {
     localStorage.setItem("savedCars", JSON.stringify(updatedCars));
   };
 
-  if (loading) {
+  // ✅ Loading state מסודר
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">טוען נתונים...</p>
+          <p className="text-gray-600">בודק אימות...</p>
         </div>
       </div>
     );
   }
 
-  if (!user) {
+  // ✅ Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-gray-900 mb-2">שגיאה</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <Button onClick={() => window.location.reload()}>נסה שוב</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ רק אחרי שהאימות הסתיים
+  if (!isAuthenticated || !user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -366,6 +449,18 @@ const BuyerRequestsPage = () => {
             אנא התחבר כדי לראות את הבקשות שלך
           </p>
           <Button onClick={() => router.push("/auth/login")}>התחבר</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ✅ Loading של נתונים (אחרי אימות מוצלח)
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-4" />
+          <p className="text-gray-600">טוען נתונים...</p>
         </div>
       </div>
     );

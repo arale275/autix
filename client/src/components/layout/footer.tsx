@@ -1,63 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
-
-interface User {
-  name: string;
-  email: string;
-  phone: string;
-  role: "dealer" | "buyer";
-  businessName?: string;
-  city: string;
-}
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Footer() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
+  const { user, isAuthenticated } = useAuth();
   const currentYear = new Date().getFullYear();
-
-  useEffect(() => {
-    // Check if user is logged in on component mount and localStorage changes
-    const checkAuthStatus = () => {
-      const authToken = localStorage.getItem("auth_token");
-      const userData = localStorage.getItem("user_data");
-
-      if (authToken && userData) {
-        try {
-          const parsedUser = JSON.parse(userData);
-          setUser(parsedUser);
-          setIsLoggedIn(true);
-        } catch (error) {
-          console.error("Error parsing user data:", error);
-          setIsLoggedIn(false);
-          setUser(null);
-        }
-      } else {
-        setIsLoggedIn(false);
-        setUser(null);
-      }
-    };
-
-    // Check on component mount
-    checkAuthStatus();
-
-    // Listen for storage changes (when user logs in/out in another tab)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === "auth_token" || e.key === "user_data") {
-        checkAuthStatus();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
-
-  const userRole = user?.role;
 
   return (
     <footer className="bg-gray-900 text-white">
@@ -85,8 +33,12 @@ export default function Footer() {
 
           {/* User Navigation */}
           <div className="space-y-3">
+            <h3 className="text-white font-medium text-sm mb-3">
+              {isAuthenticated ? "הניווט שלי" : "הצטרף אלינו"}
+            </h3>
+
             {/* For Buyers */}
-            {isLoggedIn && userRole === "buyer" && (
+            {isAuthenticated && user?.userType === "buyer" && (
               <>
                 <Link
                   href="/buyer/cars"
@@ -116,7 +68,7 @@ export default function Footer() {
             )}
 
             {/* For Dealers */}
-            {isLoggedIn && userRole === "dealer" && (
+            {isAuthenticated && user?.userType === "dealer" && (
               <>
                 <Link
                   href="/dealer/cars"
@@ -152,8 +104,14 @@ export default function Footer() {
             )}
 
             {/* For non-logged in users */}
-            {!isLoggedIn && (
+            {!isAuthenticated && (
               <>
+                <Link
+                  href="/buyer/cars"
+                  className="block text-gray-400 hover:text-white transition-colors text-sm"
+                >
+                  צפה ברכבים
+                </Link>
                 <Link
                   href="/auth/register"
                   className="block text-gray-400 hover:text-white transition-colors text-sm"
@@ -178,32 +136,47 @@ export default function Footer() {
 
           {/* Support & General */}
           <div className="space-y-3">
-            <Link
-              href="/info/contact"
-              className="block text-gray-400 hover:text-white transition-colors text-sm"
-            >
-              צור קשר
-            </Link>
+            <h3 className="text-white font-medium text-sm mb-3">מידע ותמיכה</h3>
+
             <Link
               href="/info/about"
               className="block text-gray-400 hover:text-white transition-colors text-sm"
             >
               אודות Autix
             </Link>
-            {isLoggedIn && userRole === "dealer" && (
+
+            <Link
+              href="/info/contact"
+              className="block text-gray-400 hover:text-white transition-colors text-sm"
+            >
+              צור קשר
+            </Link>
+
+            {/* Role-specific support */}
+            {isAuthenticated && user?.userType === "dealer" && (
               <a
                 href="mailto:dealers@autix.co.il"
                 className="block text-gray-400 hover:text-white transition-colors text-sm"
               >
-                תמיכה
+                תמיכה לסוחרים
               </a>
             )}
-            {isLoggedIn && userRole === "buyer" && (
+
+            {isAuthenticated && user?.userType === "buyer" && (
               <a
                 href="mailto:support@autix.co.il"
                 className="block text-gray-400 hover:text-white transition-colors text-sm"
               >
-                תמיכה
+                תמיכה לקונים
+              </a>
+            )}
+
+            {!isAuthenticated && (
+              <a
+                href="mailto:info@autix.co.il"
+                className="block text-gray-400 hover:text-white transition-colors text-sm"
+              >
+                מידע כללי
               </a>
             )}
           </div>
@@ -230,6 +203,14 @@ export default function Footer() {
                 מדיניות פרטיות
               </Link>
             </div>
+
+            {/* User status indicator for logged in users */}
+            {isAuthenticated && user && (
+              <div className="text-gray-500 text-xs">
+                מחובר כ{user.userType === "buyer" ? "קונה" : "סוחר"}:{" "}
+                {user.firstName} {user.lastName}
+              </div>
+            )}
           </div>
         </div>
       </div>

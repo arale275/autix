@@ -242,3 +242,82 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* הוסף את זה בסוף הקובץ globals.css */
+
+/* Z-index hierarchy */
+:root {
+  --z-header: 50;
+  --z-dropdown: 1000;
+  --z-modal: 1050;
+  --z-tooltip: 1100;
+  --z-loading: 9999;
+}
+
+/* Fix for transparent dropdowns */
+@layer components {
+  /* Dropdown menus */
+  .dropdown-content,
+  [data-radix-popper-content-wrapper],
+  [role="menu"],
+  [role="listbox"] {
+    @apply bg-white border border-gray-200 shadow-xl rounded-md;
+    z-index: var(--z-dropdown) !important;
+    backdrop-filter: blur(8px);
+  }
+
+  /* Mobile menu overlays */
+  .mobile-menu-overlay {
+    @apply bg-white border-t border-gray-200;
+    z-index: var(--z-dropdown);
+  }
+
+  /* Popover content */
+  .popover-content,
+  [data-side] {
+    @apply bg-white border border-gray-200 shadow-lg rounded-md;
+    z-index: var(--z-dropdown) !important;
+  }
+
+  /* Dialog/Modal overlays */
+  .dialog-overlay,
+  .modal-overlay {
+    @apply bg-black/50;
+    z-index: var(--z-modal);
+  }
+
+  .dialog-content,
+  .modal-content {
+    @apply bg-white rounded-lg shadow-2xl;
+    z-index: calc(var(--z-modal) + 1);
+  }
+
+  /* Ensure header stays on top of regular content but below modals */
+  header {
+    z-index: var(--z-header) !important;
+  }
+
+  /* Loading overlays */
+  .loading-overlay {
+    @apply bg-white/80;
+    z-index: var(--z-loading);
+  }
+}
+
+/* Fix for specific shadcn/ui components */
+@layer utilities {
+  .dropdown-menu-content {
+    @apply bg-white border border-gray-200 shadow-xl !important;
+    z-index: 1000 !important;
+  }
+
+  .select-content {
+    @apply bg-white border border-gray-200 shadow-lg !important;
+    z-index: 1000 !important;
+  }
+
+  .tooltip-content {
+    @apply bg-gray-900 text-white text-xs rounded shadow-lg !important;
+    z-index: 1100 !important;
+  }
+}
