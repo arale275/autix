@@ -1,10 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-const [isClient, setIsClient] = useState(false);
-useEffect(() => {
-  setIsClient(true);
-}, []);
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -76,6 +72,7 @@ interface SavedCar {
 }
 
 const BuyerRequestsPage = () => {
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
   // ✅ השתמש רק ב-useAuth
@@ -93,6 +90,9 @@ const BuyerRequestsPage = () => {
   const [updatingStatus, setUpdatingStatus] = useState<number | null>(null);
 
   // ✅ Debug console logs (הסר אחרי התיקון)
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   useEffect(() => {
     if (!isClient) return;
 
