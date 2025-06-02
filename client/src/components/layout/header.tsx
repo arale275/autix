@@ -15,126 +15,17 @@ import {
   FileText,
   Settings,
 } from "lucide-react";
-import { apiClient } from "@/lib/api";
-
-interface User {
-  id: number;
-  email: string;
-  firstName: string;
-  lastName: string;
-  phone?: string;
-  userType: "dealer" | "buyer";
-  dealerProfile?: {
-    businessName: string;
-    city?: string;
-  };
-}
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
-  useEffect(() => {
-    checkAuthStatus();
-
-    // Listen for storage changes (when user logs in/out in the same tab)
-    const handleStorageChange = () => {
-      checkAuthStatus();
-    };
-
-    // Listen for custom events when user logs in
-    const handleAuthChange = () => {
-      checkAuthStatus();
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-    window.addEventListener("auth-changed", handleAuthChange);
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-      window.removeEventListener("auth-changed", handleAuthChange);
-    };
-  }, []);
-
-  // Also check auth status when pathname changes (after login redirect)
-  useEffect(() => {
-    if (!isLoading) {
-      checkAuthStatus();
-    }
-  }, [pathname]);
-
-  const checkAuthStatus = async () => {
-    try {
-      const authToken = localStorage.getItem("auth_token");
-
-      if (!authToken) {
-        setIsLoggedIn(false);
-        setUser(null);
-        setIsLoading(false);
-        return;
-      }
-
-      console.log("Found token, verifying with server..."); // Debug log
-
-      // Verify token with server
-      const response = await apiClient.getProfile();
-
-      if (response.success && response.data) {
-        console.log("Token verified, user:", response.data.firstName); // Debug log
-        setUser(response.data);
-        setIsLoggedIn(true);
-
-        // Update localStorage with fresh data
-        localStorage.setItem(
-          "user_data",
-          JSON.stringify({
-            name: `${response.data.firstName} ${response.data.lastName}`,
-            email: response.data.email,
-            phone: response.data.phone || "",
-            role: response.data.userType,
-            businessName: response.data.dealerProfile?.businessName || "",
-            city: response.data.dealerProfile?.city || "",
-          })
-        );
-      } else {
-        console.log("Token invalid, clearing storage"); // Debug log
-        // Token is invalid, clear storage
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("user_data");
-        setIsLoggedIn(false);
-        setUser(null);
-      }
-    } catch (error) {
-      console.error("Auth check error:", error);
-
-      // Only clear on 401/403 errors (token invalid)
-      if (
-        error instanceof Error &&
-        (error.message.includes("401") ||
-          error.message.includes("403") ||
-          error.message.includes("גישה נדחתה"))
-      ) {
-        console.log("Auth error, clearing storage"); // Debug log
-        localStorage.removeItem("auth_token");
-        localStorage.removeItem("user_data");
-        setIsLoggedIn(false);
-        setUser(null);
-      } else {
-        // For network errors, keep existing state but stop loading
-        console.log("Network error, keeping existing state"); // Debug log
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Smart home URL based on user status
   const getHomeUrl = () => {
-    if (!isLoggedIn || !user) {
+    if (!isAuthenticated || !user) {
       return "/";
     }
 
@@ -151,7 +42,7 @@ export default function Header() {
 
   // Navigation for different user types
   const getNavigation = () => {
-    if (!isLoggedIn || !user) {
+    if (!isAuthenticated || !user) {
       return [];
     }
 
@@ -159,10 +50,9 @@ export default function Header() {
       return [
         { name: "דף הבית", href: "/dealer/home", icon: null },
         { name: "הרכבים שלי", href: "/dealer/cars", icon: Car },
-        { name: "פרסם רכב", href: "/dealer/add-car", icon: FileText },
-        { name: "קונים מחפשים", href: "/dealer/buyers", icon: Search },
+        { name: "פרסם רכב", href: "/dealer/cars/new", icon: FileText },
         {
-          name: "הפניות שקיבלתי",
+          name: "פניות מקונים",
           href: "/dealer/inquiries",
           icon: MessageSquare,
         },
@@ -176,14 +66,10 @@ export default function Header() {
         { name: "חיפוש רכבים", href: "/buyer/cars", icon: Search },
         {
           name: "פרסם מה אני מחפש",
-          href: "/buyer/post-request",
+          href: "/buyer/requests/new",
           icon: FileText,
         },
-        {
-          name: "המודעות וההודעות שלי",
-          href: "/buyer/requests",
-          icon: Car,
-        },
+        { name: "הבקשות וההודעות שלי", href: "/buyer/requests", icon: Car },
         { name: "הפרופיל שלי", href: "/buyer/profile", icon: Settings },
       ];
     }
@@ -205,18 +91,7 @@ export default function Header() {
   };
 
   const handleLogout = () => {
-    // Clear localStorage
-    localStorage.removeItem("auth_token");
-    localStorage.removeItem("user_data");
-
-    // Update state
-    setIsLoggedIn(false);
-    setUser(null);
-
-    // Trigger auth change event
-    window.dispatchEvent(new Event("auth-changed"));
-
-    // Redirect to main home page
+    logout();
     router.push("/");
   };
 
@@ -280,7 +155,7 @@ export default function Header() {
           </div>
 
           {/* Desktop Navigation - Only for logged in users */}
-          {isLoggedIn && navigation.length > 0 && (
+          {isAuthenticated && navigation.length > 0 && (
             <div className="hidden md:flex items-center space-x-6 space-x-reverse">
               {navigation.map((item) => (
                 <Link
@@ -301,7 +176,7 @@ export default function Header() {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4 space-x-reverse">
-            {isLoggedIn && user ? (
+            {isAuthenticated && user ? (
               <>
                 {/* User Profile */}
                 <div className="flex items-center space-x-3 space-x-reverse">
@@ -340,10 +215,10 @@ export default function Header() {
               </>
             ) : (
               <>
-                <Link href="/auth/login">
+                <Link href="/login">
                   <Button variant="ghost">התחבר</Button>
                 </Link>
-                <Link href="/auth/register">
+                <Link href="/register">
                   <Button className="bg-blue-600 hover:bg-blue-700">
                     הרשם
                   </Button>
@@ -374,7 +249,7 @@ export default function Header() {
           <div className="md:hidden border-t border-gray-200 py-4">
             <div className="space-y-4">
               {/* Navigation Links - Only for logged in users */}
-              {isLoggedIn && navigation.length > 0 && (
+              {isAuthenticated && navigation.length > 0 && (
                 <div className="space-y-2">
                   {navigation.map((item) => (
                     <Link
@@ -395,7 +270,7 @@ export default function Header() {
               )}
 
               {/* User Section */}
-              {isLoggedIn && user ? (
+              {isAuthenticated && user ? (
                 <div className="border-t border-gray-200 pt-4">
                   <div className="px-4 pb-3">
                     <Link
@@ -437,7 +312,7 @@ export default function Header() {
               ) : (
                 <div className="border-t border-gray-200 pt-4 space-y-2 px-4">
                   <Link
-                    href="/auth/login"
+                    href="/login"
                     className="block w-full"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
@@ -446,7 +321,7 @@ export default function Header() {
                     </Button>
                   </Link>
                   <Link
-                    href="/auth/register"
+                    href="/register"
                     className="block w-full"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >

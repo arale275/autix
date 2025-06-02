@@ -47,7 +47,7 @@ export default function Footer() {
                   חיפוש רכבים
                 </Link>
                 <Link
-                  href="/buyer/post-request"
+                  href="/buyer/requests/new"
                   className="block text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   פרסם "אני מחפש"
@@ -56,7 +56,7 @@ export default function Footer() {
                   href="/buyer/requests"
                   className="block text-gray-400 hover:text-white transition-colors text-sm"
                 >
-                  המודעות וההודעות שלי
+                  הבקשות וההודעות שלי
                 </Link>
                 <Link
                   href="/buyer/profile"
@@ -77,22 +77,16 @@ export default function Footer() {
                   הרכבים שלי
                 </Link>
                 <Link
-                  href="/dealer/add-car"
+                  href="/dealer/cars/new"
                   className="block text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   פרסם רכב למכירה
                 </Link>
                 <Link
-                  href="/dealer/buyers"
-                  className="block text-gray-400 hover:text-white transition-colors text-sm"
-                >
-                  קונים מחפשים
-                </Link>
-                <Link
                   href="/dealer/inquiries"
                   className="block text-gray-400 hover:text-white transition-colors text-sm"
                 >
-                  הפניות שקיבלתי
+                  פניות מקונים
                 </Link>
                 <Link
                   href="/dealer/profile"
@@ -113,19 +107,19 @@ export default function Footer() {
                   צפה ברכבים
                 </Link>
                 <Link
-                  href="/auth/register"
+                  href="/register"
                   className="block text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   הרשם כקונה
                 </Link>
                 <Link
-                  href="/auth/register"
+                  href="/register"
                   className="block text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   הרשם כסוחר
                 </Link>
                 <Link
-                  href="/auth/login"
+                  href="/login"
                   className="block text-gray-400 hover:text-white transition-colors text-sm"
                 >
                   התחבר לחשבון קיים
@@ -139,14 +133,14 @@ export default function Footer() {
             <h3 className="text-white font-medium text-sm mb-3">מידע ותמיכה</h3>
 
             <Link
-              href="/info/about"
+              href="/about"
               className="block text-gray-400 hover:text-white transition-colors text-sm"
             >
               אודות Autix
             </Link>
 
             <Link
-              href="/info/contact"
+              href="/contact"
               className="block text-gray-400 hover:text-white transition-colors text-sm"
             >
               צור קשר
@@ -191,13 +185,13 @@ export default function Footer() {
 
             <div className="flex space-x-4 space-x-reverse text-xs">
               <Link
-                href="/info/terms"
+                href="/terms"
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 תנאי שימוש
               </Link>
               <Link
-                href="/info/privacy"
+                href="/privacy"
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 מדיניות פרטיות
