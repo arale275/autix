@@ -8,6 +8,7 @@ import inquiryRoutes from "./routes/inquiry.routes";
 import profileRoutes from "./routes/profile.routes";
 import passport from "./config/passport";
 import googleAuthRoutes from "./routes/google-auth.routes";
+import imageRoutes from './routes/image.routes';
 
 // Import routes
 import authRoutes from "./routes/auth.routes";
@@ -50,6 +51,7 @@ app.use("/api/inquiries", inquiryRoutes);
 app.use("/api/debug", debugRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/auth", googleAuthRoutes);
+app.use('/api', imageRoutes);
 
 // Health check endpoints
 app.get("/api/health", (req, res) => {
