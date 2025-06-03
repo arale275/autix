@@ -223,9 +223,9 @@ export class AuthController {
   // קבלת פרופיל משתמש מחובר - זה התיקון העיקרי!
   async getProfile(req: AuthRequest, res: Response) {
     try {
-      console.log("🔍 Profile request for user ID:", req.user?.userId);
+      console.log("🔍 Profile request for user ID:", req.user?.id);
 
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       if (!userId) {
         return res.status(401).json({
           success: false,

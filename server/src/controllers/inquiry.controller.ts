@@ -2,19 +2,11 @@ import { Request, Response } from "express";
 import { InquiryModel } from "../models/inquiry.model";
 import { CreateInquiryData, InquiryFilters } from "../types/inquiry.types";
 import pool from "../config/database.config";
-
-// הרחבת Request type כדי לכלול user
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    email: string;
-    user_type: "buyer" | "dealer";
-  };
-}
+import { AuthRequest } from '../types/auth.types';
 
 export class InquiryController {
   // יצירת פנייה חדשה (buyers בלבד)
-  static async createInquiry(req: AuthenticatedRequest, res: Response) {
+  static async createInquiry(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const userType = req.user?.user_type;
@@ -59,7 +51,7 @@ export class InquiryController {
   }
 
   // קבלת פניות שקיבל הסוחר (dealers בלבד)
-  static async getReceivedInquiries(req: AuthenticatedRequest, res: Response) {
+  static async getReceivedInquiries(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const userType = req.user?.user_type;
@@ -119,7 +111,7 @@ export class InquiryController {
   }
 
   // קבלת הפניות ששלח הקונה (buyers בלבד)
-  static async getMySentInquiries(req: AuthenticatedRequest, res: Response) {
+  static async getMySentInquiries(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const userType = req.user?.user_type;
@@ -168,7 +160,7 @@ export class InquiryController {
   }
 
   // קבלת פנייה ספציפית
-  static async getInquiryById(req: AuthenticatedRequest, res: Response) {
+  static async getInquiryById(req: AuthRequest, res: Response) {
     try {
       const inquiryId = Number(req.params.id);
       const userId = req.user?.id;
@@ -226,7 +218,7 @@ export class InquiryController {
   }
 
   // עדכון סטטוס פנייה (dealers בלבד)
-  static async updateInquiryStatus(req: AuthenticatedRequest, res: Response) {
+  static async updateInquiryStatus(req: AuthRequest, res: Response) {
     try {
       const inquiryId = Number(req.params.id);
       const userId = req.user?.id;
@@ -294,7 +286,7 @@ export class InquiryController {
   }
 
   // מחיקת פנייה (buyers בלבד - רק אם לא נענתה)
-  static async deleteInquiry(req: AuthenticatedRequest, res: Response) {
+  static async deleteInquiry(req: AuthRequest, res: Response) {
     try {
       const inquiryId = Number(req.params.id);
       const userId = req.user?.id;
@@ -357,7 +349,7 @@ export class InquiryController {
   }
 
   // סטטיסטיקות פניות לסוחר
-  static async getDealerStats(req: AuthenticatedRequest, res: Response) {
+  static async getDealerStats(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const userType = req.user?.user_type;

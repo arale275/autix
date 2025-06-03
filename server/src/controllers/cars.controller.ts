@@ -197,7 +197,7 @@ export class CarsController {
   // הוספת רכב חדש (רק דילרים)
   async addCar(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
 
       // מציאת dealer_id של המשתמש
       const dealerResult = await pool.query(
@@ -270,7 +270,7 @@ export class CarsController {
   async updateCar(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
 
       // בדיקה שהרכב שייך לדילר הנוכחי
       const carCheck = await pool.query(
@@ -359,7 +359,7 @@ export class CarsController {
   async deleteCar(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
 
       // בדיקה שהרכב שייך לדילר הנוכחי
       const carCheck = await pool.query(
@@ -457,7 +457,7 @@ export class CarsController {
   // קבלת הרכבים שלי (לדילר מחובר)
   async getMyCars(req: AuthRequest, res: Response) {
     try {
-      const userId = req.user?.userId;
+      const userId = req.user?.id;
       const { page = 1, limit = 20, status = "active" } = req.query;
       const offset = (Number(page) - 1) * Number(limit);
 

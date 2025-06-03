@@ -23,17 +23,15 @@ export const authenticateToken = (
     const decoded = jwt.verify(token, process.env.JWT_SECRET!) as JWTPayload;
 
     // הגדרת המשתמש ב-request
-    req.user = {
-      id: decoded.userId,
-      userId: decoded.userId,
-      email: decoded.email,
-      password: "", // ריק - לא נדרש במידלוור
-      full_name: "", // ריק - לא נדרש במידלוור
-      phone: "",
-      user_type: decoded.userType,
-      userType: decoded.userType,
-      is_verified: true,
-    } as User;
+   req.user = {
+  id: decoded.userId,
+  email: decoded.email,
+  first_name: '',
+  last_name: '',
+  phone: '',
+  user_type: decoded.userType,
+  is_verified: true,
+} as User;
 
     next();
   } catch (error) {
@@ -53,7 +51,7 @@ export const requireRole = (roles: string[]) => {
       });
     }
 
-    if (!req.user?.userType || !roles.includes(req.user.userType)) {
+    if (!req.user?.user_type || !roles.includes(req.user.user_type)) {
       return res.status(403).json({
         success: false,
         message: "אין לך הרשאה לפעולה זו",

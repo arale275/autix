@@ -26,8 +26,9 @@ export class UserModel {
       return {
         id: row.id,
         email: row.email,
-        password: row.password_hash,
-        full_name: `${row.first_name} ${row.last_name}`.trim(),
+        first_name: row.first_name,
+        last_name: row.last_name,
+        password_hash: row.password_hash,
         phone: row.phone,
         user_type: row.user_type,
         is_verified: true, // ברירת מחדל - אין עמודה כזאת בדאטהבייס
@@ -57,8 +58,9 @@ export class UserModel {
       return {
         id: row.id,
         email: row.email,
-        password: row.password_hash,
-        full_name: `${row.first_name} ${row.last_name}`.trim(),
+        first_name: row.first_name,
+        last_name: row.last_name,
+        password_hash: row.password_hash,
         phone: row.phone,
         user_type: row.user_type,
         is_verified: true, // ברירת מחדל - אין עמודה כזאת בדאטהבייס
@@ -101,8 +103,9 @@ export class UserModel {
       return {
         id: row.id,
         email: row.email,
-        password: row.password_hash,
-        full_name: `${row.first_name} ${row.last_name}`.trim(),
+        first_name: row.first_name,
+        last_name: row.last_name,
+        password_hash: row.password_hash,
         phone: row.phone,
         user_type: row.user_type,
         is_verified: true, // ברירת מחדל - אין עמודה כזאת בדאטהבייס

@@ -6,19 +6,11 @@ import {
   CarRequestFilters,
 } from "../types/car-request.types";
 import pool from "../config/database.config";
-
-// הרחבת Request type כדי לכלול user
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    email: string;
-    user_type: "buyer" | "dealer";
-  };
-}
+import { AuthRequest } from '../types/auth.types';
 
 export class CarRequestController {
   // יצירת בקשת רכב חדשה (buyers בלבד)
-  static async createCarRequest(req: AuthenticatedRequest, res: Response) {
+  static async createCarRequest(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const userType = req.user?.user_type;
@@ -66,7 +58,7 @@ export class CarRequestController {
   }
 
   // קבלת כל בקשות הרכב (dealers בלבד) עם סינון
-  static async getAllCarRequests(req: AuthenticatedRequest, res: Response) {
+  static async getAllCarRequests(req: AuthRequest, res: Response) {
     try {
       const userType = req.user?.user_type;
 
@@ -119,7 +111,7 @@ export class CarRequestController {
   }
 
   // קבלת בקשות הרכב שלי (buyer בלבד)
-  static async getMyCarRequests(req: AuthenticatedRequest, res: Response) {
+  static async getMyCarRequests(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const userType = req.user?.user_type;
@@ -160,7 +152,7 @@ export class CarRequestController {
   }
 
   // קבלת בקשת רכב ספציפית
-  static async getCarRequestById(req: AuthenticatedRequest, res: Response) {
+  static async getCarRequestById(req: AuthRequest, res: Response) {
     try {
       const carRequestId = Number(req.params.id);
       const userId = req.user?.id;
@@ -205,7 +197,7 @@ export class CarRequestController {
   }
 
   // עדכון בקשת רכב (buyer בלבד - רק את שלו)
-  static async updateCarRequest(req: AuthenticatedRequest, res: Response) {
+  static async updateCarRequest(req: AuthRequest, res: Response) {
     try {
       const carRequestId = Number(req.params.id);
       const userId = req.user?.id;
@@ -270,7 +262,7 @@ export class CarRequestController {
   }
 
   // מחיקת בקשת רכב (buyer בלבד - רק את שלו)
-  static async deleteCarRequest(req: AuthenticatedRequest, res: Response) {
+  static async deleteCarRequest(req: AuthRequest, res: Response) {
     try {
       const carRequestId = Number(req.params.id);
       const userId = req.user?.id;

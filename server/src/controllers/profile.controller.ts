@@ -5,19 +5,11 @@ import {
   UpdateDealerProfileData,
   UpdateBuyerProfileData,
 } from "../types/profile.types";
-
-// הרחבת Request type כדי לכלול user
-interface AuthenticatedRequest extends Request {
-  user?: {
-    id: number;
-    email: string;
-    user_type: "buyer" | "dealer";
-  };
-}
+import { AuthRequest } from '../types/auth.types';
 
 export class ProfileController {
   // קבלת פרופיל משתמש בסיסי
-  static async getUserProfile(req: AuthenticatedRequest, res: Response) {
+  static async getUserProfile(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
 
@@ -51,7 +43,7 @@ export class ProfileController {
   }
 
   // קבלת פרופיל מלא (כל הפרטים)
-  static async getFullProfile(req: AuthenticatedRequest, res: Response) {
+  static async getFullProfile(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
 
@@ -85,7 +77,7 @@ export class ProfileController {
   }
 
   // עדכון פרטים בסיסיים של משתמש
-  static async updateUserProfile(req: AuthenticatedRequest, res: Response) {
+  static async updateUserProfile(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
 
@@ -137,7 +129,7 @@ export class ProfileController {
   }
 
   // עדכון פרטי עסק (dealers בלבד)
-  static async updateDealerProfile(req: AuthenticatedRequest, res: Response) {
+  static async updateDealerProfile(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const userType = req.user?.user_type;
@@ -202,7 +194,7 @@ export class ProfileController {
   }
 
   // עדכון העדפות קונה (buyers בלבד)
-  static async updateBuyerProfile(req: AuthenticatedRequest, res: Response) {
+  static async updateBuyerProfile(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const userType = req.user?.user_type;
@@ -262,7 +254,7 @@ export class ProfileController {
   }
 
   // קבלת סטטיסטיקות פרופיל
-  static async getProfileStats(req: AuthenticatedRequest, res: Response) {
+  static async getProfileStats(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const userType = req.user?.user_type;
@@ -290,7 +282,7 @@ export class ProfileController {
   }
 
   // קבלת רשימת סוחרים (ציבורי)
-  static async getAllDealers(req: AuthenticatedRequest, res: Response) {
+  static async getAllDealers(req: AuthRequest, res: Response) {
     try {
       const limit = req.query.limit ? Number(req.query.limit) : 50;
       const verifiedOnly = req.query.verified_only === "true";
@@ -321,7 +313,7 @@ export class ProfileController {
   }
 
   // קבלת פרופיל סוחר ספציפי (ציבורי)
-  static async getDealerById(req: AuthenticatedRequest, res: Response) {
+  static async getDealerById(req: AuthRequest, res: Response) {
     try {
       const dealerId = Number(req.params.id);
 
@@ -380,7 +372,7 @@ export class ProfileController {
   }
 
   // מחיקת חשבון (soft delete)
-  static async deleteAccount(req: AuthenticatedRequest, res: Response) {
+  static async deleteAccount(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
       const { confirm_password } = req.body;
