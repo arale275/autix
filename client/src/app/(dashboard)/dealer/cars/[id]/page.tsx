@@ -1,4 +1,4 @@
-// app-new/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers
+// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -19,28 +19,34 @@ import {
   MapPin,
   Car as CarIcon,
   ChevronLeft,
-  ChevronRight,
   ImageIcon,
   ExternalLink,
   AlertTriangle,
   TrendingUp,
-  Users,
   MessageSquare,
   Heart,
-  DollarSign,
   Clock,
   BarChart3,
   Target,
   Zap,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import CarForm from "@/components/forms/CarForm";
 import { ImageGallery } from "@/components/cards/ImageGallery";
+import { ImageUploader } from "@/components/forms/ImageUploader";
 import { useCar } from "@/hooks/api/useCars";
 import { useDealerCars } from "@/hooks/api/useCars";
 import { useImages } from "@/hooks/useImages";
@@ -90,58 +96,6 @@ const normalizeImages = (
 
   return { main, gallery };
 };
-
-// Mock analytics data
-const ANALYTICS_DATA = {
-  views: {
-    total: 247,
-    thisWeek: 43,
-    trend: "+12%",
-  },
-  inquiries: {
-    total: 8,
-    thisWeek: 3,
-    trend: "+25%",
-  },
-  favorites: {
-    total: 12,
-    thisWeek: 2,
-    trend: "+5%",
-  },
-  clicks: {
-    total: 89,
-    thisWeek: 15,
-    trend: "+8%",
-  },
-};
-
-// Mock recent activity
-const RECENT_ACTIVITY = [
-  {
-    id: 1,
-    type: "view",
-    description: "משתמש צפה ברכב",
-    time: "לפני 2 שעות",
-    icon: <Eye className="w-4 h-4" />,
-    color: "text-blue-600",
-  },
-  {
-    id: 2,
-    type: "inquiry",
-    description: "דני כהן שלח פנייה",
-    time: "אתמול",
-    icon: <MessageSquare className="w-4 h-4" />,
-    color: "text-green-600",
-  },
-  {
-    id: 3,
-    type: "favorite",
-    description: "נשמר למועדפים",
-    time: "לפני 2 ימים",
-    icon: <Heart className="w-4 h-4" />,
-    color: "text-red-600",
-  },
-];
 
 // Format Functions
 const formatPrice = (price: number): string => {
@@ -198,9 +152,10 @@ export default function DealerCarDetailsPage() {
   const carId = parseInt(params.id as string);
 
   // State
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState("overview");
   const [isEditing, setIsEditing] = useState(false);
+  const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
+  const [uploadingImages, setUploadingImages] = useState(false);
 
   // Hooks
   const { car, loading, error, refetch } = useCar(carId);
@@ -211,17 +166,11 @@ export default function DealerCarDetailsPage() {
     toggleAvailability,
     actionLoading,
   } = useDealerCars();
-  const { setMainImage, deleteImage, fetchCarImages } = useImages();
+  const { setMainImage, deleteImage, uploadMultipleImages } = useImages();
 
-  // Check ownership - תיקון
+  // Check ownership - תיקון הבעיה המקורית
   useEffect(() => {
     if (car && user) {
-      // Debug: בואו נראה מה הערכים
-      console.log("Car dealer_user_id:", car.dealer_user_id);
-      console.log("Car dealerId:", car.dealerId);
-      console.log("User id:", user.id);
-      console.log("User type:", user.userType);
-
       // ✅ תיקון: השתמש ב-dealer_user_id במקום dealerId
       if (user.userType === "dealer" && car.dealer_user_id !== user.id) {
         toast.error("אין לך הרשאה לצפות ברכב זה");
@@ -248,6 +197,25 @@ export default function DealerCarDetailsPage() {
       if (success) {
         refetch();
       }
+    }
+  };
+
+  // ✅ פונקציה חדשה להעלאת תמונות
+  const handleImageUpload = async (files: File[]) => {
+    if (!car || files.length === 0) return;
+
+    setUploadingImages(true);
+    try {
+      const success = await uploadMultipleImages(car.id, files);
+      if (success) {
+        toast.success(`${files.length} תמונות הועלו בהצלחה`);
+        setIsImageUploadOpen(false);
+        refetch(); // רענון נתוני הרכב
+      }
+    } catch (error) {
+      toast.error("שגיאה בהעלאת התמונות");
+    } finally {
+      setUploadingImages(false);
     }
   };
 
@@ -402,11 +370,6 @@ export default function DealerCarDetailsPage() {
                 <Badge className={getStatusColor(car.status)}>
                   {getStatusLabel(car.status)}
                 </Badge>
-                {car.isFeatured && (
-                  <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                    מומלץ
-                  </Badge>
-                )}
                 {!car.isAvailable && <Badge variant="secondary">מוסתר</Badge>}
               </div>
             </div>
@@ -475,10 +438,9 @@ export default function DealerCarDetailsPage() {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="overview">סקירה</TabsTrigger>
           <TabsTrigger value="analytics">סטטיסטיקות</TabsTrigger>
-          <TabsTrigger value="activity">פעילות</TabsTrigger>
           <TabsTrigger value="edit">עריכה</TabsTrigger>
         </TabsList>
 
@@ -487,14 +449,42 @@ export default function DealerCarDetailsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Car Details */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Image Gallery - החלק המעודכן */}
+              {/* Image Gallery */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">
                     <span>תמונות הרכב</span>
-                    <Badge variant="outline">
-                      {car.images?.length || 0} תמונות
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">
+                        {car.images?.length || 0} תמונות
+                      </Badge>
+                      {/* ✅ כפתור העלאת תמונות */}
+                      <Dialog
+                        open={isImageUploadOpen}
+                        onOpenChange={setIsImageUploadOpen}
+                      >
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Upload className="w-4 h-4 mr-1" />
+                            הוסף תמונות
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>העלאת תמונות לרכב</DialogTitle>
+                          </DialogHeader>
+                          <ImageUploader
+                            onImagesChange={handleImageUpload}
+                            maxImages={10}
+                            maxFileSize={5}
+                            disabled={uploadingImages}
+                            existingImages={car.images?.map((img) =>
+                              typeof img === "string" ? img : img.image_url
+                            )}
+                          />
+                        </DialogContent>
+                      </Dialog>
+                    </div>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
@@ -508,18 +498,6 @@ export default function DealerCarDetailsPage() {
                     onDelete={handleDeleteImage}
                     className="space-y-4"
                   />
-
-                  {/* Add Images Button */}
-                  <div className="border-t pt-4 mt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => setActiveTab("edit")}
-                      className="w-full"
-                    >
-                      <ImageIcon className="w-4 h-4 mr-2" />
-                      הוסף תמונות נוספות
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
 
@@ -566,11 +544,11 @@ export default function DealerCarDetailsPage() {
                       </div>
                     )}
 
-                    {car.engineSize && (
+                    {car.color && (
                       <div className="text-center p-3 bg-gray-50 rounded-lg">
                         <CarIcon className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                        <div className="text-sm text-gray-600">נפח מנוע</div>
-                        <div className="font-semibold">{car.engineSize}</div>
+                        <div className="text-sm text-gray-600">צבע</div>
+                        <div className="font-semibold">{car.color}</div>
                       </div>
                     )}
                   </div>
@@ -590,36 +568,6 @@ export default function DealerCarDetailsPage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Quick Stats */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5" />
-                    ביצועים מהירים
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">צפיות השבוע</span>
-                    <span className="font-semibold text-blue-600">
-                      {ANALYTICS_DATA.views.thisWeek}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">פניות</span>
-                    <span className="font-semibold text-green-600">
-                      {ANALYTICS_DATA.inquiries.total}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600">מועדפים</span>
-                    <span className="font-semibold text-red-600">
-                      {ANALYTICS_DATA.favorites.total}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Quick Actions */}
               <Card>
                 <CardHeader>
@@ -682,121 +630,17 @@ export default function DealerCarDetailsPage() {
 
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">סך צפיות</p>
-                    <p className="text-2xl font-bold text-blue-600">
-                      {ANALYTICS_DATA.views.total}
-                    </p>
-                    <p className="text-xs text-green-600">
-                      {ANALYTICS_DATA.views.trend} השבוע
-                    </p>
-                  </div>
-                  <Eye className="w-8 h-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">פניות</p>
-                    <p className="text-2xl font-bold text-green-600">
-                      {ANALYTICS_DATA.inquiries.total}
-                    </p>
-                    <p className="text-xs text-green-600">
-                      {ANALYTICS_DATA.inquiries.trend} השבוע
-                    </p>
-                  </div>
-                  <MessageSquare className="w-8 h-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">מועדפים</p>
-                    <p className="text-2xl font-bold text-red-600">
-                      {ANALYTICS_DATA.favorites.total}
-                    </p>
-                    <p className="text-xs text-green-600">
-                      {ANALYTICS_DATA.favorites.trend} השבוע
-                    </p>
-                  </div>
-                  <Heart className="w-8 h-8 text-red-500" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">קליקים</p>
-                    <p className="text-2xl font-bold text-purple-600">
-                      {ANALYTICS_DATA.clicks.total}
-                    </p>
-                    <p className="text-xs text-green-600">
-                      {ANALYTICS_DATA.clicks.trend} השבוע
-                    </p>
-                  </div>
-                  <Target className="w-8 h-8 text-purple-500" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Performance Chart Placeholder */}
           <Card>
             <CardHeader>
-              <CardTitle>ביצועים לאורך זמן</CardTitle>
+              <CardTitle>סטטיסטיקות הרכב</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                <div className="text-center text-gray-500">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-2" />
-                  <p>גרף ביצועים יתווסף בעתיד</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Activity Tab */}
-        <TabsContent value="activity" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="w-5 h-5" />
-                פעילות אחרונה
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {RECENT_ACTIVITY.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
-                  >
-                    <div className={cn("mt-0.5", activity.color)}>
-                      {activity.icon}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-900">
-                        {activity.description}
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {activity.time}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-center py-12 text-gray-500">
+                <BarChart3 className="w-12 h-12 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">
+                  סטטיסטיקות בפיתוח
+                </h3>
+                <p>מידע על צפיות, פניות ומועדפים יתווסף בעתיד</p>
               </div>
             </CardContent>
           </Card>
