@@ -253,34 +253,21 @@ function LoginContent() {
               </Button>
             </form>
 
-            {/* Demo Login Section */}
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <h3 className="text-sm font-medium text-gray-700 mb-3 text-center">
-                התחברות מהירה לדוגמה
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  onClick={() => handleDemoLogin("buyer")}
-                  disabled={isSubmitting}
-                  className="flex items-center justify-center space-x-2 space-x-reverse"
-                >
-                  <Users className="w-4 h-4" />
-                  <span>קונה</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => handleDemoLogin("dealer")}
-                  disabled={isSubmitting}
-                  className="flex items-center justify-center space-x-2 space-x-reverse"
-                >
-                  <Car className="w-4 h-4" />
-                  <span>סוחר</span>
-                </Button>
+            {/* Google Login Section */}
+            <div className="mt-6">
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    או
+                  </span>
+                </div>
               </div>
-              <p className="text-xs text-gray-500 text-center mt-2">
-                לחשבונות דוגמה ללא הרשמה
-              </p>
+              <div className="mt-6">
+                <GoogleLoginButton />
+              </div>
             </div>
 
             {/* Register Link */}
@@ -305,16 +292,6 @@ function LoginContent() {
           </p>
         </div>
       </div>
-      <div className="relative">
-        <div className="absolute inset-0 flex items-center">
-          <span className="w-full border-t" />
-        </div>
-        <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground">או</span>
-        </div>
-      </div>
-
-      <GoogleLoginButton />
     </div>
   );
 }

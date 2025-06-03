@@ -23,7 +23,7 @@ import {
   Building2,
   CheckCircle,
 } from "lucide-react";
-import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton';
+import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 
 type UserType = "buyer" | "dealer";
 
@@ -588,7 +588,24 @@ export default function RegisterPage() {
                 </div>
               </form>
             )}
-
+            {/* Google Login Section */}
+            {step === 1 && (
+              <div className="mt-6">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      או
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-6">
+                  <GoogleLoginButton text="הירשם עם Google" />
+                </div>
+              </div>
+            )}
             {/* Login Link */}
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
@@ -611,16 +628,6 @@ export default function RegisterPage() {
           </p>
         </div>
       </div>
-      <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">או</span>
-          </div>
-        </div>
-
-        <GoogleLoginButton text="הירשם עם Google" />
     </div>
   );
 }
