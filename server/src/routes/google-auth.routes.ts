@@ -1,7 +1,12 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import passport from "../config/passport";
 import { generateToken } from "../utils/jwt.util";
 import { JWTPayload } from "../types/auth.types";
+
+// הרחב את Request interface
+interface AuthenticatedRequest extends Request {
+  user?: any;
+}
 
 const router = express.Router();
 
@@ -15,11 +20,17 @@ router.get(
 router.get(
   "/google/callback",
   passport.authenticate("google", { session: false }),
-  (req, res) => {
+  (req: AuthenticatedRequest, res: Response) => {
     try {
-      const user = req.user as any;
+      const user = req.user;
 
-      // צור JWT payload לפי הטיפוס הקיים שלך
+      if (!user) {
+        return res.redirect(
+          `${process.env.CLIENT_URL}/auth/login?error=no_user`
+        );
+      }
+
+      // צור JWT payload
       const payload: JWTPayload = {
         userId: user.id,
         email: user.email,
