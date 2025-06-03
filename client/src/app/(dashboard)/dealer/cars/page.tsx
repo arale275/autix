@@ -57,16 +57,16 @@ import {
 import { cn } from "@/lib/utils";
 import type { Car } from "@/lib/api/types";
 
-// Filter Options
+// Filter Options - תוקן לחלוטין
 const STATUS_OPTIONS = [
-  { value: "", label: "כל הסטטוסים" },
+  { value: "all", label: "כל הסטטוסים" },
   { value: "active", label: "פעיל" },
   { value: "sold", label: "נמכר" },
   { value: "deleted", label: "נמחק" },
 ];
 
 const AVAILABILITY_OPTIONS = [
-  { value: "", label: "הכל" },
+  { value: "all", label: "הכל" },
   { value: "available", label: "זמין" },
   { value: "unavailable", label: "לא זמין" },
 ];
@@ -251,12 +251,12 @@ function DealerCarCard({
 export default function DealerCarsPage() {
   const { user } = useAuth();
 
-  // State
+  // State - תוקן להשתמש ב-"all" במקום ערכים ריקים
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterMake, setFilterMake] = useState("");
-  const [filterStatus, setFilterStatus] = useState("");
-  const [filterAvailability, setFilterAvailability] = useState("");
+  const [filterMake, setFilterMake] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterAvailability, setFilterAvailability] = useState("all");
   const [sortBy, setSortBy] = useState("created_at:desc");
 
   // Cars Hook
@@ -272,7 +272,7 @@ export default function DealerCarsPage() {
     toggleAvailability,
   } = useDealerCars();
 
-  // Filtered and sorted cars
+  // Filtered and sorted cars - תוקן הסינון
   const filteredCars = useMemo(() => {
     let filtered = cars;
 
@@ -288,20 +288,22 @@ export default function DealerCarsPage() {
     }
 
     // Filter by make
-    if (filterMake) {
+    if (filterMake && filterMake !== "all") {
       filtered = filtered.filter((car) => car.make === filterMake);
     }
 
     // Filter by status
-    if (filterStatus) {
+    if (filterStatus && filterStatus !== "all") {
       filtered = filtered.filter((car) => car.status === filterStatus);
     }
 
     // Filter by availability
-    if (filterAvailability === "available") {
-      filtered = filtered.filter((car) => car.isAvailable);
-    } else if (filterAvailability === "unavailable") {
-      filtered = filtered.filter((car) => !car.isAvailable);
+    if (filterAvailability && filterAvailability !== "all") {
+      if (filterAvailability === "available") {
+        filtered = filtered.filter((car) => car.isAvailable);
+      } else if (filterAvailability === "unavailable") {
+        filtered = filtered.filter((car) => !car.isAvailable);
+      }
     }
 
     // Sort
@@ -384,9 +386,9 @@ export default function DealerCarsPage() {
 
   const clearFilters = () => {
     setSearchQuery("");
-    setFilterMake("");
-    setFilterStatus("");
-    setFilterAvailability("");
+    setFilterMake("all");
+    setFilterStatus("all");
+    setFilterAvailability("all");
     setSortBy("created_at:desc");
   };
 
@@ -539,7 +541,7 @@ export default function DealerCarsPage() {
                     <SelectValue placeholder="יצרן" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">כל היצרנים</SelectItem>
+                    <SelectItem value="all">כל היצרנים</SelectItem>
                     {CAR_MANUFACTURERS.map((make) => (
                       <SelectItem key={make} value={make}>
                         {make}
@@ -578,9 +580,9 @@ export default function DealerCarsPage() {
                 </Select>
 
                 {(searchQuery ||
-                  filterMake ||
-                  filterStatus ||
-                  filterAvailability) && (
+                  filterMake !== "all" ||
+                  filterStatus !== "all" ||
+                  filterAvailability !== "all") && (
                   <Button variant="ghost" onClick={clearFilters} size="sm">
                     נקה פילטרים
                   </Button>
