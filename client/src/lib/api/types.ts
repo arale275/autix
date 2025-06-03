@@ -1,5 +1,18 @@
 // lib/api/types.ts - API Types בסיסיים
 "use client";
+export interface CarImage {
+  id: number;
+  car_id: number;
+  image_url: string;
+  thumbnail_url?: string;
+  is_main: boolean;
+  display_order: number;
+  original_filename?: string;
+  file_size?: number;
+  content_type?: string;
+  created_at: string;
+  updated_at: string;
+}
 
 // Base API response structure
 export interface ApiResponse<T = any> {
@@ -78,7 +91,7 @@ export interface Car {
   transmission?: string;
   color?: string;
   description?: string;
-  images?: string[];
+  images?: string[] | CarImage[]; // תמיכה בשני הסוגים
   status: "active" | "sold" | "deleted";
   city?: string;
   engineSize?: string;
@@ -211,7 +224,7 @@ export interface CreateCarRequest {
   description?: string;
   city?: string;
   engineSize?: string;
-  images?: string[];
+  images?: string[] | CarImage[]; // תמיכה בשני הסוגים
   isFeatured?: boolean;
 }
 

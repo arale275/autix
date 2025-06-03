@@ -40,11 +40,56 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import CarForm from "@/components/forms/CarForm";
+import { ImageGallery } from "@/components/cards/ImageGallery";
 import { useCar } from "@/hooks/api/useCars";
 import { useDealerCars } from "@/hooks/api/useCars";
+import { useImages } from "@/hooks/useImages";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
-import type { Car } from "@/lib/api/types";
+import type { Car, CarImage } from "@/lib/api/types";
+
+// Type guard to check if image is CarImage object
+const isCarImageObject = (image: string | CarImage): image is CarImage => {
+  return (
+    typeof image === "object" &&
+    image !== null &&
+    "id" in image &&
+    "image_url" in image
+  );
+};
+
+// Helper function to convert images to CarImage format
+const normalizeImages = (
+  images: (string | CarImage)[] | undefined,
+  carId: number
+): { main: CarImage | null; gallery: CarImage[] } => {
+  if (!images || images.length === 0) {
+    return { main: null, gallery: [] };
+  }
+
+  const carImages: CarImage[] = images.map((image, index) => {
+    if (isCarImageObject(image)) {
+      return image;
+    } else {
+      // Convert string URL to CarImage object
+      return {
+        id: index + 1,
+        car_id: carId,
+        image_url: image,
+        thumbnail_url: image,
+        is_main: index === 0, // First image is main by default
+        display_order: index,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
+  });
+
+  const main = carImages.find((img) => img.is_main) || null;
+  const gallery = carImages.filter((img) => !img.is_main);
+
+  return { main, gallery };
+};
 
 // Mock analytics data
 const ANALYTICS_DATA = {
@@ -166,6 +211,7 @@ export default function DealerCarDetailsPage() {
     toggleAvailability,
     actionLoading,
   } = useDealerCars();
+  const { setMainImage, deleteImage, fetchCarImages } = useImages();
 
   // Check ownership
   useEffect(() => {
@@ -175,22 +221,24 @@ export default function DealerCarDetailsPage() {
     }
   }, [car, user, router]);
 
-  // Image navigation
-  const nextImage = () => {
-    const images = car?.images || [];
-    if (images.length > 0) {
-      setCurrentImageIndex((prev) =>
-        prev === images.length - 1 ? 0 : prev + 1
-      );
+  // פונקציות לניהול תמונות
+  const handleSetMainImage = async (imageId: number) => {
+    if (!car) return;
+
+    const success = await setMainImage(car.id, imageId);
+    if (success) {
+      refetch();
     }
   };
 
-  const prevImage = () => {
-    const images = car?.images || [];
-    if (images.length > 0) {
-      setCurrentImageIndex((prev) =>
-        prev === 0 ? images.length - 1 : prev - 1
-      );
+  const handleDeleteImage = async (imageId: number) => {
+    if (!car) return;
+
+    if (window.confirm("האם אתה בטוח שברצונך למחוק את התמונה?")) {
+      const success = await deleteImage(imageId);
+      if (success) {
+        refetch();
+      }
     }
   };
 
@@ -302,8 +350,6 @@ export default function DealerCarDetailsPage() {
       </div>
     );
   }
-
-  const images = car.images || [];
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
@@ -432,79 +478,39 @@ export default function DealerCarDetailsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Car Details */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Image Gallery */}
+              {/* Image Gallery - החלק המעודכן */}
               <Card>
-                <CardContent className="p-0">
-                  <div className="relative bg-gray-100 aspect-video rounded-t-lg overflow-hidden">
-                    {images.length > 0 ? (
-                      <>
-                        <img
-                          src={images[currentImageIndex]}
-                          alt={`${car.make} ${car.model} - תמונה ${
-                            currentImageIndex + 1
-                          }`}
-                          className="w-full h-full object-cover"
-                        />
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>תמונות הרכב</span>
+                    <Badge variant="outline">
+                      {car.images?.length || 0} תמונות
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <ImageGallery
+                    images={{
+                      ...normalizeImages(car.images, car.id),
+                      count: car.images?.length || 0,
+                    }}
+                    isOwner={true}
+                    onSetMain={handleSetMainImage}
+                    onDelete={handleDeleteImage}
+                    className="space-y-4"
+                  />
 
-                        {images.length > 1 && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white hover:bg-black/70"
-                              onClick={prevImage}
-                            >
-                              <ChevronRight className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white hover:bg-black/70"
-                              onClick={nextImage}
-                            >
-                              <ChevronLeft className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-
-                        <div className="absolute bottom-2 right-2 bg-black/50 text-white text-sm px-2 py-1 rounded">
-                          {currentImageIndex + 1} / {images.length}
-                        </div>
-                      </>
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <div className="text-center text-gray-400">
-                          <ImageIcon className="w-12 h-12 mx-auto mb-2" />
-                          <p>אין תמונות</p>
-                        </div>
-                      </div>
-                    )}
+                  {/* Add Images Button */}
+                  <div className="border-t pt-4 mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => setActiveTab("edit")}
+                      className="w-full"
+                    >
+                      <ImageIcon className="w-4 h-4 mr-2" />
+                      הוסף תמונות נוספות
+                    </Button>
                   </div>
-
-                  {images.length > 1 && (
-                    <div className="p-4 border-t">
-                      <div className="flex gap-2 overflow-x-auto">
-                        {images.map((image, index) => (
-                          <button
-                            key={index}
-                            onClick={() => setCurrentImageIndex(index)}
-                            className={cn(
-                              "flex-shrink-0 w-16 h-12 rounded overflow-hidden border-2 transition-colors",
-                              index === currentImageIndex
-                                ? "border-blue-500"
-                                : "border-gray-200 hover:border-gray-300"
-                            )}
-                          >
-                            <img
-                              src={image}
-                              alt={`תמונה ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
