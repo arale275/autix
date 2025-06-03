@@ -9,6 +9,7 @@ import type {
   CreateInquiryRequest,
   UpdateInquiryStatusRequest,
   InquiriesSearchParams,
+  Pagination,
 } from "./types";
 
 /**
@@ -53,13 +54,17 @@ export const inquiriesApi = {
   getReceivedInquiries: async (
     params: InquiriesSearchParams = {}
   ): Promise<InquiriesResponse> => {
-    const response = await apiClient.getWithParams<InquiriesResponse>(
-      API_ENDPOINTS.RECEIVED_INQUIRIES,
-      params
-    );
+    const response = await apiClient.getWithParams<{
+      success: boolean;
+      data: Inquiry[];
+      pagination?: Pagination;
+    }>(API_ENDPOINTS.RECEIVED_INQUIRIES, params);
 
-    console.log(`✅ Fetched ${response.inquiries.length} received inquiries`);
-    return response;
+    // התאם מבנה התגובה לממשק הצפוי
+    return {
+      inquiries: response.data || [],
+      pagination: response.pagination,
+    };
   },
 
   /**

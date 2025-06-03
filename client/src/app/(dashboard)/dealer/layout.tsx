@@ -35,8 +35,14 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isActivePath = (path: string) => {
+    // Exact matches for all paths to avoid conflicts
     if (path === "/dealer/home") return pathname === "/dealer/home";
-    return pathname.startsWith(path);
+    if (path === "/dealer/cars") return pathname === "/dealer/cars";
+    if (path === "/dealer/cars/new") return pathname === "/dealer/cars/new";
+    if (path === "/dealer/inquiries") return pathname === "/dealer/inquiries";
+    if (path === "/dealer/profile") return pathname === "/dealer/profile";
+
+    return false;
   };
 
   const getBreadcrumbs = () => {
@@ -86,29 +92,15 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Sidebar header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <div className="flex items-center space-x-3 space-x-reverse">
-              <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
-                <Building2 className="w-4 h-4 text-purple-600" />
-              </div>
-              <div>
-                <h2 className="text-sm font-medium text-gray-900">
-                  {user?.firstName} {user?.lastName}
-                </h2>
-                <p className="text-xs text-gray-500">סוחר רכב</p>
-              </div>
-            </div>
-
-            {/* Close button (mobile only) */}
+          {/* Mobile close button only */}
+          <div className="flex items-center justify-end p-4 border-b border-gray-200 lg:hidden">
             <button
-              className="lg:hidden text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-600"
               onClick={() => setSidebarOpen(false)}
             >
               <X className="w-5 h-5" />
             </button>
           </div>
-
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-2">
             {navigation.map((item) => {
@@ -150,16 +142,6 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
               <Plus className="w-4 h-4" />
               <span className="text-sm font-medium">פרסם רכב חדש</span>
             </Link>
-
-            {/* Business info */}
-            <div className="bg-purple-50 rounded-lg p-3">
-              <h3 className="text-sm font-medium text-purple-900 mb-1">
-                פאנל ניהול עסק
-              </h3>
-              <p className="text-xs text-purple-700">
-                נהל את המלאי, עקב אחר פניות והגדל את המכירות
-              </p>
-            </div>
           </div>
         </div>
       </div>
@@ -201,33 +183,14 @@ export default function DealerLayout({ children }: DealerLayoutProps) {
                 </div>
               ))}
             </nav>
-
-            {/* Right side actions */}
-            <div className="flex items-center space-x-4 space-x-reverse">
-              {/* Quick stats */}
-              <div className="hidden md:flex items-center space-x-4 space-x-reverse text-xs text-gray-500">
-                <span className="flex items-center space-x-1 space-x-reverse">
-                  <Car className="w-3 h-3" />
-                  <span>מלאי: --</span>
-                </span>
-                <span className="flex items-center space-x-1 space-x-reverse">
-                  <MessageSquare className="w-3 h-3" />
-                  <span>פניות: --</span>
-                </span>
-              </div>
-
-              <span className="hidden sm:block text-xs text-gray-500">
-                מחובר כסוחר
-              </span>
-            </div>
           </div>
         </div>
-
-        {/* Page content */}
-        <main className="flex-1 p-6 overflow-auto">
-          <div className="max-w-7xl mx-auto">{children}</div>
-        </main>
       </div>
+
+      {/* Page content */}
+      <main className="flex-1 p-6 overflow-auto">
+        <div className="max-w-7xl mx-auto">{children}</div>
+      </main>
     </div>
   );
 }
