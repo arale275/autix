@@ -41,6 +41,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/loading-spinner";
@@ -156,6 +157,7 @@ export default function DealerCarDetailsPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   // Hooks
   const { car, loading, error, refetch } = useCar(carId);
@@ -200,22 +202,28 @@ export default function DealerCarDetailsPage() {
     }
   };
 
-  // ✅ פונקציה חדשה להעלאת תמונות
-  const handleImageUpload = async (files: File[]) => {
-    if (!car || files.length === 0) return;
+  // תיקון הפונקציות עם בדיקת null
+  const handleImagesSelect = (files: File[]) => {
+    setSelectedFiles(files);
+  };
 
-    setUploadingImages(true);
+  const handleUploadClick = async () => {
+    if (selectedFiles.length === 0 || !car) return; // ✅ הוסף בדיקת !car
+
     try {
-      const success = await uploadMultipleImages(car.id, files);
+      const success = await uploadMultipleImages(
+        car.id,
+        selectedFiles,
+        car.images
+      );
       if (success) {
-        toast.success(`${files.length} תמונות הועלו בהצלחה`);
         setIsImageUploadOpen(false);
-        refetch(); // רענון נתוני הרכב
+        setSelectedFiles([]);
+        refetch();
       }
     } catch (error) {
+      console.error("Upload error:", error);
       toast.error("שגיאה בהעלאת התמונות");
-    } finally {
-      setUploadingImages(false);
     }
   };
 
@@ -459,31 +467,28 @@ export default function DealerCarDetailsPage() {
                         {car.images?.length || 0} תמונות
                       </Badge>
                       {/* ✅ כפתור העלאת תמונות */}
-                      <Dialog
-                        open={isImageUploadOpen}
-                        onOpenChange={setIsImageUploadOpen}
-                      >
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <Upload className="w-4 h-4 mr-1" />
-                            הוסף תמונות
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>העלאת תמונות לרכב</DialogTitle>
-                          </DialogHeader>
-                          <ImageUploader
-                            onImagesChange={handleImageUpload}
-                            maxImages={10}
-                            maxFileSize={5}
-                            disabled={uploadingImages}
-                            existingImages={car.images?.map((img) =>
-                              typeof img === "string" ? img : img.image_url
-                            )}
-                          />
-                        </DialogContent>
-                      </Dialog>
+                      <DialogContent className="max-w-2xl">
+                        <DialogHeader>
+                          <DialogTitle>העלאת תמונות לרכב</DialogTitle>
+                          <DialogDescription>
+                            בחר תמונות איכותיות של הרכב ולחץ "העלה" להוספתן
+                            לגלריה
+                          </DialogDescription>
+                        </DialogHeader>
+                        <ImageUploader
+                          onImagesChange={handleImagesSelect}
+                          onUploadClick={handleUploadClick}
+                          maxImages={10}
+                          maxFileSize={5}
+                          disabled={uploadingImages}
+                          uploading={uploadingImages}
+                          existingImages={car?.images?.map(
+                            (
+                              img // ✅ הוסף ? לפני images
+                            ) => (typeof img === "string" ? img : img.image_url)
+                          )}
+                        />
+                      </DialogContent>
                     </div>
                   </CardTitle>
                 </CardHeader>

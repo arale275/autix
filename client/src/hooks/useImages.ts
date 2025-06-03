@@ -1,9 +1,8 @@
-// src/hooks/useImages.ts - תוקן עם tokenManager
+// src/hooks/useImages.ts - קוד מלא ומתוקן
 "use client";
 
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
-import { tokenManager } from "@/lib/api"; // ✅ השתמש ב-tokenManager
 
 export interface CarImage {
   id: number;
@@ -30,6 +29,23 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.autix.co.il";
 export const useImages = () => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+
+  // Helper function to get token
+  const getToken = useCallback(async () => {
+    try {
+      // נסה tokenManager אם קיים
+      const { tokenManager } = await import("@/lib/api");
+      return tokenManager.getToken();
+    } catch (error) {
+      // אם tokenManager לא עובד, נסה localStorage
+      return (
+        localStorage.getItem("token") ||
+        localStorage.getItem("authToken") ||
+        localStorage.getItem("auth") ||
+        sessionStorage.getItem("token")
+      );
+    }
+  }, []);
 
   // קבלת תמונות רכב
   const fetchCarImages = useCallback(
@@ -74,45 +90,61 @@ export const useImages = () => {
       isMain: boolean = false
     ): Promise<CarImage | null> => {
       try {
-        // ✅ השתמש ב-tokenManager במקום localStorage
-        const token = tokenManager.getToken();
+        const token = await getToken();
+
         if (!token) {
           throw new Error("נדרשת התחברות להעלאת תמונות");
         }
 
         const formData = new FormData();
-        formData.append("image", file); // ✅ כמו שהשרת מצפה
+        formData.append("image", file);
         formData.append("isMain", isMain.toString());
+
+        console.log(
+          "🔄 Uploading image:",
+          file.name,
+          "to car:",
+          carId,
+          "isMain:",
+          isMain
+        );
 
         const response = await fetch(`${API_URL}/api/cars/${carId}/images`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${token}`, // ✅ כמו שהשרת מצפה
+            Authorization: `Bearer ${token}`,
           },
           body: formData,
         });
 
+        console.log("📡 Response status:", response.status);
+
         if (!response.ok) {
-          const errorData = await response.json();
+          const errorData = await response.json().catch(() => ({
+            error: `Server error: ${response.status}`,
+          }));
+          console.error("❌ Server error:", errorData);
           throw new Error(
-            errorData.error || errorData.message || "Failed to upload image"
+            errorData.error ||
+              errorData.message ||
+              `Server error: ${response.status}`
           );
         }
 
         const data = await response.json();
+        console.log("✅ Upload success:", data);
 
-        // ✅ כמו שהשרת מחזיר
         if (data.image) {
           return data.image;
         } else {
-          throw new Error(data.message || "Failed to upload image");
+          throw new Error(data.message || "No image returned from server");
         }
       } catch (error) {
-        console.error("Error uploading image:", error);
-        throw error; // זרוק את השגיאה הלאה
+        console.error("💥 Upload error:", error);
+        throw error;
       }
     },
-    []
+    [getToken]
   );
 
   // העלאת תמונה עם הודעות (לשימוש ישיר)
@@ -139,18 +171,25 @@ export const useImages = () => {
     [uploadImageSilent]
   );
 
-  // ✅ העלאת מספר תמונות - תיקון ההודעות
+  // העלאת מספר תמונות עם לוגיקה חכמה לתמונה ראשית
   const uploadMultipleImages = useCallback(
-    async (carId: number, files: File[]): Promise<boolean> => {
+    async (
+      carId: number,
+      files: File[],
+      existingImages?: any[] // תמונות קיימות לבדיקה
+    ): Promise<boolean> => {
       try {
         setUploading(true);
 
-        // ✅ בדיקת authentication מראש
-        const token = tokenManager.getToken();
+        // בדיקת authentication מראש
+        const token = await getToken();
         if (!token) {
           toast.error("נדרשת התחברות להעלאת תמונות");
           return false;
         }
+
+        // בדוק אם יש תמונה ראשית קיימת
+        const hasMainImage = existingImages && existingImages.length > 0;
 
         const uploadedImages: CarImage[] = [];
         const failedUploads: string[] = [];
@@ -158,7 +197,13 @@ export const useImages = () => {
         // העלאה רצופה עם טיפול בשגיאות
         for (let i = 0; i < files.length; i++) {
           const file = files[i];
-          const isMain = i === 0 && uploadedImages.length === 0; // רק אם זו התמונה הראשונה שהועלתה
+
+          // הגדר תמונה ראשית רק אם:
+          // 1. זאת התמונה הראשונה שמועלת
+          // 2. אין תמונה ראשית קיימת
+          // 3. זו התמונה הראשונה שהועלתה בהצלחה
+          const isMain =
+            i === 0 && !hasMainImage && uploadedImages.length === 0;
 
           try {
             const uploadedImage = await uploadImageSilent(carId, file, isMain);
@@ -171,24 +216,40 @@ export const useImages = () => {
           }
         }
 
-        // ✅ הודעות מסכמות חכמות
+        // הודעות מסכמות חכמות
         if (uploadedImages.length > 0) {
           if (failedUploads.length === 0) {
-            // כל התמונות הועלו בהצלחה
             toast.success(`${uploadedImages.length} תמונות הועלו בהצלחה!`);
           } else {
-            // חלק הועלו, חלק נכשלו
             toast.success(`${uploadedImages.length} תמונות הועלו בהצלחה`);
             toast.error(
-              `${failedUploads.length} תמונות נכשלו: ${failedUploads.join(
-                ", "
-              )}`
+              `${failedUploads.length} תמונות נכשלו: ${failedUploads
+                .slice(0, 3)
+                .join(", ")}${failedUploads.length > 3 ? "..." : ""}`
             );
           }
+
+          // הודעה על תמונה ראשית
+          if (!hasMainImage && uploadedImages.length > 0) {
+            toast.info("✨ התמונה הראשונה הוגדרה כתמונה ראשית");
+          } else if (hasMainImage) {
+            toast.info("💡 תוכל להגדיר תמונה ראשית חדשה בגלריה");
+          }
+
           return true;
         } else {
           // כל התמונות נכשלו
-          toast.error("שגיאה בהעלאת התמונות");
+          if (failedUploads.length > 0) {
+            toast.error(
+              `כל התמונות נכשלו: ${failedUploads[0]}${
+                failedUploads.length > 1
+                  ? ` ו-${failedUploads.length - 1} נוספות`
+                  : ""
+              }`
+            );
+          } else {
+            toast.error("שגיאה בהעלאת התמונות");
+          }
           return false;
         }
       } catch (error) {
@@ -199,14 +260,14 @@ export const useImages = () => {
         setUploading(false);
       }
     },
-    [uploadImageSilent]
+    [uploadImageSilent, getToken]
   );
 
   // הגדרת תמונה ראשית
   const setMainImage = useCallback(
     async (carId: number, imageId: number): Promise<boolean> => {
       try {
-        const token = tokenManager.getToken(); // ✅ השתמש ב-tokenManager
+        const token = await getToken();
         if (!token) {
           toast.error("נדרשת התחברות");
           return false;
@@ -242,45 +303,48 @@ export const useImages = () => {
         return false;
       }
     },
-    []
+    [getToken]
   );
 
   // מחיקת תמונה
-  const deleteImage = useCallback(async (imageId: number): Promise<boolean> => {
-    try {
-      const token = tokenManager.getToken(); // ✅ השתמש ב-tokenManager
-      if (!token) {
-        toast.error("נדרשת התחברות");
+  const deleteImage = useCallback(
+    async (imageId: number): Promise<boolean> => {
+      try {
+        const token = await getToken();
+        if (!token) {
+          toast.error("נדרשת התחברות");
+          return false;
+        }
+
+        const response = await fetch(`${API_URL}/api/images/${imageId}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to delete image");
+        }
+
+        const data = await response.json();
+
+        if (data.success) {
+          toast.success("התמונה נמחקה בהצלחה!");
+          return true;
+        } else {
+          throw new Error(data.message || "Failed to delete image");
+        }
+      } catch (error) {
+        console.error("Error deleting image:", error);
+        toast.error("שגיאה במחיקת התמונה");
         return false;
       }
-
-      const response = await fetch(`${API_URL}/api/images/${imageId}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to delete image");
-      }
-
-      const data = await response.json();
-
-      if (data.success) {
-        toast.success("התמונה נמחקה בהצלחה!");
-        return true;
-      } else {
-        throw new Error(data.message || "Failed to delete image");
-      }
-    } catch (error) {
-      console.error("Error deleting image:", error);
-      toast.error("שגיאה במחיקת התמונה");
-      return false;
-    }
-  }, []);
+    },
+    [getToken]
+  );
 
   return {
     // States
