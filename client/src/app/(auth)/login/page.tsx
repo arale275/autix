@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Car, Users } from "lucide-react";
+import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 
 // Force dynamic rendering for this page
 export const dynamic = "force-dynamic";
@@ -304,6 +305,16 @@ function LoginContent() {
           </p>
         </div>
       </div>
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <span className="w-full border-t" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase">
+          <span className="bg-background px-2 text-muted-foreground">או</span>
+        </div>
+      </div>
+
+      <GoogleLoginButton />
     </div>
   );
 }
