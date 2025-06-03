@@ -216,8 +216,16 @@ export default function DealerCarDetailsPage() {
   // Check ownership
   useEffect(() => {
     if (car && user && car.dealerId !== user.id) {
-      toast.error("אין לך הרשאה לצפות ברכב זה");
-      router.push("/dealer/cars");
+      // Debug: בואו נראה מה הערכים
+      console.log("Car dealerId:", car.dealerId);
+      console.log("User id:", user.id);
+      console.log("User type:", user.userType);
+
+      // רק אם זה באמת לא התואם
+      if (user.userType === "dealer" && car.dealerId !== user.id) {
+        toast.error("אין לך הרשאה לצפות ברכב זה");
+        router.push("/dealer/cars");
+      }
     }
   }, [car, user, router]);
 
