@@ -3,6 +3,7 @@
 
 import React, { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   Search,
@@ -140,116 +141,141 @@ function DealerCarCard({
   actionLoading,
 }: DealerCarCardProps) {
   return (
-    <div className="relative">
-      <CarCard
-        car={car}
-        viewMode={viewMode}
-        showActions={false}
-        showContactButton={false}
-        showFavoriteButton={false}
-        className={cn(
-          "transition-all duration-200",
-          !car.isAvailable && "opacity-75",
-          car.status === "sold" && "ring-2 ring-purple-200"
-        )}
-      />
+    <Link href={`/dealer/cars/${car.id}`} className="block">
+      <div className="relative">
+        <CarCard
+          car={car}
+          viewMode={viewMode}
+          showActions={false}
+          showContactButton={false}
+          showFavoriteButton={false}
+          className={cn(
+            "transition-all duration-200",
+            !car.isAvailable && "opacity-75",
+            car.status === "sold" && "ring-2 ring-purple-200"
+          )}
+        />
 
-      {/* Dealer Actions Overlay */}
-      <div className="absolute top-2 left-2 flex gap-1">
-        <Badge className={getStatusColor(car.status)}>
-          {getStatusLabel(car.status)}
-        </Badge>
-        {car.isFeatured && (
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-            מומלץ
+        {/* Dealer Actions Overlay */}
+        <div className="absolute top-2 left-2 flex gap-1">
+          <Badge className={getStatusColor(car.status)}>
+            {getStatusLabel(car.status)}
           </Badge>
-        )}
-      </div>
+          {car.isFeatured && (
+            <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+              מומלץ
+            </Badge>
+          )}
+        </div>
 
-      <div className="absolute top-2 right-2">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
-              disabled={actionLoading}
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={() => onEdit(car)}>
-              <Edit className="w-4 h-4 mr-2" />
-              עריכה
-            </DropdownMenuItem>
-
-            <DropdownMenuItem
-              onClick={() => onToggleAvailability(car.id, !car.isAvailable)}
-            >
-              {car.isAvailable ? (
-                <>
-                  <EyeOff className="w-4 h-4 mr-2" />
-                  הסתר
-                </>
-              ) : (
-                <>
-                  <Eye className="w-4 h-4 mr-2" />
-                  הצג
-                </>
-              )}
-            </DropdownMenuItem>
-
-            {car.status === "active" && (
-              <DropdownMenuItem onClick={() => onMarkSold(car.id)}>
-                <CheckCircle className="w-4 h-4 mr-2" />
-                סמן כנמכר
+        <div className="absolute top-2 right-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+                disabled={actionLoading}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onEdit(car);
+                }}
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                עריכה
               </DropdownMenuItem>
-            )}
 
-            <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleAvailability(car.id, !car.isAvailable);
+                }}
+              >
+                {car.isAvailable ? (
+                  <>
+                    <EyeOff className="w-4 h-4 mr-2" />
+                    הסתר
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4 mr-2" />
+                    הצג
+                  </>
+                )}
+              </DropdownMenuItem>
 
-            <DropdownMenuItem
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "האם אתה בטוח שברצונך למחוק את הרכב? פעולה זו לא ניתנת לביטול."
-                  )
-                ) {
-                  onDelete(car.id);
-                }
-              }}
-              className="text-red-600 hover:text-red-700"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              מחיקה
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+              {car.status === "active" && (
+                <DropdownMenuItem
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onMarkSold(car.id);
+                  }}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  סמן כנמכר
+                </DropdownMenuItem>
+              )}
 
-      {/* Bottom Info Bar */}
-      <div className="absolute bottom-2 left-2 right-2">
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg p-2 text-xs">
-          <div className="flex items-center justify-between">
-            <span>נוסף ב-{formatDate(car.createdAt)}</span>
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1 text-blue-600">
-                <Eye className="w-3 h-3" />0 צפיות
-              </span>
-              <span className="flex items-center gap-1 text-purple-600">
-                <Users className="w-3 h-3" />0 פניות
-              </span>
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (
+                    window.confirm(
+                      "האם אתה בטוח שברצונך למחוק את הרכב? פעולה זו לא ניתנת לביטול."
+                    )
+                  ) {
+                    onDelete(car.id);
+                  }
+                }}
+                className="text-red-600 hover:text-red-700"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                מחיקה
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* Bottom Info Bar */}
+        <div className="absolute bottom-2 left-2 right-2">
+          <div className="bg-white/90 backdrop-blur-sm rounded-lg p-2 text-xs">
+            <div className="flex items-center justify-between">
+              <span>נוסף ב-{formatDate(car.createdAt)}</span>
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-blue-600">
+                  <Eye className="w-3 h-3" />0 צפיות
+                </span>
+                <span className="flex items-center gap-1 text-purple-600">
+                  <Users className="w-3 h-3" />0 פניות
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
 export default function DealerCarsPage() {
   const { user } = useAuth();
+  const router = useRouter();
 
   // State - תוקן להשתמש ב-"all" במקום ערכים ריקים
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -349,10 +375,12 @@ export default function DealerCarsPage() {
   }, [cars]);
 
   // Actions
-  const handleEdit = useCallback((car: Car) => {
-    // Navigate to edit page
-    window.location.href = `/dealer/cars/${car.id}/edit`;
-  }, []);
+  const handleEdit = useCallback(
+    (car: Car) => {
+      router.push(`/dealer/cars/${car.id}`);
+    },
+    [router]
+  );
 
   const handleDelete = useCallback(
     async (id: number) => {
