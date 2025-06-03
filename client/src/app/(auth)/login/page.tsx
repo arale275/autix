@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +11,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Car, Users } from "lucide-react";
 
-export default function LoginPage() {
+// Force dynamic rendering for this page
+export const dynamic = "force-dynamic";
+
+// Loading component for Suspense fallback
+function LoginLoading() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">טוען...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main login component that uses useSearchParams
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, isAuthenticated, isLoading, user } = useAuth();
@@ -289,5 +305,14 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Main export component with Suspense wrapper
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoginLoading />}>
+      <LoginContent />
+    </Suspense>
   );
 }
