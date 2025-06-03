@@ -81,7 +81,8 @@ export interface Buyer {
 // Car types
 export interface Car {
   id: number;
-  dealerId: number;
+  dealerId?: number;
+  dealer_user_id?: number; // ✅ הוסף את השדה החדש
   make: string;
   model: string;
   year: number;

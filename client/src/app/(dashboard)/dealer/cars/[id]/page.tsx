@@ -213,16 +213,17 @@ export default function DealerCarDetailsPage() {
   } = useDealerCars();
   const { setMainImage, deleteImage, fetchCarImages } = useImages();
 
-  // Check ownership
+  // Check ownership - תיקון
   useEffect(() => {
-    if (car && user && car.dealerId !== user.id) {
+    if (car && user) {
       // Debug: בואו נראה מה הערכים
+      console.log("Car dealer_user_id:", car.dealer_user_id);
       console.log("Car dealerId:", car.dealerId);
       console.log("User id:", user.id);
       console.log("User type:", user.userType);
 
-      // רק אם זה באמת לא התואם
-      if (user.userType === "dealer" && car.dealerId !== user.id) {
+      // ✅ תיקון: השתמש ב-dealer_user_id במקום dealerId
+      if (user.userType === "dealer" && car.dealer_user_id !== user.id) {
         toast.error("אין לך הרשאה לצפות ברכב זה");
         router.push("/dealer/cars");
       }
