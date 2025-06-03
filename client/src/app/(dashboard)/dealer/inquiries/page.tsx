@@ -146,7 +146,7 @@ export default function DealerInquiriesPage() {
     closed: closedCount,
   };
 
-  if (loading && inquiries.length === 0) {
+  if (loading) {
     return <LoadingState message="טוען פניות מקונים..." />;
   }
 
