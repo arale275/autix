@@ -157,12 +157,14 @@ export class CarsController {
         `
         SELECT 
           c.*,
+          c.dealer_id,
           d.business_name as dealer_name,
           d.address as dealer_address,
           d.city as dealer_city,
           d.description as dealer_description,
           d.verified as dealer_verified,
           d.rating as dealer_rating,
+          d.user_id as dealer_user_id,
           u.first_name || ' ' || u.last_name as dealer_contact,
           u.phone as dealer_phone,
           u.email as dealer_email
