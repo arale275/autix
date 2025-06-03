@@ -1,328 +1,405 @@
-// app-new/(dashboard)/dealer/cars/new/page.tsx - New Car Page for Dealers
 "use client";
 
-import React from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import {
-  ArrowRight,
-  Car as CarIcon,
-  CheckCircle,
-  TrendingUp,
-  Users,
-  Eye,
-  Star,
-  Info,
-  Zap,
-  Target,
-  ChevronLeft,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import CarForm from "@/components/forms/CarForm";
-import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import LoadingState from "@/components/states/LoadingState";
+import ErrorState from "@/components/states/ErrorState";
+import EmptyState from "@/components/states/EmptyState";
+import InquiryCard from "@/components/cards/InquiryCard";
+import { useReceivedInquiries } from "@/hooks/api/useInquiries";
+import {
+  MessageSquare,
+  Search,
+  Filter,
+  RefreshCw,
+  Users,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  TrendingUp,
+} from "lucide-react";
+import type { InquiriesSearchParams } from "@/lib/api/types";
 
-// Benefits data
-const BENEFITS = [
-  {
-    icon: <Eye className="w-6 h-6 text-blue-600" />,
-    title: "חשיפה מקסימלית",
-    description: "הרכב שלך יוצג לאלפי קונים פוטנציאליים בכל הארץ",
-  },
-  {
-    icon: <Users className="w-6 h-6 text-green-600" />,
-    title: "קונים איכותיים",
-    description: "פלטפורמה המתמחה ברכבים משמעותה קונים רציניים ומתעניינים",
-  },
-  {
-    icon: <TrendingUp className="w-6 h-6 text-purple-600" />,
-    title: "מכירה מהירה",
-    description: "רכבים איכותיים נמכרים בממוצע תוך 14 ימים בפלטפורמה",
-  },
-  {
-    icon: <Star className="w-6 h-6 text-yellow-600" />,
-    title: "כלים מתקדמים",
-    description: "מערכת ניהול מלאי, סטטיסטיקות ודוחות למעקב אחר הביצועים",
-  },
-];
+export default function DealerInquiriesPage() {
+  // Search and filter state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("created_at");
+  const [activeTab, setActiveTab] = useState("all");
 
-// Tips data
-const TIPS = [
-  {
-    title: "תמונות איכותיות",
-    description: "הוסף לפחות 5 תמונות באיכות גבוהה מזוויות שונות",
-    priority: "גבוהה",
-    color: "text-red-600",
-  },
-  {
-    title: "תיאור מפורט",
-    description: "תאר את מצב הרכב, שירותים ואביזרים נוספים",
-    priority: "גבוהה",
-    color: "text-red-600",
-  },
-  {
-    title: "מחיר תחרותי",
-    description: "בדוק מחירים דומים בשוק ותמחר בהתאם",
-    priority: "בינונית",
-    color: "text-yellow-600",
-  },
-  {
-    title: "פרטי יצירת קשר",
-    description: "וודא שפרטי הקשר שלך מעודכנים ונגישים",
-    priority: "בינונית",
-    color: "text-yellow-600",
-  },
-  {
-    title: "עדכונים שוטפים",
-    description: "עדכן את המלאי באופן קבוע ומחק רכבים שנמכרו",
-    priority: "נמוכה",
-    color: "text-green-600",
-  },
-];
+  // Inquiries hook
+  const {
+    inquiries,
+    pagination,
+    loading,
+    error,
+    actionLoading,
+    fetchInquiries,
+    refetch,
+    markAsResponded,
+    closeInquiry,
+    deleteInquiry,
+    clearError,
+    newCount,
+    respondedCount,
+    closedCount,
+  } = useReceivedInquiries();
 
-// Process steps
-const PROCESS_STEPS = [
-  {
-    number: "1",
-    title: "מלא פרטי הרכב",
-    description: "יצרן, דגם, שנה, מחיר וכל הפרטים הטכניים",
-    color: "bg-blue-100 text-blue-800",
-  },
-  {
-    number: "2",
-    title: "הוסף תמונות",
-    description: "העלה תמונות איכותיות של הרכב מזוויות שונות",
-    color: "bg-green-100 text-green-800",
-  },
-  {
-    number: "3",
-    title: "כתוב תיאור",
-    description: "תאר את הרכב, מצבו, שירותים וכל מידע רלוונטי",
-    color: "bg-purple-100 text-purple-800",
-  },
-  {
-    number: "4",
-    title: "פרסם והמתן",
-    description: "הרכב יהיה זמין מיד וקונים יוכלו ליצור איתך קשר",
-    color: "bg-yellow-100 text-yellow-800",
-  },
-];
+  // Filter inquiries based on search and filters
+  const filteredInquiries = useMemo(() => {
+    let filtered = inquiries;
 
-export default function NewCarPage() {
-  const router = useRouter();
-  const { user } = useAuth();
-
-  const handleSuccess = () => {
-    toast.success("הרכב נוסף בהצלחה!", {
-      description: "הרכב זמין כעת למכירה",
-    });
-    router.push("/dealer/cars");
-  };
-
-  const handleCancel = () => {
-    if (window.confirm("האם אתה בטוח שברצונך לבטל? השינויים לא יישמרו.")) {
-      router.push("/dealer/cars");
+    // Filter by tab
+    if (activeTab !== "all") {
+      filtered = filtered.filter((inquiry) => inquiry.status === activeTab);
     }
+
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(
+        (inquiry) =>
+          inquiry.message.toLowerCase().includes(query) ||
+          inquiry.buyer?.firstName?.toLowerCase().includes(query) ||
+          inquiry.buyer?.lastName?.toLowerCase().includes(query) ||
+          inquiry.buyer?.email?.toLowerCase().includes(query) ||
+          inquiry.car?.make?.toLowerCase().includes(query) ||
+          inquiry.car?.model?.toLowerCase().includes(query)
+      );
+    }
+
+    return filtered;
+  }, [inquiries, searchQuery, activeTab]);
+
+  // Handle search
+  const handleSearch = async () => {
+    const params: InquiriesSearchParams = {
+      sortBy: sortBy as "created_at",
+      sortOrder: "desc",
+    };
+
+    if (statusFilter !== "all") {
+      params.status = statusFilter as "new" | "responded" | "closed";
+    }
+
+    await fetchInquiries(params);
   };
 
-  if (!user || user.userType !== "dealer") {
+  // Handle refresh
+  const handleRefresh = async () => {
+    await refetch();
+  };
+
+  // Stats data
+  const stats = [
+    {
+      title: "פניות חדשות",
+      value: newCount,
+      icon: AlertCircle,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      description: "דורשות מענה",
+    },
+    {
+      title: "נענו",
+      value: respondedCount,
+      icon: CheckCircle,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      description: "קיבלו מענה",
+    },
+    {
+      title: "סגורות",
+      value: closedCount,
+      icon: XCircle,
+      color: "text-gray-600",
+      bgColor: "bg-gray-50",
+      description: "הושלמו",
+    },
+    {
+      title: "סה״כ",
+      value: inquiries.length,
+      icon: TrendingUp,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      description: "כל הפניות",
+    },
+  ];
+
+  // Tab counts
+  const tabCounts = {
+    all: inquiries.length,
+    new: newCount,
+    responded: respondedCount,
+    closed: closedCount,
+  };
+
+  if (loading && inquiries.length === 0) {
+    return <LoadingState message="טוען פניות מקונים..." />;
+  }
+
+  if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-6 text-center">
-            <div className="text-red-600 mb-2">גישה מוגבלת</div>
-            <p className="text-red-500 mb-4">
-              רק סוחרי רכב יכולים להוסיף רכבים חדשים
-            </p>
-            <Link href="/dealer/home">
-              <Button>חזור לדף הבית</Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+      <ErrorState
+        title="שגיאה בטעינת הפניות"
+        message={error}
+        onRetry={() => {
+          clearError();
+          refetch();
+        }}
+      />
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-8">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-600">
-        <Link href="/dealer/cars" className="hover:text-blue-600">
-          המלאי שלי
-        </Link>
-        <ChevronLeft className="w-4 h-4" />
-        <span className="text-gray-900">הוספת רכב חדש</span>
-      </nav>
-
-      {/* Page Header */}
-      <div className="text-center space-y-4">
-        <div className="flex justify-center">
-          <div className="bg-purple-100 p-3 rounded-full">
-            <CarIcon className="w-8 h-8 text-purple-600" />
-          </div>
+    <div className="container mx-auto px-4 py-6 max-w-7xl">
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <MessageSquare className="h-8 w-8 text-blue-600" />
+            פניות מקונים
+          </h1>
+          <p className="text-gray-600 mt-1">ניהול וטיפול בפניות מהקונים שלך</p>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          הוספת רכב חדש למלאי
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          פרסם את הרכב שלך ותן לקונים איכותיים למצוא אותו בקלות. המערכת שלנו
-          מבטיחה חשיפה מקסימלית ומכירה מהירה.
-        </p>
+
+        <div className="flex items-center gap-3">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={loading}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            רענן
+          </Button>
+        </div>
       </div>
 
-      {/* Benefits Section */}
-      <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-0">
-        <CardHeader>
-          <CardTitle className="text-center text-xl">
-            למה לפרסם אצלנו?
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        {stats.map((stat, index) => (
+          <Card key={index} className="hover:shadow-md transition-shadow">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-600">
+                    {stat.title}
+                  </p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {stat.value}
+                  </p>
+                  <p className="text-xs text-gray-500">{stat.description}</p>
+                </div>
+                <div className={`p-3 rounded-full ${stat.bgColor}`}>
+                  <stat.icon className={`h-6 w-6 ${stat.color}`} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Search and Filters */}
+      <Card className="mb-6">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            חיפוש וסינון
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {BENEFITS.map((benefit, index) => (
-              <div key={index} className="text-center space-y-3">
-                <div className="flex justify-center">{benefit.icon}</div>
-                <h3 className="font-semibold text-gray-900">{benefit.title}</h3>
-                <p className="text-sm text-gray-600">{benefit.description}</p>
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Search Input */}
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="חפש לפי הודעה, שם קונה, מייל או רכב..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pr-10"
+                />
               </div>
-            ))}
+            </div>
+
+            {/* Status Filter */}
+            <div className="lg:w-48">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="סינון לפי סטטוס" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל הסטטוסים</SelectItem>
+                  <SelectItem value="new">חדשות</SelectItem>
+                  <SelectItem value="responded">נענו</SelectItem>
+                  <SelectItem value="closed">סגורות</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Sort */}
+            <div className="lg:w-48">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger>
+                  <SelectValue placeholder="מיון" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="created_at">לפי תאריך</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Search Button */}
+            <Button
+              onClick={handleSearch}
+              disabled={loading}
+              className="lg:w-auto"
+            >
+              <Search className="h-4 w-4 mr-2" />
+              חפש
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Form Column */}
-        <div className="lg:col-span-2">
-          <CarForm onSuccess={handleSuccess} />
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
+          <TabsTrigger value="all" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            הכל
+            {tabCounts.all > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {tabCounts.all}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="new" className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4" />
+            חדשות
+            {tabCounts.new > 0 && (
+              <Badge variant="default" className="bg-blue-600 text-xs">
+                {tabCounts.new}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="responded" className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            נענו
+            {tabCounts.responded > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {tabCounts.responded}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="closed" className="flex items-center gap-2">
+            <XCircle className="h-4 w-4" />
+            סגורות
+            {tabCounts.closed > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {tabCounts.closed}
+              </Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Inquiries List */}
+        <div className="mt-6">
+          {filteredInquiries.length === 0 ? (
+            <EmptyState
+              variant="inquiries"
+              title={
+                searchQuery.trim()
+                  ? "לא נמצאו פניות מתאימות"
+                  : activeTab === "new"
+                  ? "אין פניות חדשות"
+                  : activeTab === "responded"
+                  ? "אין פניות שנענו"
+                  : activeTab === "closed"
+                  ? "אין פניות סגורות"
+                  : "אין פניות עדיין"
+              }
+              description={
+                searchQuery.trim()
+                  ? "נסה לשנות את מילות החיפוש או הסינונים"
+                  : activeTab === "new"
+                  ? "כל הפניות החדשות יופיעו כאן"
+                  : "כשתקבל פניות מקונים, הן יופיעו כאן"
+              }
+              {...(searchQuery.trim() && {
+                actionLabel: "נקה חיפוש",
+                onAction: () => setSearchQuery(""),
+              })}
+            />
+          ) : (
+            <div className="space-y-4">
+              {filteredInquiries.map((inquiry) => (
+                <InquiryCard
+                  key={inquiry.id}
+                  inquiry={inquiry}
+                  userType="dealer"
+                  onMarkAsResponded={markAsResponded}
+                  onClose={closeInquiry}
+                  onDelete={deleteInquiry}
+                  actionLoading={actionLoading[inquiry.id] || false}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Process Steps */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Info className="w-5 h-5 text-blue-600" />
-                תהליך הפרסום
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {PROCESS_STEPS.map((step) => (
-                <div key={step.number} className="flex gap-3">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${step.color}`}
+        {/* Pagination */}
+        {pagination && pagination.totalPages > 1 && (
+          <div className="flex justify-center mt-8">
+            <div className="flex items-center gap-2">
+              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                .slice(
+                  Math.max(0, pagination.page - 3),
+                  Math.min(pagination.totalPages, pagination.page + 2)
+                )
+                .map((page) => (
+                  <Button
+                    key={page}
+                    variant={page === pagination.page ? "default" : "outline"}
+                    size="sm"
+                    onClick={() =>
+                      fetchInquiries({ ...pagination, page, limit: 10 })
+                    }
+                    disabled={loading}
                   >
-                    {step.number}
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-1">
-                      {step.title}
-                    </h4>
-                    <p className="text-sm text-gray-600">{step.description}</p>
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Tips for Success */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-green-600" />
-                טיפים להצלחה
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {TIPS.map((tip, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-gray-900 text-sm">
-                      {tip.title}
-                    </h4>
-                    <Badge
-                      variant="outline"
-                      className={`text-xs ${tip.color} border-current`}
-                    >
-                      {tip.priority}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-gray-600">{tip.description}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Quick Stats */}
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="p-4">
-              <div className="text-center space-y-3">
-                <Zap className="w-8 h-8 text-green-600 mx-auto" />
-                <div className="text-2xl font-bold text-green-700">24 שעות</div>
-                <p className="text-sm text-green-600">
-                  זמן ממוצע עד לפנייה ראשונה מקונה
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Alternative Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">פעולות נוספות</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Link href="/dealer/cars" className="block">
-                <Button variant="outline" className="w-full justify-start">
-                  <ArrowRight className="w-4 h-4 mr-2" />
-                  חזור למלאי
-                </Button>
-              </Link>
-
-              <Link href="/dealer/home" className="block">
-                <Button variant="outline" className="w-full justify-start">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  לוח בקרה
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Bottom Info Section */}
-      <Card className="bg-gray-50 border-gray-200">
-        <CardContent className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            <div className="space-y-2">
-              <CheckCircle className="w-8 h-8 text-green-600 mx-auto" />
-              <h3 className="font-semibold text-gray-900">פרסום מיידי</h3>
-              <p className="text-sm text-gray-600">
-                הרכב שלך יהיה זמין לצפייה מיד לאחר הפרסום
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Users className="w-8 h-8 text-blue-600 mx-auto" />
-              <h3 className="font-semibold text-gray-900">קהל מתעניין</h3>
-              <p className="text-sm text-gray-600">
-                המשתמשים שלנו מחפשים באופן פעיל רכבים לקנייה
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Star className="w-8 h-8 text-yellow-600 mx-auto" />
-              <h3 className="font-semibold text-gray-900">איכות מובטחת</h3>
-              <p className="text-sm text-gray-600">
-                אנחנו דואגים לאיכות הפרסומים ולחוויית משתמש מעולה
-              </p>
+                    {page}
+                  </Button>
+                ))}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </Tabs>
+
+      {/* Loading Overlay */}
+      {loading && inquiries.length > 0 && (
+        <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+          <Card className="p-6">
+            <div className="flex items-center gap-3">
+              <RefreshCw className="h-5 w-5 animate-spin" />
+              <span>טוען...</span>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

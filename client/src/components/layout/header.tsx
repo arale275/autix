@@ -81,9 +81,14 @@ export default function Header() {
 
   const isActivePath = (path: string) => {
     if (path === "/") return pathname === "/";
-    if (path === "/dealer/home" && pathname === "/dealer/home") return true;
-    if (path === "/buyer/home" && pathname === "/buyer/home") return true;
-    return pathname.startsWith(path);
+
+    // Exact matches למניעת conflicts
+    if (path === "/dealer/cars") return pathname === "/dealer/cars";
+    if (path === "/dealer/cars/new") return pathname === "/dealer/cars/new";
+    if (path === "/dealer/inquiries") return pathname === "/dealer/inquiries";
+    // ... וכו'
+
+    return false;
   };
 
   const toggleMobileMenu = () => {
