@@ -2,27 +2,50 @@
 import { Request } from "express";
 
 export interface User {
-  id?: number;
-  userId?: number; // 🔥 הוסף את השניים - לתאימות
+  id: number;
   email: string;
-  password: string;
-  full_name: string;
+  password_hash?: string;
+  first_name: string;
+  last_name: string;
   phone?: string;
   user_type: "buyer" | "dealer";
-  userType?: "buyer" | "dealer"; // 🔥 הוסף גם את זה לתאימות
-  is_verified: boolean;
+  is_verified?: boolean;
+  google_id?: string;
+  provider?: string;
+  avatar_url?: string;
   created_at?: Date;
   updated_at?: Date;
+}
+
+// הרחב את Express Request
+declare global {
+  namespace Express {
+    interface User {
+      id: number;
+      email: string;
+      first_name: string;
+      last_name: string;
+      user_type: "buyer" | "dealer";
+      google_id?: string;
+      provider?: string;
+      avatar_url?: string;
+    }
+  }
 }
 
 export interface AuthRequest extends Request {
   user?: User;
 }
 
+// תקן את AuthenticatedRequest - השתמש בUser המלא
+export interface AuthenticatedRequest extends Request {
+  user: User; // השתמש בUser המלא במקום אובייקט חלקי
+}
+
 export interface RegisterRequest {
   email: string;
   password: string;
-  fullName: string; // 🔥 שנה מfirstName+lastName ל-fullName
+  fullName: string;
   phone?: string;
   userType: "buyer" | "dealer";
 }
