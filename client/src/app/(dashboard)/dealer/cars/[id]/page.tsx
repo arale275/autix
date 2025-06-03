@@ -471,7 +471,7 @@ export default function DealerCarDetailsPage() {
                         {car.images?.length || 0} תמונות
                       </Badge>
                       {/* ✅ כפתור העלאת תמונות */}
-                      // תיקון מבנה Dialog - וודא שזה נראה כך:
+
                       <Dialog
                         open={isImageUploadOpen}
                         onOpenChange={setIsImageUploadOpen}
