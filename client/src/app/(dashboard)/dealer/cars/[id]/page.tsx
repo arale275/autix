@@ -507,8 +507,18 @@ export default function DealerCarDetailsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4">
+                  {(() => {
+                    const normalized = normalizeImages(car.images, car.id);
+                    console.log("🔍 Car images:", car.images);
+                    console.log("🔍 Normalized:", normalized);
+                    console.log("🔍 Count:", normalized.count);
+                    console.log("🔍 Main:", normalized.main);
+                    console.log("🔍 Gallery:", normalized.gallery);
+                    return null;
+                  })()}
+
                   <ImageGallery
-                    images={normalizeImages(car.images, car.id)} // ✅ פשוט יותר - הפונקציה מחזירה הכל
+                    images={normalizeImages(car.images, car.id)}
                     isOwner={true}
                     onSetMain={handleSetMainImage}
                     onDelete={handleDeleteImage}
