@@ -6,6 +6,8 @@ import debugRoutes from "./routes/debug.routes";
 import carRequestRoutes from "./routes/car-request.routes";
 import inquiryRoutes from "./routes/inquiry.routes";
 import profileRoutes from "./routes/profile.routes";
+import passport from "./config/passport";
+import googleAuthRoutes from "./routes/google-auth.routes";
 
 // Import routes
 import authRoutes from "./routes/auth.routes";
@@ -36,6 +38,7 @@ app.use(
   })
 );
 
+app.use(passport.initialize());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -46,6 +49,7 @@ app.use("/api/car-requests", carRequestRoutes);
 app.use("/api/inquiries", inquiryRoutes);
 app.use("/api/debug", debugRoutes);
 app.use("/api/profile", profileRoutes);
+app.use("/api/auth", googleAuthRoutes);
 
 // Health check endpoints
 app.get("/api/health", (req, res) => {
