@@ -79,40 +79,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Dashboard Header with Breadcrumbs */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4 space-x-reverse">
-              {/* User Welcome */}
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                  שלום, {user?.firstName}
-                </h1>
-                <p className="text-sm text-gray-600">
-                  {user?.userType === "dealer"
-                    ? "פאנל ניהול לסוחר"
-                    : "האזור האישי שלך"}
-                </p>
-              </div>
-            </div>
-
-            {/* User Type Badge */}
-            <div className="flex items-center space-x-2 space-x-reverse">
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-medium ${
-                  user?.userType === "dealer"
-                    ? "bg-purple-100 text-purple-800"
-                    : "bg-blue-100 text-blue-800"
-                }`}
-              >
-                {user?.userType === "dealer" ? "סוחר רכב" : "קונה פרטי"}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Main Dashboard Content */}
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-7xl mx-auto">{children}</div>
