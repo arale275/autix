@@ -149,30 +149,31 @@ export class CarsController {
   }
 
   // קבלת רכב ספציפי
+  // קבלת רכב ספציפי - עם תמונות
   async getCarById(req: Request, res: Response) {
     try {
       const { id } = req.params;
 
       const carResult = await pool.query(
         `
-        SELECT 
-          c.*,
-          c.dealer_id,
-          d.business_name as dealer_name,
-          d.address as dealer_address,
-          d.city as dealer_city,
-          d.description as dealer_description,
-          d.verified as dealer_verified,
-          d.rating as dealer_rating,
-          d.user_id as dealer_user_id,
-          u.first_name || ' ' || u.last_name as dealer_contact,
-          u.phone as dealer_phone,
-          u.email as dealer_email
-        FROM cars c
-        JOIN dealers d ON c.dealer_id = d.id
-        JOIN users u ON d.user_id = u.id
-        WHERE c.id = $1 AND c.status = 'active'
-      `,
+      SELECT 
+        c.*,
+        c.dealer_id,
+        d.business_name as dealer_name,
+        d.address as dealer_address,
+        d.city as dealer_city,
+        d.description as dealer_description,
+        d.verified as dealer_verified,
+        d.rating as dealer_rating,
+        d.user_id as dealer_user_id,
+        u.first_name || ' ' || u.last_name as dealer_contact,
+        u.phone as dealer_phone,
+        u.email as dealer_email
+      FROM cars c
+      JOIN dealers d ON c.dealer_id = d.id
+      JOIN users u ON d.user_id = u.id
+      WHERE c.id = $1 AND c.status = 'active'
+    `,
         [id]
       );
 
@@ -183,9 +184,28 @@ export class CarsController {
         });
       }
 
+      const car = carResult.rows[0];
+
+      // ✅ הוסף תמונות לרכב
+      const imagesResult = await pool.query(
+        `
+      SELECT 
+        id, car_id, image_url, thumbnail_url, is_main, 
+        display_order, original_filename, file_size, 
+        content_type, created_at, updated_at
+      FROM car_images 
+      WHERE car_id = $1 
+      ORDER BY display_order ASC, created_at ASC
+      `,
+        [id]
+      );
+
+      // הוסף את התמונות לאובייקט הרכב
+      car.images = imagesResult.rows;
+
       res.json({
         success: true,
-        data: carResult.rows[0],
+        data: car,
       });
     } catch (error) {
       console.error("Get car by ID error:", error);
@@ -195,7 +215,6 @@ export class CarsController {
       });
     }
   }
-
   // הוספת רכב חדש (רק דילרים)
   async addCar(req: AuthRequest, res: Response) {
     try {
