@@ -6,7 +6,7 @@ import {
   CarRequestFilters,
 } from "../types/car-request.types";
 import pool from "../config/database.config";
-import { AuthRequest } from '../types/auth.types';
+import { AuthRequest } from "../types/auth.types";
 
 export class CarRequestController {
   // יצירת בקשת רכב חדשה (buyers בלבד)
