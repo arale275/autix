@@ -467,28 +467,38 @@ export default function DealerCarDetailsPage() {
                         {car.images?.length || 0} תמונות
                       </Badge>
                       {/* ✅ כפתור העלאת תמונות */}
-                      <DialogContent className="max-w-2xl">
-                        <DialogHeader>
-                          <DialogTitle>העלאת תמונות לרכב</DialogTitle>
-                          <DialogDescription>
-                            בחר תמונות איכותיות של הרכב ולחץ "העלה" להוספתן
-                            לגלריה
-                          </DialogDescription>
-                        </DialogHeader>
-                        <ImageUploader
-                          onImagesChange={handleImagesSelect}
-                          onUploadClick={handleUploadClick}
-                          maxImages={10}
-                          maxFileSize={5}
-                          disabled={uploadingImages}
-                          uploading={uploadingImages}
-                          existingImages={car?.images?.map(
-                            (
-                              img // ✅ הוסף ? לפני images
-                            ) => (typeof img === "string" ? img : img.image_url)
-                          )}
-                        />
-                      </DialogContent>
+                      // תיקון מבנה Dialog - וודא שזה נראה כך:
+                      <Dialog
+                        open={isImageUploadOpen}
+                        onOpenChange={setIsImageUploadOpen}
+                      >
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm">
+                            <Upload className="w-4 h-4 mr-1" />
+                            הוסף תמונות
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-2xl">
+                          <DialogHeader>
+                            <DialogTitle>העלאת תמונות לרכב</DialogTitle>
+                            <DialogDescription>
+                              בחר תמונות איכותיות של הרכב ולחץ "העלה" להוספתן
+                              לגלריה
+                            </DialogDescription>
+                          </DialogHeader>
+                          <ImageUploader
+                            onImagesChange={handleImagesSelect}
+                            onUploadClick={handleUploadClick}
+                            maxImages={10}
+                            maxFileSize={5}
+                            disabled={uploadingImages}
+                            uploading={uploadingImages}
+                            existingImages={car?.images?.map((img) =>
+                              typeof img === "string" ? img : img.image_url
+                            )}
+                          />
+                        </DialogContent>
+                      </Dialog>
                     </div>
                   </CardTitle>
                 </CardHeader>
