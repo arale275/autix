@@ -215,17 +215,6 @@ export default function RegisterPage() {
             <span>חזרה לדף הבית</span>
           </Link>
 
-          <div className="flex items-center justify-center space-x-2 space-x-reverse mb-4">
-            <div className="w-10 h-10">
-              <img
-                src="/autix_logo.png"
-                alt="Autix"
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">Autix</h1>
-          </div>
-
           <h2 className="text-xl font-semibold text-gray-800 mb-2">
             הצטרפות ל-Autix
           </h2>
