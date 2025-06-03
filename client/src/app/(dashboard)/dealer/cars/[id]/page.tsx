@@ -69,9 +69,9 @@ const isCarImageObject = (image: string | CarImage): image is CarImage => {
 const normalizeImages = (
   images: (string | CarImage)[] | undefined,
   carId: number
-): { main: CarImage | null; gallery: CarImage[] } => {
+): { main: CarImage | null; gallery: CarImage[]; count: number } => {
   if (!images || images.length === 0) {
-    return { main: null, gallery: [] };
+    return { main: null, gallery: [], count: 0 }; // ✅ הוסף count
   }
 
   const carImages: CarImage[] = images.map((image, index) => {
@@ -92,10 +92,14 @@ const normalizeImages = (
     }
   });
 
-  const main = carImages.find((img) => img.is_main) || null;
+  const main = carImages.find((img) => img.is_main) || carImages[0] || null; // ✅ שיפור לוגיקה
   const gallery = carImages.filter((img) => !img.is_main);
 
-  return { main, gallery };
+  return {
+    main,
+    gallery,
+    count: carImages.length, // ✅ הוסף count אמיתי
+  };
 };
 
 // Format Functions
@@ -504,10 +508,7 @@ export default function DealerCarDetailsPage() {
                 </CardHeader>
                 <CardContent className="p-4">
                   <ImageGallery
-                    images={{
-                      ...normalizeImages(car.images, car.id),
-                      count: car.images?.length || 0,
-                    }}
+                    images={normalizeImages(car.images, car.id)} // ✅ פשוט יותר - הפונקציה מחזירה הכל
                     isOwner={true}
                     onSetMain={handleSetMainImage}
                     onDelete={handleDeleteImage}
