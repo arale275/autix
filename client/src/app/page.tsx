@@ -1,5 +1,9 @@
-import { Metadata } from "next";
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Search,
   Car,
@@ -10,12 +14,6 @@ import {
   CheckCircle,
   ArrowLeft,
 } from "lucide-react";
-
-export const metadata: Metadata = {
-  title: "Autix - פלטפורמה לחיבור בין סוחרי רכב לקונים",
-  description:
-    "מצא את הרכב המושלם או פרסם את הרכב שלך למכירה. הפלטפורמה המתקדמת לחיבור בין סוחרי רכב לקונים פרטיים.",
-};
 
 const features = [
   {
@@ -53,6 +51,30 @@ const stats = [
 ];
 
 export default function HomePage() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated && user) {
+      if (user.userType === "dealer") {
+        router.replace("/dealer/home");
+      } else if (user.userType === "buyer") {
+        router.replace("/buyer/home");
+      }
+    }
+  }, [isAuthenticated, user, isLoading, router]);
+
+  // הצג loading בזמן בדיקת auth או redirect
+  if (isLoading || (isAuthenticated && user)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">טוען...</p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="min-h-screen">
       {/* Hero Section */}

@@ -34,8 +34,18 @@ export default function BuyerLayout({ children }: BuyerLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const isActivePath = (path: string) => {
+    // Exact matches for all paths to avoid conflicts
     if (path === "/buyer/home") return pathname === "/buyer/home";
-    return pathname.startsWith(path);
+    if (path === "/buyer/cars") return pathname === "/buyer/cars";
+    if (path === "/buyer/requests")
+      return (
+        pathname.startsWith("/buyer/requests") && !pathname.includes("/new")
+      );
+    if (path === "/buyer/requests/new")
+      return pathname === "/buyer/requests/new";
+    if (path === "/buyer/profile") return pathname === "/buyer/profile";
+
+    return false;
   };
 
   const getBreadcrumbs = () => {
