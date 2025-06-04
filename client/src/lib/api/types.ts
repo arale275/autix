@@ -1,4 +1,4 @@
-// lib/api/types.ts - API Types בסיסיים
+// lib/api/types.ts - API Types עם השדות החדשים
 "use client";
 export interface CarImage {
   id: number;
@@ -82,7 +82,7 @@ export interface Buyer {
 export interface Car {
   id: number;
   dealerId?: number;
-  dealer_user_id?: number; // ✅ הוסף את השדה החדש
+  dealer_user_id?: number;
   make: string;
   model: string;
   year: number;
@@ -92,10 +92,11 @@ export interface Car {
   transmission?: string;
   color?: string;
   description?: string;
-  images?: string[] | CarImage[]; // תמיכה בשני הסוגים
+  images?: string[] | CarImage[];
   status: "active" | "sold" | "deleted";
   city?: string;
   engineSize?: string;
+  hand?: string; // ✅ השדה החדש - יד ראשונה/שנייה/שלישית+
   isAvailable: boolean;
   isFeatured: boolean;
   createdAt: string;
@@ -225,7 +226,8 @@ export interface CreateCarRequest {
   description?: string;
   city?: string;
   engineSize?: string;
-  images?: string[] | CarImage[]; // תמיכה בשני הסוגים
+  hand?: string; // ✅ השדה החדש
+  images?: string[] | CarImage[];
   isFeatured?: boolean;
 }
 
