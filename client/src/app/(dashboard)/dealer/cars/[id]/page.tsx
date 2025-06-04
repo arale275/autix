@@ -231,22 +231,29 @@ export default function DealerCarDetailsPage() {
     if (!car) return;
 
     try {
+      // Debug: הדפסת כל הנתונים של הרכב
+      console.log("🔍 Full car object:", car);
+      console.log("🔍 car.isAvailable:", car.isAvailable);
+      console.log("🔍 car.is_available:", (car as any).is_available);
+      console.log("🔍 All car keys:", Object.keys(car));
+
+      const currentValue = (car as any).is_available ?? car.isAvailable ?? true;
+      const newValue = !currentValue;
+
       console.log("🔄 Starting toggle...", {
         carId: car.id,
-        currentValue: car.isAvailable,
-        newValue: !(car.isAvailable ?? true),
+        currentValue: currentValue,
+        newValue: newValue,
+        rawIsAvailable: (car as any).is_available,
+        camelCaseIsAvailable: car.isAvailable,
       });
 
-      const success = await toggleAvailability(
-        car.id,
-        !(car.isAvailable ?? true)
-      );
+      const success = await toggleAvailability(car.id, newValue);
 
       console.log("📤 Toggle result:", { success });
 
       if (success) {
         console.log("✅ Refetching car data...");
-        // רענון נתוני הרכב הספציפי
         await refetch();
         console.log("✅ Refetch complete");
       } else {
@@ -596,7 +603,9 @@ export default function DealerCarDetailsPage() {
                     הצגה לקונים
                   </span>
                   <span className="text-xs text-gray-500">
-                    {car.isAvailable ?? true ? "מוצג למכירה" : "מוסתר מהקונים"}
+                    {(car as any).is_available ?? car.isAvailable ?? true
+                      ? "מוצג למכירה"
+                      : "מוסתר מהקונים"}
                   </span>
                 </div>
 
@@ -604,7 +613,9 @@ export default function DealerCarDetailsPage() {
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={car.isAvailable ?? true}
+                    checked={
+                      (car as any).is_available ?? car.isAvailable ?? true
+                    }
                     onChange={handleToggleAvailability}
                     disabled={actionLoading[car.id]}
                     className="sr-only peer"
