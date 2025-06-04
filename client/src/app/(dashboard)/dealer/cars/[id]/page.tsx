@@ -422,59 +422,12 @@ export default function DealerCarDetailsPage() {
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Status Info Only */}
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleShare}>
-                <Share2 className="w-4 h-4 mr-2" />
-                שתף
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleToggleAvailability}
-                disabled={actionLoading[car.id]}
-              >
-                {car.isAvailable ? (
-                  <>
-                    <EyeOff className="w-4 h-4 mr-2" />
-                    הסתר
-                  </>
-                ) : (
-                  <>
-                    <Eye className="w-4 h-4 mr-2" />
-                    הצג
-                  </>
-                )}
-              </Button>
-
-              {car.status === "active" && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleMarkSold}
-                  disabled={actionLoading[car.id]}
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  סמן כנמכר
-                </Button>
-              )}
-
-              <Button variant="outline" size="sm" onClick={handleEdit}>
-                <Edit className="w-4 h-4 mr-2" />
-                עריכה
-              </Button>
-
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDelete}
-                disabled={actionLoading[car.id]}
-                className="text-red-600 hover:text-red-700"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                מחק
-              </Button>
+              <Badge className={getStatusColor(car.status)}>
+                {getStatusLabel(car.status)}
+              </Badge>
+              {!car.isAvailable && <Badge variant="secondary">מוסתר</Badge>}
             </div>
           </div>
         </CardContent>
@@ -615,10 +568,10 @@ export default function DealerCarDetailsPage() {
               <Button
                 variant="outline"
                 className="w-full justify-start"
-                onClick={() => window.open(`/buyer/cars/${car.id}`, "_blank")}
+                onClick={handleShare}
               >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                צפה כקונה
+                <Share2 className="w-4 h-4 mr-2" />
+                שתף רכב
               </Button>
 
               <Button
@@ -628,6 +581,47 @@ export default function DealerCarDetailsPage() {
               >
                 <Edit className="w-4 h-4 mr-2" />
                 ערוך פרטים
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={handleToggleAvailability}
+                disabled={actionLoading[car.id]}
+              >
+                {car.isAvailable ? (
+                  <>
+                    <EyeOff className="w-4 h-4 mr-2" />
+                    הסתר מהמכירה
+                  </>
+                ) : (
+                  <>
+                    <Eye className="w-4 h-4 mr-2" />
+                    הצג למכירה
+                  </>
+                )}
+              </Button>
+
+              {car.status === "active" && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={handleMarkSold}
+                  disabled={actionLoading[car.id]}
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  סמן כנמכר
+                </Button>
+              )}
+
+              <Button
+                variant="outline"
+                className="w-full justify-start text-red-600 hover:text-red-700"
+                onClick={handleDelete}
+                disabled={actionLoading[car.id]}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                מחק רכב
               </Button>
             </CardContent>
           </Card>
