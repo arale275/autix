@@ -288,6 +288,7 @@ export function useCar(carId: number | null) {
  */
 export function useDealerCars() {
   const [cars, setCars] = useState<Car[]>([]);
+  console.log("🚀 useDealerCars hook initialized");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<{
@@ -322,6 +323,11 @@ export function useDealerCars() {
   // ✅ Register for cache invalidation
   useEffect(() => {
     return registerCarListCallback(fetchMyCars);
+  }, [fetchMyCars]);
+
+  useEffect(() => {
+    console.log("📞 Initial fetch calling fetchMyCars");
+    fetchMyCars();
   }, [fetchMyCars]);
 
   // ✅ Helper function for actions with cache invalidation
