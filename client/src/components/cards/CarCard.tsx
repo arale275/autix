@@ -1,4 +1,4 @@
-// components/cards/CarCard.tsx - Car Card Component (Fixed - No Clock, City Up)
+// components/cards/CarCard.tsx - Fixed Images Display
 "use client";
 
 import React from "react";
@@ -12,7 +12,6 @@ import {
   Gauge,
   Fuel,
   Settings,
-  Phone,
   MessageSquare,
   Star,
   ImageIcon,
@@ -27,9 +26,10 @@ import {
 } from "@/components/ui/card";
 import { useFavorites } from "@/hooks/ui/useLocalStorage";
 import { cn } from "@/lib/utils";
+import { normalizeImages } from "@/lib/car-utils"; // ✅ ייבוא הפונקציה מהרפקטור
 import type { Car, CarImage } from "@/lib/api/types";
 
-// ✅ Fixed Format Functions
+// ✅ Format Functions
 const formatPrice = (price: number): string => {
   return new Intl.NumberFormat("he-IL", {
     style: "currency",
@@ -46,15 +46,7 @@ const formatYear = (year: number): string => {
   return year.toString();
 };
 
-const getCarAge = (year: number): string => {
-  const currentYear = new Date().getFullYear();
-  const age = currentYear - year;
-  if (age === 0) return "חדש";
-  if (age === 1) return "שנה";
-  return `${age} שנים`;
-};
-
-// Car condition based on age and mileage
+// Car condition functions
 const getCarCondition = (
   year: number,
   mileage: number
@@ -83,40 +75,7 @@ const getConditionColor = (condition: string): string => {
   }
 };
 
-// ✅ Helper function to get main image URL
-const getMainImageUrl = (
-  images: (string | CarImage)[] | undefined
-): string | null => {
-  if (!images || images.length === 0) {
-    return null;
-  }
-
-  // Look for main image
-  const mainImage = images.find((img) => {
-    if (typeof img === "string") {
-      return false; // If it's a string, we can't know if it's main
-    }
-    return img.is_main;
-  });
-
-  if (mainImage && typeof mainImage !== "string") {
-    return mainImage.image_url;
-  }
-
-  // Fallback to first image
-  const firstImage = images[0];
-  if (typeof firstImage === "string") {
-    return firstImage;
-  }
-  return firstImage.image_url;
-};
-
-// ✅ Helper function to get images count
-const getImagesCount = (images: (string | CarImage)[] | undefined): number => {
-  return images?.length || 0;
-};
-
-// ✅ Fixed Component Interface
+// ✅ Component Interface
 export interface CarCardProps {
   car: Car;
   viewMode?: "grid" | "list";
@@ -142,9 +101,21 @@ export default function CarCard({
   const condition = getCarCondition(car.year, car.mileage || 0);
   const conditionColor = getConditionColor(condition);
 
-  // ✅ Get main image and count
-  const mainImageUrl = getMainImageUrl(car.images);
-  const imagesCount = getImagesCount(car.images);
+  // ✅ FIXED: משתמש באותה לוגיקה כמו בעמוד הרכב הספציפי
+  const normalizedImages = normalizeImages(car.images, car.id);
+  const mainImageUrl = normalizedImages.main?.image_url || null;
+  const imagesCount = normalizedImages.count;
+
+  // Debug log
+  if (process.env.NODE_ENV === "development") {
+    console.log("🖼️ CarCard Debug:", {
+      carId: car.id,
+      rawImages: car.images,
+      normalizedImages,
+      mainImageUrl,
+      imagesCount,
+    });
+  }
 
   const handleContact = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -162,7 +133,7 @@ export default function CarCard({
     onView?.(car);
   };
 
-  // ✅ Fixed Grid Layout with Image Support
+  // ✅ Grid Layout
   if (viewMode === "grid") {
     return (
       <Card
@@ -211,7 +182,7 @@ export default function CarCard({
             <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
               {car.make} {car.model}
             </h3>
-            {/* ✅ FIXED: העיר עברה למעלה ליד השנה */}
+            {/* העיר עברה למעלה ליד השנה */}
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
@@ -228,7 +199,7 @@ export default function CarCard({
         </CardHeader>
 
         <CardContent className="p-4 pt-2">
-          {/* ✅ Car Image - Fixed to show actual image */}
+          {/* ✅ Car Image - FIXED: משתמש בלוגיקה מהעמוד הספציפי */}
           <div className="relative bg-gray-100 rounded-lg mb-4 aspect-video overflow-hidden">
             {mainImageUrl ? (
               <Image
@@ -237,17 +208,25 @@ export default function CarCard({
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                 sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                onError={(e) => {
+                  console.error("❌ Image load error:", mainImageUrl);
+                  // Hide image on error and show placeholder
+                  e.currentTarget.style.display = "none";
+                }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
                 <ImageIcon className="w-8 h-8 text-gray-400" />
+                <span className="text-xs text-gray-500 mt-1">אין תמונה</span>
               </div>
             )}
 
-            {/* Images Count Badge */}
-            <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
-              {imagesCount} תמונות
-            </div>
+            {/* Images Count Badge - רק אם יש תמונות */}
+            {imagesCount > 0 && (
+              <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                {imagesCount} תמונות
+              </div>
+            )}
           </div>
 
           {/* Car Details */}
@@ -314,7 +293,7 @@ export default function CarCard({
     );
   }
 
-  // ✅ List Layout - Fixed to show actual image
+  // ✅ List Layout - FIXED
   return (
     <Card
       className={cn(
@@ -325,7 +304,7 @@ export default function CarCard({
     >
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
-          {/* ✅ Car Image - Fixed to show actual image */}
+          {/* ✅ Car Image - FIXED */}
           <div className="w-24 h-16 bg-gray-100 rounded flex-shrink-0 overflow-hidden relative">
             {mainImageUrl ? (
               <Image
@@ -334,6 +313,10 @@ export default function CarCard({
                 fill
                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                 sizes="96px"
+                onError={(e) => {
+                  console.error("❌ List image error:", mainImageUrl);
+                  e.currentTarget.style.display = "none";
+                }}
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
