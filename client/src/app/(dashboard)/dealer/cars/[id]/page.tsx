@@ -271,12 +271,16 @@ export default function DealerCarDetailsPage() {
   const handleToggleAvailability = async () => {
     if (!car) return;
 
+    const currentValue = car.isAvailable ?? true; // ברירת מחדל true אם undefined
+    const newValue = !currentValue;
+
     console.log("🔄 Before toggle:", {
-      currentAvailable: car.isAvailable,
-      willChangeTo: !car.isAvailable,
+      currentAvailable: currentValue,
+      willChangeTo: newValue,
+      carIsAvailable: car.isAvailable,
     });
 
-    const success = await toggleAvailability(car.id, !car.isAvailable);
+    const success = await toggleAvailability(car.id, newValue);
     if (success) {
       console.log("✅ Toggle success, refetching...");
       refetch();
@@ -576,6 +580,13 @@ export default function DealerCarDetailsPage() {
                 ערוך פרטים
               </Button>
 
+              {/* Debug Info - תמחק אחרי הבדיקה */}
+              <div className="text-xs text-gray-400 p-2 bg-yellow-50 rounded">
+                Debug: car.isAvailable = {String(car.isAvailable)}
+                <br />
+                Status: {car.status}
+              </div>
+
               {/* Toggle Switch for Availability */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex flex-col">
@@ -605,13 +616,6 @@ export default function DealerCarDetailsPage() {
                     )}
                   />
                 </button>
-              </div>
-
-              {/* Debug Info - תמחק אחרי הבדיקה */}
-              <div className="text-xs text-gray-400 p-2 bg-yellow-50 rounded">
-                Debug: car.isAvailable = {car.isAvailable ? "true" : "false"}
-                <br />
-                Status: {car.status}
               </div>
 
               {car.status === "active" && (
