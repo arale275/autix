@@ -299,7 +299,9 @@ function DealerCarCard({
                 {car.make} {car.model} {car.year}
               </Link>
               <div className="text-sm text-gray-500">
-                {car.city} • {imageCount} תמונות
+                {car.city && <span>{car.city}</span>}
+                {car.city && imageCount > 0 && <span> • </span>}
+                {imageCount > 0 && <span>{imageCount} תמונות</span>}
               </div>
             </div>
           </div>
@@ -377,7 +379,7 @@ function DealerCarCard({
   return (
     <div className="relative group">
       {/* Selection Checkbox */}
-      <div className="absolute top-2 right-2 z-10">
+      <div className="absolute top-2 right-2 z-10 transition-transform duration-200 group-hover:scale-105">
         <Checkbox
           checked={isSelected}
           onCheckedChange={() => onSelect(car.id)}
@@ -386,121 +388,125 @@ function DealerCarCard({
       </div>
 
       <Link href={`/dealer/cars/${car.id}`} className="block">
-        <CarCard
-          car={car}
-          viewMode={viewMode as "grid" | "list"}
-          showActions={false}
-          showContactButton={false}
-          showFavoriteButton={false}
-          className={cn(
-            "transition-all duration-200 hover:shadow-lg hover:-translate-y-1",
-            isSelected && "ring-2 ring-blue-500 ring-offset-2",
-            !car.isAvailable && "opacity-75",
-            car.status === "sold" && "ring-2 ring-purple-200",
-            car.status === "deleted" && "ring-2 ring-red-200"
-          )}
-        />
-      </Link>
-
-      {/* Enhanced Status Badges */}
-      <div className="absolute top-2 left-2 flex flex-col gap-1">
-        <Badge className={getStatusColor(car.status)}>
-          {getStatusLabel(car.status)}
-        </Badge>
-        {car.isFeatured && (
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-            <Star className="w-3 h-3 mr-1" />
-            מומלץ
-          </Badge>
-        )}
-        {!hasImages && (
-          <Badge className="bg-orange-100 text-orange-800 border-orange-200">
-            <ImageIcon className="w-3 h-3 mr-1" />
-            ללא תמונות
-          </Badge>
-        )}
-        {daysOnMarket > 30 && (
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-            <Clock className="w-3 h-3 mr-1" />
-            מלאי ישן
-          </Badge>
-        )}
-      </div>
-
-      {/* Interactive Availability Toggle */}
-      {car.status === "active" && (
-        <div className="absolute top-2 left-1/2 transform -translate-x-1/2">
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onToggleAvailability(car.id, !car.isAvailable);
-            }}
-            disabled={actionLoading}
+        <div className="relative overflow-hidden transition-all duration-300 ease-out hover:scale-[1.02] hover:shadow-xl">
+          <CarCard
+            car={car}
+            viewMode={viewMode as "grid" | "list"}
+            showActions={false}
+            showContactButton={false}
+            showFavoriteButton={false}
             className={cn(
-              "px-2 py-1 text-xs font-medium rounded-full border transition-all duration-200",
-              "hover:shadow-md backdrop-blur-sm",
-              car.isAvailable
-                ? "bg-green-100/90 text-green-800 border-green-200 hover:bg-green-200"
-                : "bg-gray-100/90 text-gray-800 border-gray-200 hover:bg-gray-200",
-              actionLoading && "opacity-50 cursor-not-allowed"
+              "border transition-all duration-300",
+              isSelected && "ring-2 ring-blue-500 ring-offset-2",
+              !car.isAvailable && "opacity-75",
+              car.status === "sold" && "ring-2 ring-purple-200",
+              car.status === "deleted" && "ring-2 ring-red-200"
             )}
-          >
-            {car.isAvailable ? "פעיל" : "מוסתר"}
-          </button>
-        </div>
-      )}
+          />
 
-      {/* Quick Actions on Hover */}
-      <div className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex gap-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onEdit(car);
-          }}
-        >
-          <Edit className="h-3 w-3" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            // Share functionality
-          }}
-        >
-          <Share2 className="h-3 w-3" />
-        </Button>
-      </div>
+          {/* Enhanced Status Badges - נעים עם הקארד */}
+          <div className="absolute top-2 left-2 flex flex-col gap-1 transition-transform duration-300 group-hover:scale-105">
+            <Badge className={getStatusColor(car.status)}>
+              {getStatusLabel(car.status)}
+            </Badge>
+            {car.isFeatured && (
+              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                <Star className="w-3 h-3 mr-1" />
+                מומלץ
+              </Badge>
+            )}
+            {!hasImages && (
+              <Badge className="bg-orange-100 text-orange-800 border-orange-200">
+                <ImageIcon className="w-3 h-3 mr-1" />
+                ללא תמונות
+              </Badge>
+            )}
+            {daysOnMarket > 30 && (
+              <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                <Clock className="w-3 h-3 mr-1" />
+                מלאי ישן
+              </Badge>
+            )}
+          </div>
 
-      {/* Enhanced Bottom Info Bar */}
-      <div className="absolute bottom-2 left-2 right-2">
-        <div className="bg-white/95 backdrop-blur-sm rounded-lg p-2 text-xs border border-white/20 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="text-gray-600">
-                נוסף ב-{formatDate(car.createdAt)}
-              </span>
-              {imageCount > 0 && (
-                <span className="flex items-center gap-1 text-blue-600">
-                  <ImageIcon className="w-3 h-3" />
-                  {imageCount}
-                </span>
-              )}
-              <span className="flex items-center gap-1 text-gray-500">
-                <Clock className="w-3 h-3" />
-                {daysOnMarket}ד
-              </span>
+          {/* Interactive Availability Toggle - נעים עם הקארד */}
+          {car.status === "active" && (
+            <div className="absolute top-2 left-1/2 transform -translate-x-1/2 transition-transform duration-300 group-hover:scale-105">
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleAvailability(car.id, !car.isAvailable);
+                }}
+                disabled={actionLoading}
+                className={cn(
+                  "px-2 py-1 text-xs font-medium rounded-full border transition-all duration-200",
+                  "hover:shadow-md backdrop-blur-sm",
+                  car.isAvailable
+                    ? "bg-green-100/90 text-green-800 border-green-200 hover:bg-green-200"
+                    : "bg-gray-100/90 text-gray-800 border-gray-200 hover:bg-gray-200",
+                  actionLoading && "opacity-50 cursor-not-allowed"
+                )}
+              >
+                {car.isAvailable ? "פעיל" : "מוסתר"}
+              </button>
+            </div>
+          )}
+
+          {/* Quick Actions on Hover - נעים עם הקארד */}
+          <div className="absolute top-2 right-10 opacity-0 group-hover:opacity-100 transition-all duration-300 transform group-hover:scale-105 flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onEdit(car);
+              }}
+            >
+              <Edit className="h-3 w-3" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 w-8 p-0 bg-white/90 hover:bg-white"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Share functionality
+              }}
+            >
+              <Share2 className="h-3 w-3" />
+            </Button>
+          </div>
+
+          {/* Enhanced Bottom Info Bar - נעים עם הקארד */}
+          <div className="absolute bottom-2 left-2 right-2 transition-transform duration-300 group-hover:scale-105">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg p-2 text-xs border border-white/20 shadow-sm">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-900">
+                    {car.make} {car.model} {car.year}
+                  </span>
+                  {car.city && (
+                    <span className="text-gray-600">{car.city}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  {imageCount > 0 && (
+                    <span className="flex items-center gap-1 text-blue-600">
+                      <ImageIcon className="w-3 h-3" />
+                      {imageCount}
+                    </span>
+                  )}
+                  <span className="text-gray-500">{daysOnMarket}ד</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </Link>
     </div>
   );
 }
@@ -1059,7 +1065,7 @@ export default function DealerCarsPage() {
           לוח בקרה
         </Link>
         <ChevronLeft className="w-4 h-4" />
-        <span className="text-gray-900 font-medium">המלאי שלי</span>
+        <span className="text-gray-900 font-medium">הרכבים שלי</span>
       </nav>
 
       {/* Enhanced Page Header */}
@@ -1067,7 +1073,7 @@ export default function DealerCarsPage() {
         <div>
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <CarIcon className="w-8 h-8 text-blue-600" />
-            המלאי שלי
+            הרכבים שלי
           </h1>
           <p className="text-gray-600 mt-1">
             נהל את רכבי החברה שלך ועקוב אחר הביצועים • {filteredCars.length}{" "}
