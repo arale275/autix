@@ -582,7 +582,7 @@ export default function DealerCarDetailsPage() {
                 ערוך פרטים
               </Button>
 
-              {/* Toggle Switch for Availability - Simple Version */}
+              {/* Toggle Switch for Availability - Debug Version */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-gray-900">
@@ -591,21 +591,31 @@ export default function DealerCarDetailsPage() {
                   <span className="text-xs text-gray-500">
                     {car.isAvailable ? "מוצג למכירה" : "מוסתר מהקונים"}
                   </span>
+                  {/* Debug info */}
+                  <span className="text-xs text-red-500">
+                    Debug: {String(car.isAvailable)}
+                  </span>
                 </div>
 
-                {/* Simple Toggle Switch */}
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={car.isAvailable ?? true}
-                    onChange={handleToggleAvailability}
-                    disabled={actionLoading[car.id]}
-                    className="sr-only peer"
+                {/* Manual Toggle Switch */}
+                <div
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log("🔥 TOGGLE CLICKED!");
+                    handleToggleAvailability();
+                  }}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors duration-300 border-2 border-blue-500 ${
+                    car.isAvailable ? "bg-green-500" : "bg-gray-300"
+                  }`}
+                  style={{ zIndex: 1000 }}
+                >
+                  <div
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 shadow-lg ${
+                      car.isAvailable ? "translate-x-6" : "translate-x-1"
+                    }`}
                   />
-                  <div className="relative w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-blue-300 transition-colors duration-300">
-                    <div className="absolute top-0.5 left-0.5 bg-white border border-gray-300 rounded-full h-5 w-5 transition-transform duration-300 peer-checked:translate-x-5 peer-checked:border-white"></div>
-                  </div>
-                </label>
+                </div>
               </div>
 
               {car.status === "active" && (
