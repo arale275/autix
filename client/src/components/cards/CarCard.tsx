@@ -108,7 +108,7 @@ export default function CarCard({
       <Card
         className={cn(
           "group hover:shadow-lg transition-all duration-300 cursor-pointer border-gray-200 hover:border-blue-300",
-          !car.isAvailable && "opacity-75 grayscale",
+
           className
         )}
       >
@@ -228,13 +228,6 @@ export default function CarCard({
                 </div>
               )}
             </div>
-
-            {/* Description */}
-            {car.description && (
-              <p className="text-sm text-gray-600 line-clamp-2">
-                {car.description}
-              </p>
-            )}
           </div>
         </CardContent>
 
@@ -265,7 +258,7 @@ export default function CarCard({
     <Card
       className={cn(
         "group hover:shadow-md transition-all duration-200 cursor-pointer",
-        !car.isAvailable && "opacity-75 grayscale",
+
         className
       )}
     >
