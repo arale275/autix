@@ -186,6 +186,25 @@ export class CarsController {
 
       const car = carResult.rows[0];
 
+      // ✅ המרה לcamelCase לתואמות עם Frontend
+      const transformedCar = {
+        ...car,
+        isAvailable: car.is_available,
+        fuelType: car.fuel_type,
+        createdAt: car.created_at,
+        updatedAt: car.updated_at,
+        dealerId: car.dealer_id,
+        dealerUserId: car.dealer_user_id,
+        dealerName: car.dealer_name,
+        dealerAddress: car.dealer_address,
+        dealerCity: car.dealer_city,
+        dealerDescription: car.dealer_description,
+        dealerVerified: car.dealer_verified,
+        dealerRating: car.dealer_rating,
+        dealerContact: car.dealer_contact,
+        dealerPhone: car.dealer_phone,
+        dealerEmail: car.dealer_email,
+      };
       // ✅ הוסף תמונות לרכב
       const imagesResult = await pool.query(
         `
@@ -205,7 +224,7 @@ export class CarsController {
 
       res.json({
         success: true,
-        data: car,
+        data: transformedCar, // במקום car
       });
     } catch (error) {
       console.error("Get car by ID error:", error);
@@ -362,10 +381,20 @@ export class CarsController {
         ]
       );
 
+      // ✅ המרה לcamelCase לתואמות עם Frontend
+      const transformedCar = {
+        ...updateResult.rows[0],
+        isAvailable: updateResult.rows[0].is_available,
+        fuelType: updateResult.rows[0].fuel_type,
+        createdAt: updateResult.rows[0].created_at,
+        updatedAt: updateResult.rows[0].updated_at,
+        dealerId: updateResult.rows[0].dealer_id,
+      };
+
       res.json({
         success: true,
         message: "רכב עודכן בהצלחה",
-        data: updateResult.rows[0],
+        data: transformedCar,
       });
     } catch (error) {
       console.error("Update car error:", error);
