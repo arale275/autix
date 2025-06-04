@@ -271,10 +271,17 @@ export default function DealerCarDetailsPage() {
   const handleToggleAvailability = async () => {
     if (!car) return;
 
+    console.log("🔄 Before toggle:", {
+      currentAvailable: car.isAvailable,
+      willChangeTo: !car.isAvailable,
+    });
+
     const success = await toggleAvailability(car.id, !car.isAvailable);
     if (success) {
-      // עדכון מיידי של הסטטוס במקום הודעה בלבד
+      console.log("✅ Toggle success, refetching...");
       refetch();
+    } else {
+      console.log("❌ Toggle failed");
     }
   };
 
