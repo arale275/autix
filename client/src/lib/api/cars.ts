@@ -22,14 +22,16 @@ export const carsApi = {
    * Public endpoint - no auth required
    */
   getCars: async (params: CarsSearchParams = {}): Promise<CarsResponse> => {
-    const response = await apiClient.getWithParams<CarsResponse>(
+    const response = await apiClient.getWithParams<any>( // ← שנה ל-any
       API_ENDPOINTS.CARS,
       params,
-      { skipAuth: true } // Public endpoint
+      { skipAuth: true }
     );
 
     console.log(`✅ Fetched ${response.cars.length} cars`);
-    return response;
+
+    // ✅ הוסף נרמול:
+    return normalizeCarsResponse(response);
   },
 
   /**
@@ -88,10 +90,12 @@ export const carsApi = {
    * Requires authentication and dealer role
    */
   addCar: async (carData: CreateCarRequest): Promise<Car> => {
-    const response = await apiClient.post<Car>(API_ENDPOINTS.CARS, carData);
+    const response = await apiClient.post<any>(API_ENDPOINTS.CARS, carData); // ← שנה ל-any
 
     console.log(`✅ Added new car: ${carData.make} ${carData.model}`);
-    return response;
+
+    // ✅ הוסף נרמול:
+    return normalizeCarFromAPI(response);
   },
 
   /**
@@ -125,13 +129,16 @@ export const carsApi = {
    * Mark car as sold (dealer only)
    */
   markCarAsSold: async (id: number): Promise<Car> => {
-    const response = await apiClient.put<Car>(API_ENDPOINTS.CAR_BY_ID(id), {
+    const response = await apiClient.put<any>(API_ENDPOINTS.CAR_BY_ID(id), {
+      // ← שנה ל-any
       status: "sold",
       isAvailable: false,
     });
 
     console.log(`✅ Marked car ${id} as sold`);
-    return response;
+
+    // ✅ הוסף נרמול:
+    return normalizeCarFromAPI(response);
   },
 
   // Toggle car availability (dealer only)
