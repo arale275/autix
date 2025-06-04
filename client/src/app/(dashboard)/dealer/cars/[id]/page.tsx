@@ -1,4 +1,4 @@
-// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers
+// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers (Clean)
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -40,9 +40,9 @@ import { ImageUploader } from "@/components/forms/ImageUploader";
 import { CarStatusBadge } from "@/components/features/CarStatusBadge";
 import { CarActions } from "@/components/features/CarActions";
 import { useCar } from "@/hooks/api/useCars";
-import { useDealerCars } from "@/hooks/api/useCars";
 import { useImages } from "@/hooks/useImages";
 import { useAuth } from "@/contexts/AuthContext";
+import { carsApi } from "@/lib/api/cars";
 import {
   formatPrice,
   formatMileage,
@@ -53,6 +53,7 @@ import {
 } from "@/lib/formatters";
 import { normalizeImages } from "@/lib/car-utils";
 import type { Car } from "@/lib/api/types";
+import { carEvents } from "@/lib/events/carEvents";
 
 export default function DealerCarDetailsPage() {
   const params = useParams();
@@ -65,11 +66,10 @@ export default function DealerCarDetailsPage() {
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   // Hooks
   const { car, loading, error, refetch } = useCar(carId);
-  const { toggleAvailability, actionLoading, deleteCar, markAsSold } =
-    useDealerCars();
   const { setMainImage, deleteImage, uploadMultipleImages } = useImages();
 
   // Check ownership
@@ -88,7 +88,8 @@ export default function DealerCarDetailsPage() {
     const success = await setMainImage(car.id, imageId);
     if (success) {
       refetch();
-      router.refresh(); // ✅ עדכון עמוד כללי
+      // ✅ שליחת event
+      carEvents.emitCarUpdate(car.id, "image", { imageId });
     }
   };
 
@@ -98,7 +99,6 @@ export default function DealerCarDetailsPage() {
       const success = await deleteImage(imageId);
       if (success) {
         refetch();
-        router.refresh(); // ✅ עדכון עמוד כללי
       }
     }
   };
@@ -119,7 +119,6 @@ export default function DealerCarDetailsPage() {
         setIsImageUploadOpen(false);
         setSelectedFiles([]);
         refetch();
-        router.refresh(); // ✅ עדכון עמוד כללי
       }
     } catch (error) {
       console.error("Upload error:", error);
@@ -127,14 +126,12 @@ export default function DealerCarDetailsPage() {
     }
   };
 
-  // Toggle availability with confirmation for hiding
   const handleToggleAvailability = async () => {
     if (!car) return;
 
     const currentValue = car.isAvailable ?? true;
     const newValue = !currentValue;
 
-    // Show confirmation only when hiding the car
     if (currentValue && !newValue) {
       const confirmed = window.confirm(
         "האם אתה בטוח שברצונך להסתיר את הרכב מהקונים?"
@@ -143,15 +140,21 @@ export default function DealerCarDetailsPage() {
     }
 
     try {
-      const success = await toggleAvailability(car.id, newValue);
-      if (success) {
-        refetch();
-        router.refresh(); // ✅ עדכון עמוד כללי
-        toast.success(newValue ? "הרכב מוצג כעת לקונים" : "הרכב הוסתר מהקונים");
-      }
+      setActionLoading(true);
+      await carsApi.toggleCarAvailability(car.id, newValue);
+      await refetch();
+
+      // ✅ שליחת event לעמודים אחרים
+      carEvents.emitCarUpdate(car.id, "availability", {
+        isAvailable: newValue,
+      });
+
+      toast.success(newValue ? "הרכב מוצג כעת לקונים" : "הרכב הוסתר מהקונים");
     } catch (error) {
       console.error("Toggle error:", error);
       toast.error("שגיאה בשינוי מצב הרכב");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -167,10 +170,10 @@ export default function DealerCarDetailsPage() {
   const handleSaveEdit = () => {
     setIsEditMode(false);
     refetch();
-    router.refresh(); // ✅ עדכון עמוד כללי
     toast.success("הרכב עודכן בהצלחה");
   };
 
+  // ✅ Delete עם API ישיר
   const handleDelete = async () => {
     if (!car) return;
     if (
@@ -178,32 +181,41 @@ export default function DealerCarDetailsPage() {
         "האם אתה בטוח שברצונך למחוק את הרכב? פעולה זו לא ניתנת לביטול."
       )
     ) {
-      const success = await deleteCar(car.id);
-      if (success) {
+      try {
+        setActionLoading(true);
+        await carsApi.deleteCar(car.id);
         toast.success("הרכב נמחק בהצלחה");
         router.push("/dealer/cars");
+      } catch (error) {
+        console.error("Delete error:", error);
+        toast.error("שגיאה במחיקת הרכב");
+      } finally {
+        setActionLoading(false);
       }
     }
   };
 
+  // ✅ Mark as sold עם API ישיר
   const handleMarkSold = async () => {
     if (!car) return;
 
-    const confirmed = window.confirm(
-      `האם אתה בטוח שברצונך לסמן את הרכב ${formatCarTitle(
-        car.make,
-        car.model,
-        car.year
-      )} כנמכר?\n\nלאחר הסימון:\n• הרכב יוסתר מהקונים\n• לא ניתן לקבל פניות חדשות\n• הסטטוס ישתנה ל"נמכר"\n\nפעולה זו לא ניתנת לביטול.`
-    );
-
+    const confirmed = window.confirm(/* ... */);
     if (!confirmed) return;
 
-    const success = await markAsSold(car.id);
-    if (success) {
+    try {
+      setActionLoading(true);
+      await carsApi.updateCar(car.id, { status: "sold" });
+      await refetch();
+
+      // ✅ שליחת event
+      carEvents.emitCarUpdate(car.id, "status", { status: "sold" });
+
       toast.success("הרכב סומן כנמכר בהצלחה");
-      refetch();
-      router.refresh(); // ✅ עדכון עמוד כללי
+    } catch (error) {
+      console.error("Mark sold error:", error);
+      toast.error("שגיאה בסימון הרכב כנמכר");
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -340,7 +352,7 @@ export default function DealerCarDetailsPage() {
               onToggleAvailability={
                 car.status === "active" ? handleToggleAvailability : undefined
               }
-              loading={actionLoading[car.id]}
+              loading={actionLoading}
             />
           </div>
         </CardContent>
@@ -509,7 +521,7 @@ export default function DealerCarDetailsPage() {
             onEdit={handleEdit}
             onMarkSold={handleMarkSold}
             onDelete={handleDelete}
-            loading={actionLoading[car.id]}
+            loading={actionLoading}
           />
 
           {/* Status Information Cards */}

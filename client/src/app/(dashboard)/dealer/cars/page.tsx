@@ -1,7 +1,7 @@
 // app/(dashboard)/dealer/cars/page.tsx - Refactored Cars Management Page
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -28,6 +28,7 @@ import { useDealerCars } from "@/hooks/api/useCars";
 import { useAuth } from "@/contexts/AuthContext";
 import { filterCars, calculateCarStats } from "@/lib/car-utils";
 import type { Car } from "@/lib/api/types";
+import { carEvents } from "@/lib/events/carEvents";
 
 export default function DealerCarsPage() {
   const { user } = useAuth();
@@ -50,6 +51,18 @@ export default function DealerCarsPage() {
     markAsSold,
     toggleAvailability,
   } = useDealerCars();
+
+  useEffect(() => {
+    const cleanup = carEvents.onCarUpdate((detail) => {
+      console.log("🔄 Received car update in cars list:", detail);
+
+      // רענון מיידי של הרשימה
+      refetch();
+    });
+
+    // ניקוי בעת unmount
+    return cleanup;
+  }, [refetch]);
 
   // Filtered and sorted cars
   const filteredCars = useMemo(() => {
