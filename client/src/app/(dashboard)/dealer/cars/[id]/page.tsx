@@ -571,7 +571,7 @@ export default function DealerCarDetailsPage() {
                 ערוך פרטים
               </Button>
 
-              {/* Toggle Switch for Availability */}
+              {/* Toggle Switch for Availability - Simple Version */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-gray-900">
@@ -582,25 +582,19 @@ export default function DealerCarDetailsPage() {
                   </span>
                 </div>
 
-                <div
-                  onClick={handleToggleAvailability}
-                  className={cn(
-                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 cursor-pointer",
-                    actionLoading[car.id] && "opacity-50 cursor-not-allowed",
-                    car.isAvailable ?? true ? "bg-green-500" : "bg-gray-300"
-                  )}
-                  role="switch"
-                  aria-checked={car.isAvailable ?? true}
-                >
-                  <div
-                    className={cn(
-                      "inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-200 shadow-lg",
-                      car.isAvailable ?? true
-                        ? "translate-x-6"
-                        : "translate-x-1"
-                    )}
+                {/* Simple Toggle Switch */}
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={car.isAvailable ?? true}
+                    onChange={handleToggleAvailability}
+                    disabled={actionLoading[car.id]}
+                    className="sr-only peer"
                   />
-                </div>
+                  <div className="relative w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 peer-focus:ring-2 peer-focus:ring-blue-300 transition-colors duration-300">
+                    <div className="absolute top-0.5 left-0.5 bg-white border border-gray-300 rounded-full h-5 w-5 transition-transform duration-300 peer-checked:translate-x-5 peer-checked:border-white"></div>
+                  </div>
+                </label>
               </div>
 
               {car.status === "active" && (
