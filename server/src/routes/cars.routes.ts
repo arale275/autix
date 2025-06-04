@@ -46,4 +46,11 @@ router.get(
   carsController.getMyCars
 ); // הרכבים שלי
 
+router.put(
+  "/:id/availability",
+  authenticateToken,
+  requireRole(["dealer"]),
+  carsController.toggleCarAvailability
+);
+
 export default router;

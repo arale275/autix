@@ -130,16 +130,17 @@ export const carsApi = {
     return response;
   },
 
-  /**
-   * Toggle car availability (dealer only)
-   */
+  
+   // Toggle car availability (dealer only)
+   
   toggleCarAvailability: async (
-    id: number,
-    isAvailable: boolean
-  ): Promise<Car> => {
-    const response = await apiClient.put<Car>(API_ENDPOINTS.CAR_BY_ID(id), {
-      isAvailable,
-    });
+  id: number,
+  isAvailable: boolean
+): Promise<Car> => {
+  const response = await apiClient.put<Car>(
+    `${API_ENDPOINTS.CAR_BY_ID(id)}/availability`,
+    { isAvailable }
+  );
 
     console.log(`✅ Toggled car ${id} availability to ${isAvailable}`);
     return response;

@@ -555,4 +555,63 @@ export class CarsController {
       });
     }
   }
+  async toggleCarAvailability(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+      const { isAvailable } = req.body;
+      const userId = req.user?.id;
+
+      // בדיקה שהרכב שייך לדילר הנוכחי
+      const carCheck = await pool.query(
+        `
+      SELECT c.id 
+      FROM cars c
+      JOIN dealers d ON c.dealer_id = d.id
+      WHERE c.id = $1 AND d.user_id = $2
+      `,
+        [id, userId]
+      );
+
+      if (carCheck.rows.length === 0) {
+        return res.status(403).json({
+          success: false,
+          message: "אין לך הרשאה לערוך רכב זה",
+        });
+      }
+
+      // עדכון is_available בלבד
+      const updateResult = await pool.query(
+        `
+      UPDATE cars SET
+        is_available = $2,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING *
+      `,
+        [id, isAvailable]
+      );
+
+      // המרה לcamelCase
+      const transformedCar = {
+        ...updateResult.rows[0],
+        isAvailable: updateResult.rows[0].is_available,
+        fuelType: updateResult.rows[0].fuel_type,
+        createdAt: updateResult.rows[0].created_at,
+        updatedAt: updateResult.rows[0].updated_at,
+        dealerId: updateResult.rows[0].dealer_id,
+      };
+
+      res.json({
+        success: true,
+        message: `רכב ${isAvailable ? "הוצג" : "הוסתר"} בהצלחה`,
+        data: transformedCar,
+      });
+    } catch (error) {
+      console.error("Toggle availability error:", error);
+      res.status(500).json({
+        success: false,
+        message: "שגיאה בעדכון זמינות הרכב",
+      });
+    }
+  }
 }
