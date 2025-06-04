@@ -1,4 +1,4 @@
-// app/(dashboard)/dealer/cars/[id]/page.tsx - Refactored Car Details Page
+// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -6,17 +6,20 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
-  ChevronLeft,
-  AlertTriangle,
-  Upload,
-  MessageSquare,
+  Edit,
+  CheckCircle,
+  Share2,
   Calendar,
   Gauge,
   Fuel,
   Settings,
   MapPin,
   Car as CarIcon,
-  CheckCircle,
+  ChevronLeft,
+  AlertTriangle,
+  Zap,
+  Upload,
+  MessageSquare,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -79,12 +82,13 @@ export default function DealerCarDetailsPage() {
     }
   }, [car, user, router]);
 
-  // Image management functions
+  // פונקציות לניהול תמונות
   const handleSetMainImage = async (imageId: number) => {
     if (!car) return;
     const success = await setMainImage(car.id, imageId);
     if (success) {
       refetch();
+      router.refresh(); // ✅ עדכון עמוד כללי
     }
   };
 
@@ -94,6 +98,7 @@ export default function DealerCarDetailsPage() {
       const success = await deleteImage(imageId);
       if (success) {
         refetch();
+        router.refresh(); // ✅ עדכון עמוד כללי
       }
     }
   };
@@ -114,6 +119,7 @@ export default function DealerCarDetailsPage() {
         setIsImageUploadOpen(false);
         setSelectedFiles([]);
         refetch();
+        router.refresh(); // ✅ עדכון עמוד כללי
       }
     } catch (error) {
       console.error("Upload error:", error);
@@ -121,13 +127,14 @@ export default function DealerCarDetailsPage() {
     }
   };
 
-  // Car actions
+  // Toggle availability with confirmation for hiding
   const handleToggleAvailability = async () => {
     if (!car) return;
 
     const currentValue = car.isAvailable ?? true;
     const newValue = !currentValue;
 
+    // Show confirmation only when hiding the car
     if (currentValue && !newValue) {
       const confirmed = window.confirm(
         "האם אתה בטוח שברצונך להסתיר את הרכב מהקונים?"
@@ -139,6 +146,7 @@ export default function DealerCarDetailsPage() {
       const success = await toggleAvailability(car.id, newValue);
       if (success) {
         refetch();
+        router.refresh(); // ✅ עדכון עמוד כללי
         toast.success(newValue ? "הרכב מוצג כעת לקונים" : "הרכב הוסתר מהקונים");
       }
     } catch (error) {
@@ -147,6 +155,7 @@ export default function DealerCarDetailsPage() {
     }
   };
 
+  // Actions
   const handleEdit = () => {
     setIsEditMode(true);
   };
@@ -158,6 +167,7 @@ export default function DealerCarDetailsPage() {
   const handleSaveEdit = () => {
     setIsEditMode(false);
     refetch();
+    router.refresh(); // ✅ עדכון עמוד כללי
     toast.success("הרכב עודכן בהצלחה");
   };
 
@@ -193,6 +203,7 @@ export default function DealerCarDetailsPage() {
     if (success) {
       toast.success("הרכב סומן כנמכר בהצלחה");
       refetch();
+      router.refresh(); // ✅ עדכון עמוד כללי
     }
   };
 

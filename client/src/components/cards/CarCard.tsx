@@ -122,7 +122,6 @@ export default function CarCard({
                   מומלץ
                 </Badge>
               )}
-              {!car.isAvailable && <Badge variant="secondary">לא זמין</Badge>}
             </div>
 
             {/* Favorite Button */}
