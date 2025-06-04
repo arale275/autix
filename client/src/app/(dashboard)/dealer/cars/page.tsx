@@ -52,6 +52,14 @@ export default function DealerCarsPage() {
     toggleAvailability,
   } = useDealerCars();
   console.log("🚗 Cars in dealer page:", cars);
+  console.log(
+    "🔍 Car 9 raw data:",
+    JSON.stringify(
+      cars.find((car) => car.id === 9),
+      null,
+      2
+    )
+  );
   // ❌ הוסר useEffect - העדכונים יקרו אוטומטית דרך cache invalidation!
 
   // Filtered and sorted cars
