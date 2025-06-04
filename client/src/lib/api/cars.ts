@@ -36,10 +36,7 @@ export const carsApi = {
    * Public endpoint - no auth required
    */
   getCar: async (id: number): Promise<Car> => {
-    const response = await apiClient.get<Car>(
-      API_ENDPOINTS.CAR_BY_ID(id),
-      { skipAuth: true } // Public endpoint
-    );
+    const response = await apiClient.get<Car>(API_ENDPOINTS.CAR_BY_ID(id));
 
     console.log(`✅ Fetched car ${id}`);
     return response;
@@ -130,17 +127,16 @@ export const carsApi = {
     return response;
   },
 
-  
-   // Toggle car availability (dealer only)
-   
+  // Toggle car availability (dealer only)
+
   toggleCarAvailability: async (
-  id: number,
-  isAvailable: boolean
-): Promise<Car> => {
-  const response = await apiClient.put<Car>(
-    `${API_ENDPOINTS.CAR_BY_ID(id)}/availability`,
-    { isAvailable }
-  );
+    id: number,
+    isAvailable: boolean
+  ): Promise<Car> => {
+    const response = await apiClient.put<Car>(
+      `${API_ENDPOINTS.CAR_BY_ID(id)}/availability`,
+      { isAvailable }
+    );
 
     console.log(`✅ Toggled car ${id} availability to ${isAvailable}`);
     return response;
