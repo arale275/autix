@@ -51,7 +51,7 @@ export default function DealerCarsPage() {
     markAsSold,
     toggleAvailability,
   } = useDealerCars();
-
+  console.log("🚗 Cars in dealer page:", cars);
   // ❌ הוסר useEffect - העדכונים יקרו אוטומטית דרך cache invalidation!
 
   // Filtered and sorted cars
