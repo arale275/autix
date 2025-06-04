@@ -2,6 +2,7 @@
 import { Request, Response } from "express";
 import pool from "../config/database.config";
 import { AuthRequest } from "../types/auth.types";
+import jwt from "jsonwebtoken";
 
 export class CarsController {
   // קבלת כל הרכבים (עם חיפוש וסינון)
@@ -148,12 +149,14 @@ export class CarsController {
     }
   }
 
-  // קבלת רכב ספציפי
-  // קבלת רכב ספציפי - עם תמונות
+  // server/src/controllers/cars.controller.ts - Fixed getCarById function
+
+  // החלף את הפונקציה getCarById הקיימת עם זו:
   async getCarById(req: Request, res: Response) {
     try {
       const { id } = req.params;
 
+      // First, try to get the car with any status
       const carResult = await pool.query(
         `
       SELECT 
@@ -172,8 +175,8 @@ export class CarsController {
       FROM cars c
       JOIN dealers d ON c.dealer_id = d.id
       JOIN users u ON d.user_id = u.id
-      WHERE c.id = $1 AND c.status = 'active'
-    `,
+      WHERE c.id = $1
+      `,
         [id]
       );
 
@@ -185,6 +188,42 @@ export class CarsController {
       }
 
       const car = carResult.rows[0];
+
+      // Check if the car is not active and user is not the owner
+      if (car.status !== "active") {
+        // Check if the user is authenticated and is the owner
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+          // Not authenticated - can only see active cars
+          return res.status(404).json({
+            success: false,
+            message: "רכב לא נמצא",
+          });
+        }
+
+        try {
+          const token = authHeader.substring(7);
+          const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+          // Check if user is the owner of this car
+          if (decoded.id !== car.dealer_user_id) {
+            // Not the owner - can only see active cars
+            return res.status(404).json({
+              success: false,
+              message: "רכב לא נמצא",
+            });
+          }
+
+          // User is the owner - can see their own car even if sold/deleted
+        } catch (error) {
+          // Invalid token - can only see active cars
+          return res.status(404).json({
+            success: false,
+            message: "רכב לא נמצא",
+          });
+        }
+      }
 
       // ✅ המרה לcamelCase לתואמות עם Frontend
       const transformedCar = {
@@ -205,6 +244,7 @@ export class CarsController {
         dealerPhone: car.dealer_phone,
         dealerEmail: car.dealer_email,
       };
+
       // ✅ הוסף תמונות לרכב
       const imagesResult = await pool.query(
         `
@@ -220,11 +260,11 @@ export class CarsController {
       );
 
       // הוסף את התמונות לאובייקט הרכב
-      car.images = imagesResult.rows;
+      transformedCar.images = imagesResult.rows;
 
       res.json({
         success: true,
-        data: transformedCar, // במקום car
+        data: transformedCar,
       });
     } catch (error) {
       console.error("Get car by ID error:", error);
