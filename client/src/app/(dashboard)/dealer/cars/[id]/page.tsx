@@ -216,9 +216,7 @@ export default function DealerCarDetailsPage() {
       const success = await toggleAvailability(car.id, newValue);
       if (success) {
         refetch();
-        toast.success(
-          newValue ? "הרכב מוצג כעת לקונים" : "הרכב הוסתר מהקונים"
-        );
+        toast.success(newValue ? "הרכב מוצג כעת לקונים" : "הרכב הוסתר מהקונים");
       }
     } catch (error) {
       console.error("Toggle error:", error);
@@ -258,9 +256,17 @@ export default function DealerCarDetailsPage() {
 
   const handleMarkSold = async () => {
     if (!car) return;
+
+    // הוספת confirmation dialog
+    const confirmed = window.confirm(
+      `האם אתה בטוח שברצונך לסמן את הרכב ${car.make} ${car.model} ${car.year} כנמכר?\n\nלאחר הסימון:\n• הרכב יוסתר מהקונים\n• לא ניתן לקבל פניות חדשות\n• הסטטוס ישתנה ל"נמכר"\n\nפעולה זו ניתנת לביטול מהעמוד הראשי.`
+    );
+
+    if (!confirmed) return;
+
     const success = await markAsSold(car.id);
     if (success) {
-      toast.success("הרכב סומן כנמכר");
+      toast.success("הרכב סומן כנמכר בהצלחה");
       refetch();
     }
   };
@@ -422,13 +428,13 @@ export default function DealerCarDetailsPage() {
                   <p className="text-xs text-gray-500 mt-1">לחץ לשינוי מצב</p>
                 </div>
               )}
-              
+
               {car.status === "sold" && (
                 <Badge className="bg-purple-100 text-purple-800 border-purple-200">
                   נמכר
                 </Badge>
               )}
-              
+
               {car.status === "deleted" && (
                 <Badge className="bg-red-100 text-red-800 border-red-200">
                   נמחק
@@ -487,9 +493,13 @@ export default function DealerCarDetailsPage() {
 
               <ImageGallery
                 images={normalizeImages(car.images, car.id)}
-                isOwner={car.status === "active"} 
-                onSetMain={car.status === "active" ? handleSetMainImage : undefined}
-                onDelete={car.status === "active" ? handleDeleteImage : undefined}
+                isOwner={car.status === "active"}
+                onSetMain={
+                  car.status === "active" ? handleSetMainImage : undefined
+                }
+                onDelete={
+                  car.status === "active" ? handleDeleteImage : undefined
+                }
                 className="space-y-4"
               />
             </CardContent>
@@ -535,7 +545,9 @@ export default function DealerCarDetailsPage() {
                   <Settings className="w-5 h-5 text-gray-600 mx-auto mb-2" />
                   <div className="text-xs text-gray-600 mb-1">נפח מנוע</div>
                   <div className="font-semibold text-gray-900">
-                    {(car as any).engineSize ? `${(car as any).engineSize}cc` : "לא צוין"}
+                    {(car as any).engineSize
+                      ? `${(car as any).engineSize}L`
+                      : "לא צוין"}
                   </div>
                 </div>
 
@@ -623,7 +635,7 @@ export default function DealerCarDetailsPage() {
 
                 <Button
                   variant="outline"
-                  className="w-full justify-start"
+                  className="w-full justify-start text-purple-600 hover:text-purple-700 hover:bg-purple-50"
                   onClick={handleMarkSold}
                   disabled={actionLoading[car.id]}
                 >
@@ -633,7 +645,7 @@ export default function DealerCarDetailsPage() {
 
                 <Button
                   variant="outline"
-                  className="w-full justify-start text-red-600 hover:text-red-700"
+                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
                   onClick={handleDelete}
                   disabled={actionLoading[car.id]}
                 >
@@ -655,8 +667,8 @@ export default function DealerCarDetailsPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-purple-700">
-                  הרכב הזה נמכר בהצלחה ואינו זמין יותר לקונים. 
-                  נתונים אלה נשמרים לצורך מעקב וניהול.
+                  הרכב הזה נמכר בהצלחה ואינו זמין יותר לקונים. נתונים אלה נשמרים
+                  לצורך מעקב וניהול.
                 </p>
               </CardContent>
             </Card>
