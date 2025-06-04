@@ -549,6 +549,7 @@ export class CarsController {
   }
 
   // קבלת הרכבים שלי (לדילר מחובר) - מחזיר את כל הסטטוסים
+  // קבלת הרכבים שלי (לדילר מחובר) - FIXED עם תמונות
   async getMyCars(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
@@ -568,6 +569,7 @@ export class CarsController {
         paramIndex++;
       }
 
+      // ✅ FIXED: מביא רכבים ראשית
       const carsResult = await pool.query(
         `
         SELECT c.*
@@ -579,6 +581,44 @@ export class CarsController {
         `,
         [...queryParams, limitNum, offset]
       );
+
+      // ✅ FIXED: מביא תמונות לכל הרכבים
+      const cars = carsResult.rows;
+
+      // אם יש רכבים, מביא את התמונות שלהם
+      if (cars.length > 0) {
+        const carIds = cars.map((car) => car.id);
+        const placeholders = carIds
+          .map((_, index) => `$${index + 1}`)
+          .join(",");
+
+        const imagesResult = await pool.query(
+          `
+          SELECT 
+            id, car_id, image_url, thumbnail_url, is_main, 
+            display_order, original_filename, file_size, 
+            content_type, created_at, updated_at
+          FROM car_images 
+          WHERE car_id IN (${placeholders})
+          ORDER BY car_id, display_order ASC, created_at ASC
+          `,
+          carIds
+        );
+
+        // ✅ קיבוץ תמונות לפי רכב
+        const imagesByCarId = imagesResult.rows.reduce((acc, image) => {
+          if (!acc[image.car_id]) {
+            acc[image.car_id] = [];
+          }
+          acc[image.car_id].push(image);
+          return acc;
+        }, {} as Record<number, any[]>);
+
+        // ✅ הוספת תמונות לכל רכב
+        cars.forEach((car) => {
+          car.images = imagesByCarId[car.id] || [];
+        });
+      }
 
       const countResult = await pool.query(
         `
@@ -595,7 +635,7 @@ export class CarsController {
       res.json({
         success: true,
         data: {
-          cars: carsResult.rows,
+          cars: cars,
           pagination: {
             page: pageNum,
             limit: limitNum,
