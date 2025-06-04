@@ -259,7 +259,7 @@ export default function DealerCarDetailsPage() {
 
     // הוספת confirmation dialog
     const confirmed = window.confirm(
-      `האם אתה בטוח שברצונך לסמן את הרכב ${car.make} ${car.model} ${car.year} כנמכר?\n\nלאחר הסימון:\n• הרכב יוסתר מהקונים\n• לא ניתן לקבל פניות חדשות\n• הסטטוס ישתנה ל"נמכר"\n\nפעולה זו ניתנת לביטול מהעמוד הראשי.`
+      `האם אתה בטוח שברצונך לסמן את הרכב ${car.make} ${car.model} ${car.year} כנמכר?\n\nלאחר הסימון:\n• הרכב יוסתר מהקונים\n• לא ניתן לקבל פניות חדשות\n• הסטטוס ישתנה ל"נמכר"\n\nפעולה זו לא ניתנת לביטול .`
     );
 
     if (!confirmed) return;
