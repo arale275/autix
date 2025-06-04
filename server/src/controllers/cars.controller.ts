@@ -149,38 +149,31 @@ export class CarsController {
     }
   }
 
+  // קבלת רכב ספציפי - עם תמונות ובדיקת בעלות
   async getCarById(req: Request, res: Response) {
-    console.log("🚗 DEBUG: getCarById called with ID:", req.params.id);
-    console.log(
-      "🔑 DEBUG: Auth header:",
-      req.headers.authorization ? "Present" : "Missing"
-    );
-
     try {
       const { id } = req.params;
 
-      // First, try to get the car with any status
-      console.log("🔍 DEBUG: Searching for car with ID:", id);
       const carResult = await pool.query(
         `
-      SELECT 
-        c.*,
-        c.dealer_id,
-        d.business_name as dealer_name,
-        d.address as dealer_address,
-        d.city as dealer_city,
-        d.description as dealer_description,
-        d.verified as dealer_verified,
-        d.rating as dealer_rating,
-        d.user_id as dealer_user_id,
-        u.first_name || ' ' || u.last_name as dealer_contact,
-        u.phone as dealer_phone,
-        u.email as dealer_email
-      FROM cars c
-      JOIN dealers d ON c.dealer_id = d.id
-      JOIN users u ON d.user_id = u.id
-      WHERE c.id = $1
-      `,
+        SELECT 
+          c.*,
+          c.dealer_id,
+          d.business_name as dealer_name,
+          d.address as dealer_address,
+          d.city as dealer_city,
+          d.description as dealer_description,
+          d.verified as dealer_verified,
+          d.rating as dealer_rating,
+          d.user_id as dealer_user_id,
+          u.first_name || ' ' || u.last_name as dealer_contact,
+          u.phone as dealer_phone,
+          u.email as dealer_email
+        FROM cars c
+        JOIN dealers d ON c.dealer_id = d.id
+        JOIN users u ON d.user_id = u.id
+        WHERE c.id = $1
+        `,
         [id]
       );
 
@@ -193,13 +186,12 @@ export class CarsController {
 
       const car = carResult.rows[0];
 
-      // Check if the car is not active and user is not the owner
+      // בדיקה אם הרכב לא פעיל והמשתמש לא הבעלים
       if (car.status !== "active") {
-        // Check if the user is authenticated and is the owner
         const authHeader = req.headers.authorization;
+        const token = authHeader && authHeader.split(" ")[1];
 
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-          // Not authenticated - can only see active cars
+        if (!token) {
           return res.status(404).json({
             success: false,
             message: "רכב לא נמצא",
@@ -207,21 +199,16 @@ export class CarsController {
         }
 
         try {
-          const token = authHeader.substring(7);
           const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
 
-          // Check if user is the owner of this car
-          if (decoded.id !== car.dealer_user_id) {
-            // Not the owner - can only see active cars
+          // בדיקה אם המשתמש הוא הבעלים של הרכב
+          if (decoded.userId !== car.dealer_user_id) {
             return res.status(404).json({
               success: false,
               message: "רכב לא נמצא",
             });
           }
-
-          // User is the owner - can see their own car even if sold/deleted
         } catch (error) {
-          // Invalid token - can only see active cars
           return res.status(404).json({
             success: false,
             message: "רכב לא נמצא",
@@ -229,7 +216,7 @@ export class CarsController {
         }
       }
 
-      // ✅ המרה לcamelCase לתואמות עם Frontend
+      // המרה לcamelCase לתואמות עם Frontend
       const transformedCar = {
         ...car,
         isAvailable: car.is_available,
@@ -249,21 +236,20 @@ export class CarsController {
         dealerEmail: car.dealer_email,
       };
 
-      // ✅ הוסף תמונות לרכב
+      // הוסף תמונות לרכב
       const imagesResult = await pool.query(
         `
-      SELECT 
-        id, car_id, image_url, thumbnail_url, is_main, 
-        display_order, original_filename, file_size, 
-        content_type, created_at, updated_at
-      FROM car_images 
-      WHERE car_id = $1 
-      ORDER BY display_order ASC, created_at ASC
-      `,
+        SELECT 
+          id, car_id, image_url, thumbnail_url, is_main, 
+          display_order, original_filename, file_size, 
+          content_type, created_at, updated_at
+        FROM car_images 
+        WHERE car_id = $1 
+        ORDER BY display_order ASC, created_at ASC
+        `,
         [id]
       );
 
-      // הוסף את התמונות לאובייקט הרכב
       transformedCar.images = imagesResult.rows;
 
       res.json({
@@ -278,6 +264,7 @@ export class CarsController {
       });
     }
   }
+
   // הוספת רכב חדש (רק דילרים)
   async addCar(req: AuthRequest, res: Response) {
     try {
@@ -319,7 +306,7 @@ export class CarsController {
           fuel_type, transmission, color, description, images, city
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING *
-      `,
+        `,
         [
           dealerId,
           make,
@@ -363,7 +350,7 @@ export class CarsController {
         FROM cars c
         JOIN dealers d ON c.dealer_id = d.id
         WHERE c.id = $1 AND d.user_id = $2
-      `,
+        `,
         [id, userId]
       );
 
@@ -407,7 +394,7 @@ export class CarsController {
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
         RETURNING *
-      `,
+        `,
         [
           id,
           make,
@@ -425,7 +412,7 @@ export class CarsController {
         ]
       );
 
-      // ✅ המרה לcamelCase לתואמות עם Frontend
+      // המרה לcamelCase לתואמות עם Frontend
       const transformedCar = {
         ...updateResult.rows[0],
         isAvailable: updateResult.rows[0].is_available,
@@ -462,7 +449,7 @@ export class CarsController {
         FROM cars c
         JOIN dealers d ON c.dealer_id = d.id
         WHERE c.id = $1 AND d.user_id = $2
-      `,
+        `,
         [id, userId]
       );
 
@@ -478,7 +465,7 @@ export class CarsController {
         `
         UPDATE cars SET status = 'deleted', updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
-      `,
+        `,
         [id]
       );
 
@@ -512,7 +499,7 @@ export class CarsController {
         WHERE d.id = $1 AND c.status = 'active'
         ORDER BY c.created_at DESC
         LIMIT $2 OFFSET $3
-      `,
+        `,
         [dealerId, Number(limit), offset]
       );
 
@@ -521,7 +508,7 @@ export class CarsController {
         SELECT COUNT(*) as total
         FROM cars c
         WHERE c.dealer_id = $1 AND c.status = 'active'
-      `,
+        `,
         [dealerId]
       );
 
@@ -548,6 +535,7 @@ export class CarsController {
     }
   }
 
+  // קבלת הרכבים שלי (לדילר מחובר) - מחזיר את כל הסטטוסים
   async getMyCars(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
@@ -569,23 +557,23 @@ export class CarsController {
 
       const carsResult = await pool.query(
         `
-      SELECT c.*
-      FROM cars c
-      JOIN dealers d ON c.dealer_id = d.id
-      WHERE d.user_id = $1 ${statusCondition}
-      ORDER BY c.created_at DESC
-      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-    `,
+        SELECT c.*
+        FROM cars c
+        JOIN dealers d ON c.dealer_id = d.id
+        WHERE d.user_id = $1 ${statusCondition}
+        ORDER BY c.created_at DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+        `,
         [...queryParams, limitNum, offset]
       );
 
       const countResult = await pool.query(
         `
-      SELECT COUNT(*) as total
-      FROM cars c
-      JOIN dealers d ON c.dealer_id = d.id
-      WHERE d.user_id = $1 ${statusCondition}
-    `,
+        SELECT COUNT(*) as total
+        FROM cars c
+        JOIN dealers d ON c.dealer_id = d.id
+        WHERE d.user_id = $1 ${statusCondition}
+        `,
         queryParams
       );
 
@@ -612,6 +600,7 @@ export class CarsController {
     }
   }
 
+  // טוגל זמינות רכב (הצגה/הסתרה)
   async toggleCarAvailability(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
@@ -621,11 +610,11 @@ export class CarsController {
       // בדיקה שהרכב שייך לדילר הנוכחי
       const carCheck = await pool.query(
         `
-      SELECT c.id 
-      FROM cars c
-      JOIN dealers d ON c.dealer_id = d.id
-      WHERE c.id = $1 AND d.user_id = $2
-      `,
+        SELECT c.id 
+        FROM cars c
+        JOIN dealers d ON c.dealer_id = d.id
+        WHERE c.id = $1 AND d.user_id = $2
+        `,
         [id, userId]
       );
 
@@ -639,12 +628,12 @@ export class CarsController {
       // עדכון is_available בלבד
       const updateResult = await pool.query(
         `
-      UPDATE cars SET
-        is_available = $2,
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = $1
-      RETURNING *
-      `,
+        UPDATE cars SET
+          is_available = $2,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE id = $1
+        RETURNING *
+        `,
         [id, isAvailable]
       );
 
