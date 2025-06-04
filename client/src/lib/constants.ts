@@ -36,34 +36,108 @@ export const API_ENDPOINTS = {
   DB_TEST: "/api/db-test",
 } as const;
 
-// Car Manufacturers (אלפבתי בעברית)
+// Car Manufacturers
 export const CAR_MANUFACTURERS = [
-  "Audi",
-  "BMW",
-  "Chevrolet",
-  "Citroen",
-  "Fiat",
-  "Ford",
-  "Honda",
-  "Hyundai",
-  "Infiniti",
-  "Jeep",
-  "Kia",
-  "Lexus",
-  "Mazda",
-  "Mercedes",
-  "Mitsubishi",
-  "Nissan",
-  "Opel",
-  "Peugeot",
-  "Renault",
-  "Seat",
-  "Skoda",
-  "Subaru",
-  "Suzuki",
-  "Toyota",
-  "Volkswagen",
-  "Volvo",
+  // יצרנים גרמניים
+  { value: "Audi", label: "אאודי" },
+  { value: "BMW", label: "ב.מ.וו" },
+  { value: "Mercedes-Benz", label: "מרצדס-בנץ" },
+  { value: "Porsche", label: "פורשה" },
+  { value: "Volkswagen", label: "פולקסווגן" },
+  { value: "Opel", label: "אופל" },
+
+  // יצרנים יפניים
+  { value: "Toyota", label: "טויוטה" },
+  { value: "Honda", label: "הונדה" },
+  { value: "Nissan", label: "ניסאן" },
+  { value: "Mazda", label: "מאזדה" },
+  { value: "Mitsubishi", label: "מיצובישי" },
+  { value: "Subaru", label: "סובארו" },
+  { value: "Suzuki", label: "סוזוקי" },
+  { value: "Lexus", label: "לקסוס" },
+  { value: "Infiniti", label: "אינפיניטי" },
+  { value: "Acura", label: "אקורה" },
+
+  // יצרנים קוריאניים
+  { value: "Hyundai", label: "יונדאי" },
+  { value: "Kia", label: "קיה" },
+  { value: "Genesis", label: "ג'נסיס" },
+  { value: "Daewoo", label: "דאוו" },
+  { value: "SsangYong", label: "סאנגיונג" },
+
+  // יצרנים אמריקאים
+  { value: "Ford", label: "פורד" },
+  { value: "Chevrolet", label: "שברולט" },
+  { value: "Jeep", label: "ג'יפ" },
+  { value: "Chrysler", label: "קרייזלר" },
+  { value: "Dodge", label: "דודג'" },
+  { value: "Cadillac", label: "קדילק" },
+  { value: "Lincoln", label: "לינקולן" },
+  { value: "Buick", label: "ביואיק" },
+
+  // יצרנים איטלקיים
+  { value: "Fiat", label: "פיאט" },
+  { value: "Alfa Romeo", label: "אלפא רומיאו" },
+  { value: "Lancia", label: "לאנצ'יה" },
+  { value: "Ferrari", label: "פרארי" },
+  { value: "Lamborghini", label: "למבורגיני" },
+  { value: "Maserati", label: "מזראטי" },
+
+  // יצרנים צרפתיים
+  { value: "Peugeot", label: "פיז'ו" },
+  { value: "Renault", label: "רנו" },
+  { value: "Citroen", label: "סיטרואן" },
+
+  // יצרנים ספרדיים
+  { value: "SEAT", label: "סיאט" },
+
+  // יצרנים צ'כיים
+  { value: "Skoda", label: "שקודה" },
+
+  // יצרנים שוודיים
+  { value: "Volvo", label: "וולוו" },
+  { value: "Saab", label: "סאאב" },
+
+  // יצרנים בריטיים
+  { value: "Land Rover", label: "לנד רובר" },
+  { value: "Range Rover", label: "ריינג' רובר" },
+  { value: "Jaguar", label: "יגואר" },
+  { value: "Mini", label: "מיני" },
+  { value: "Bentley", label: "בנטלי" },
+  { value: "Rolls-Royce", label: "רולס רויס" },
+  { value: "MG", label: "MG" },
+
+  // יצרנים רומניים
+  { value: "Dacia", label: "דאצ'יה" },
+
+  // יצרנים הודיים
+  { value: "Tata", label: "טאטא" },
+
+  // יצרנים מלזיים
+  { value: "Proton", label: "פרוטון" },
+
+  // יצרנים סיניים
+  { value: "BYD", label: "BYD" },
+  { value: "Geely", label: "ג'ילי" },
+  { value: "Chery", label: "צ'רי" },
+  { value: "Great Wall", label: "גרייט וול" },
+  { value: "Haval", label: "האוול" },
+  { value: "Lynk & Co", label: "לינק אנד קו" },
+
+  // יצרנים חשמליים/חדשים
+  { value: "Tesla", label: "טסלה" },
+  { value: "Polestar", label: "פולסטאר" },
+  { value: "Lucid", label: "לוסיד" },
+  { value: "Rivian", label: "ריוויאן" },
+
+  // יצרנים שכבר לא פעילים בישראל
+  { value: "Isuzu", label: "איסוזו" },
+  { value: "Daihatsu", label: "דייהטסו" },
+
+  // מותגי יוקרה נוספים
+  { value: "McLaren", label: "מקלארן" },
+  { value: "Aston Martin", label: "אסטון מרטין" },
+  { value: "Lotus", label: "לוטוס" },
 ] as const;
 
 // Fuel Types
