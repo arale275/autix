@@ -178,7 +178,6 @@ interface StatCardProps {
   icon: React.ElementType;
   color: string;
   subtitle?: string;
-  onClick?: () => void;
   progress?: number;
 }
 
@@ -188,17 +187,10 @@ function StatCard({
   icon: Icon,
   color,
   subtitle,
-  onClick,
   progress,
 }: StatCardProps) {
   return (
-    <Card
-      className={cn(
-        "transition-all duration-200 hover:shadow-md cursor-pointer group",
-        onClick && "hover:scale-105"
-      )}
-      onClick={onClick}
-    >
+    <Card className="transition-colors duration-200">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
@@ -213,7 +205,7 @@ function StatCard({
           </div>
           <div
             className={cn(
-              `p-3 rounded-full bg-${color}-100 group-hover:bg-${color}-200 transition-colors`,
+              `p-3 rounded-full bg-${color}-100`,
               "flex items-center justify-center"
             )}
           >
@@ -1008,22 +1000,9 @@ export default function DealerCarsPage() {
     setSelectedCities([]);
   };
 
-  // Quick filter for status
+  // Quick filter for status - removed click functionality
   const handleStatClick = (filterType: string) => {
-    switch (filterType) {
-      case "active":
-        setFilterStatus("active");
-        break;
-      case "sold":
-        setFilterStatus("sold");
-        break;
-      case "available":
-        setFilterAvailability("available");
-        break;
-      case "no-images":
-        toggleQuickFilter("no-images");
-        break;
-    }
+    // Removed functionality
   };
 
   // Error state
@@ -1072,27 +1051,11 @@ export default function DealerCarsPage() {
             הרכבים שלי
           </h1>
           <p className="text-gray-600 mt-1">
-            נהל את רכבי החברה שלך ועקוב אחר הביצועים • {filteredCars.length}{" "}
-            מתוך {cars.length} רכבים
+            נהל את הרכבים שלך ומכור אותם ביעילות
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <Button
-            onClick={() => refetch()}
-            variant="outline"
-            size="sm"
-            disabled={loading}
-          >
-            <RefreshCw
-              className={cn("w-4 h-4 mr-2", loading && "animate-spin")}
-            />
-            רענן
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="w-4 h-4 mr-2" />
-            ייצא
-          </Button>
           <Link href="/dealer/cars/new">
             <Button>
               <Plus className="w-4 h-4 mr-2" />
@@ -1117,7 +1080,6 @@ export default function DealerCarsPage() {
           icon={CheckCircle}
           color="green"
           progress={stats.availableProgress}
-          onClick={() => handleStatClick("active")}
         />
         <StatCard
           title="נמכרו"
@@ -1125,15 +1087,12 @@ export default function DealerCarsPage() {
           icon={TrendingUp}
           color="purple"
           progress={stats.soldProgress}
-          onClick={() => handleStatClick("sold")}
         />
         <StatCard
           title="זמינים"
           value={stats.available}
           icon={Eye}
           color="blue"
-          subtitle={`${Math.round(stats.availableProgress)}% מהמלאי`}
-          onClick={() => handleStatClick("available")}
         />
         <StatCard
           title="ללא תמונות"
@@ -1141,7 +1100,6 @@ export default function DealerCarsPage() {
           icon={ImageIcon}
           color="orange"
           subtitle="זקוק לתמונות"
-          onClick={() => handleStatClick("no-images")}
         />
       </div>
 
@@ -1170,26 +1128,28 @@ export default function DealerCarsPage() {
               )}
             </div>
 
-            {/* Quick Filter Chips */}
-            <div className="flex flex-wrap gap-2">
-              {QUICK_FILTERS.map((filter) => (
-                <button
-                  key={filter.id}
-                  onClick={() => toggleQuickFilter(filter.id)}
-                  className={cn(
-                    "px-3 py-1 text-sm font-medium rounded-full border transition-all duration-200",
-                    activeQuickFilters.includes(filter.id)
-                      ? `bg-${filter.color}-100 text-${filter.color}-800 border-${filter.color}-300`
-                      : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
-                  )}
-                >
-                  {filter.label}
-                  {activeQuickFilters.includes(filter.id) && (
-                    <X className="w-3 h-3 ml-1 inline" />
-                  )}
-                </button>
-              ))}
-            </div>
+            {/* Quick Filter Chips - Hidden */}
+            {false && (
+              <div className="flex flex-wrap gap-2">
+                {QUICK_FILTERS.map((filter) => (
+                  <button
+                    key={filter.id}
+                    onClick={() => toggleQuickFilter(filter.id)}
+                    className={cn(
+                      "px-3 py-1 text-sm font-medium rounded-full border transition-all duration-200",
+                      activeQuickFilters.includes(filter.id)
+                        ? `bg-${filter.color}-100 text-${filter.color}-800 border-${filter.color}-300`
+                        : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                    )}
+                  >
+                    {filter.label}
+                    {activeQuickFilters.includes(filter.id) && (
+                      <X className="w-3 h-3 ml-1 inline" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Main Filters Row */}
             <div className="flex flex-col lg:flex-row gap-4">
@@ -1291,22 +1251,24 @@ export default function DealerCarsPage() {
               </div>
             </div>
 
-            {/* Advanced Filters */}
-            <AdvancedFilters
-              isOpen={isAdvancedFiltersOpen}
-              onOpenChange={setIsAdvancedFiltersOpen}
-              priceRange={priceRange}
-              onPriceRangeChange={setPriceRange}
-              yearRange={yearRange}
-              onYearRangeChange={setYearRange}
-              selectedFuelTypes={selectedFuelTypes}
-              onFuelTypesChange={setSelectedFuelTypes}
-              selectedTransmissions={selectedTransmissions}
-              onTransmissionsChange={setSelectedTransmissions}
-              selectedCities={selectedCities}
-              onCitiesChange={setSelectedCities}
-              onReset={resetAdvancedFilters}
-            />
+            {/* Advanced Filters - Hidden */}
+            {false && (
+              <AdvancedFilters
+                isOpen={isAdvancedFiltersOpen}
+                onOpenChange={setIsAdvancedFiltersOpen}
+                priceRange={priceRange}
+                onPriceRangeChange={setPriceRange}
+                yearRange={yearRange}
+                onYearRangeChange={setYearRange}
+                selectedFuelTypes={selectedFuelTypes}
+                onFuelTypesChange={setSelectedFuelTypes}
+                selectedTransmissions={selectedTransmissions}
+                onTransmissionsChange={setSelectedTransmissions}
+                selectedCities={selectedCities}
+                onCitiesChange={setSelectedCities}
+                onReset={resetAdvancedFilters}
+              />
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1371,12 +1333,9 @@ export default function DealerCarsPage() {
       {/* Results Summary with Enhanced Info */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4 text-sm text-gray-600">
-          <span>
-            מציג {filteredCars.length} מתוך {cars.length} רכבים
-          </span>
           {selectedCars.length > 0 && (
             <span className="text-blue-600 font-medium">
-              • {selectedCars.length} נבחרו
+              {selectedCars.length} נבחרו
             </span>
           )}
           {activeQuickFilters.length > 0 && (
@@ -1392,19 +1351,6 @@ export default function DealerCarsPage() {
               <LoadingSpinner size="sm" />
               טוען...
             </div>
-          )}
-
-          {viewMode !== "table" && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleSelectAll}
-              className="text-xs"
-            >
-              {selectedCars.length === filteredCars.length
-                ? "בטל בחירה"
-                : "בחר הכל"}
-            </Button>
           )}
         </div>
       </div>
