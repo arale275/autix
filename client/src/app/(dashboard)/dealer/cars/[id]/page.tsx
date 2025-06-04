@@ -142,9 +142,8 @@ export default function DealerCarDetailsPage() {
     try {
       setActionLoading(true);
       await carsApi.toggleCarAvailability(car.id, newValue);
-      await refetch();
 
-      // ✅ שליחת event לעמודים אחרים
+      // ✅ שלח event קודם (לפני refetch)
       carEvents.emitCarUpdate(car.id, "availability", {
         isAvailable: newValue,
       });
@@ -168,8 +167,17 @@ export default function DealerCarDetailsPage() {
   };
 
   const handleSaveEdit = () => {
+    if (!car) return; // ✅ הוסף בדיקה
+
     setIsEditMode(false);
     refetch();
+
+    // ✅ הוסף event
+    carEvents.emitCarUpdate(car.id, "update", {
+      action: "edit_completed",
+      carId: car.id,
+    });
+
     toast.success("הרכב עודכן בהצלחה");
   };
 
@@ -184,6 +192,13 @@ export default function DealerCarDetailsPage() {
       try {
         setActionLoading(true);
         await carsApi.deleteCar(car.id);
+
+        // ✅ הוסף event
+        carEvents.emitCarUpdate(car.id, "delete", {
+          action: "car_deleted",
+          carId: car.id,
+        });
+
         toast.success("הרכב נמחק בהצלחה");
         router.push("/dealer/cars");
       } catch (error) {
@@ -199,17 +214,19 @@ export default function DealerCarDetailsPage() {
   const handleMarkSold = async () => {
     if (!car) return;
 
-    const confirmed = window.confirm(/* ... */);
+    const confirmed = window.confirm(
+      "האם אתה בטוח שברצונך לסמן את הרכב כנמכר?"
+    );
     if (!confirmed) return;
 
     try {
       setActionLoading(true);
       await carsApi.updateCar(car.id, { status: "sold" });
-      await refetch();
 
-      // ✅ שליחת event
+      // ✅ שלח event
       carEvents.emitCarUpdate(car.id, "status", { status: "sold" });
 
+      await refetch();
       toast.success("הרכב סומן כנמכר בהצלחה");
     } catch (error) {
       console.error("Mark sold error:", error);
