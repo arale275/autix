@@ -544,33 +544,46 @@ export class CarsController {
     }
   }
 
-  // קבלת הרכבים שלי (לדילר מחובר)
+  // החלף את הפונקציה getMyCars עם זו:
   async getMyCars(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
-      const { page = 1, limit = 20, status = "active" } = req.query;
-      const offset = (Number(page) - 1) * Number(limit);
+      const { page = "1", limit = "20", status = "all" } = req.query;
+      const pageNum = Number(page);
+      const limitNum = Number(limit);
+      const offset = (pageNum - 1) * limitNum;
+
+      // בניית תנאי הסטטוס
+      let statusCondition = "";
+      let queryParams: any[] = [userId];
+      let paramIndex = 2;
+
+      if (status !== "all") {
+        statusCondition = `AND c.status = $${paramIndex}`;
+        queryParams.push(status);
+        paramIndex++;
+      }
 
       const carsResult = await pool.query(
         `
-        SELECT c.*
-        FROM cars c
-        JOIN dealers d ON c.dealer_id = d.id
-        WHERE d.user_id = $1 AND c.status = $2
-        ORDER BY c.created_at DESC
-        LIMIT $3 OFFSET $4
-      `,
-        [userId, status, Number(limit), offset]
+      SELECT c.*
+      FROM cars c
+      JOIN dealers d ON c.dealer_id = d.id
+      WHERE d.user_id = $1 ${statusCondition}
+      ORDER BY c.created_at DESC
+      LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+    `,
+        [...queryParams, limitNum, offset]
       );
 
       const countResult = await pool.query(
         `
-        SELECT COUNT(*) as total
-        FROM cars c
-        JOIN dealers d ON c.dealer_id = d.id
-        WHERE d.user_id = $1 AND c.status = $2
-      `,
-        [userId, status]
+      SELECT COUNT(*) as total
+      FROM cars c
+      JOIN dealers d ON c.dealer_id = d.id
+      WHERE d.user_id = $1 ${statusCondition}
+    `,
+        queryParams
       );
 
       const total = parseInt(countResult.rows[0].total);
@@ -580,10 +593,10 @@ export class CarsController {
         data: {
           cars: carsResult.rows,
           pagination: {
-            page: Number(page),
-            limit: Number(limit),
+            page: pageNum,
+            limit: limitNum,
             total,
-            totalPages: Math.ceil(total / Number(limit)),
+            totalPages: Math.ceil(total / limitNum),
           },
         },
       });
@@ -595,6 +608,7 @@ export class CarsController {
       });
     }
   }
+
   async toggleCarAvailability(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
