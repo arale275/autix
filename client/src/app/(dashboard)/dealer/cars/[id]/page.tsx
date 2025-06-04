@@ -273,9 +273,7 @@ export default function DealerCarDetailsPage() {
 
     const success = await toggleAvailability(car.id, !car.isAvailable);
     if (success) {
-      toast.success(
-        car.isAvailable ? "הרכב הוסתר מהמכירה" : "הרכב הוצג למכירה"
-      );
+      // עדכון מיידי של הסטטוס במקום הודעה בלבד
       refetch();
     }
   };
@@ -553,15 +551,6 @@ export default function DealerCarDetailsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              {/* Visibility Status */}
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">זמינות לקונים:</span>
-                  <Badge variant={car.isAvailable ? "default" : "secondary"}>
-                    {car.isAvailable ? "מוצג" : "מוסתר"}
-                  </Badge>
-                </div>
-              </div>
               <Button
                 variant="outline"
                 className="w-full justify-start"
@@ -580,29 +569,35 @@ export default function DealerCarDetailsPage() {
                 ערוך פרטים
               </Button>
 
-              <Button
-                variant={car.isAvailable ? "default" : "outline"}
-                className={cn(
-                  "w-full justify-start transition-colors",
-                  car.isAvailable
-                    ? "bg-green-600 hover:bg-green-700 text-white"
-                    : "bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
-                )}
-                onClick={handleToggleAvailability}
-                disabled={actionLoading[car.id]}
-              >
-                {car.isAvailable ? (
-                  <>
-                    <Eye className="w-4 h-4 mr-2" />
-                    מוצג למכירה
-                  </>
-                ) : (
-                  <>
-                    <EyeOff className="w-4 h-4 mr-2" />
-                    מוסתר מהמכירה
-                  </>
-                )}
-              </Button>
+              {/* Toggle Switch for Availability */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium text-gray-900">
+                    הצגה לקונים
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {car.isAvailable ? "מוצג למכירה" : "מוסתר מהקונים"}
+                  </span>
+                </div>
+
+                <button
+                  onClick={handleToggleAvailability}
+                  disabled={actionLoading[car.id]}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50",
+                    car.isAvailable
+                      ? "bg-green-500 hover:bg-green-600"
+                      : "bg-gray-300 hover:bg-gray-400"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                      car.isAvailable ? "translate-x-6" : "translate-x-1"
+                    )}
+                  />
+                </button>
+              </div>
 
               {car.status === "active" && (
                 <Button
