@@ -161,14 +161,14 @@ export default function DealerCarDetailsPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Hooks
+  // Hooks - תיקון לשימוש באותו hook
   const { car, loading, error, refetch } = useCar(carId);
   const {
+    toggleAvailability,
+    actionLoading,
     updateCar,
     deleteCar,
     markAsSold,
-    toggleAvailability,
-    actionLoading,
   } = useDealerCars();
   const { setMainImage, deleteImage, uploadMultipleImages } = useImages();
 
@@ -227,6 +227,36 @@ export default function DealerCarDetailsPage() {
     }
   };
 
+  const handleToggleAvailability = async () => {
+    if (!car) return;
+
+    try {
+      console.log("🔄 Starting toggle...", {
+        carId: car.id,
+        currentValue: car.isAvailable,
+        newValue: !(car.isAvailable ?? true),
+      });
+
+      const success = await toggleAvailability(
+        car.id,
+        !(car.isAvailable ?? true)
+      );
+
+      console.log("📤 Toggle result:", { success });
+
+      if (success) {
+        console.log("✅ Refetching car data...");
+        // רענון נתוני הרכב הספציפי
+        await refetch();
+        console.log("✅ Refetch complete");
+      } else {
+        console.log("❌ Toggle failed");
+      }
+    } catch (error) {
+      console.error("💥 Toggle error:", error);
+    }
+  };
+
   // Actions
   const handleEdit = () => {
     setIsEditMode(true);
@@ -264,18 +294,6 @@ export default function DealerCarDetailsPage() {
     const success = await markAsSold(car.id);
     if (success) {
       toast.success("הרכב סומן כנמכר");
-      refetch();
-    }
-  };
-
-  const handleToggleAvailability = async () => {
-    if (!car) return;
-
-    const currentValue = car.isAvailable ?? true;
-    const newValue = !currentValue;
-
-    const success = await toggleAvailability(car.id, newValue);
-    if (success) {
       refetch();
     }
   };
