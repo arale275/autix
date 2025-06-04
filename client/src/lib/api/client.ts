@@ -73,7 +73,7 @@ class ApiClient {
 
     // Prepare headers
     const requestHeaders: Record<string, string> = {
-      "Content-Type": "application/json", "Pragma": "no-cache",
+      "Content-Type": "application/json",
     };
 
     // Add other headers

@@ -76,19 +76,6 @@ const nextConfig = {
         ],
       },
       {
-        source: "/api/(.*)",
-        headers: [
-          {
-            key: "Cache-Control",
-            value: "no-cache, no-store, must-revalidate",
-          },
-          {
-            key: "Pragma",
-            value: "no-cache",
-          },
-        ],
-      },
-      {
         source: "/static/(.*)",
         headers: [
           {
