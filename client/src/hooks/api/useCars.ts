@@ -341,9 +341,6 @@ export function useDealerCars() {
           );
         }
 
-        // ✅ Invalidate cache to sync all components
-        invalidateCarCache(carId);
-
         return true;
       } catch (err) {
         const errorMessage = handleApiError(err);
@@ -356,49 +353,13 @@ export function useDealerCars() {
     []
   );
 
-  const addCar = useCallback(
-    async (carData: CreateCarRequest): Promise<Car | null> => {
-      try {
-        setActionLoading((prev) => ({ ...prev, add: true }));
-
-        const newCar = await carsApi.addCar(carData);
-        setCars((prev) => [newCar, ...prev]);
-
-        // ✅ Invalidate cache for new car
-        invalidateCarCache();
-
-        return newCar;
-      } catch (err) {
-        const errorMessage = handleApiError(err);
-        setError(errorMessage);
-        return null;
-      } finally {
-        setActionLoading((prev) => ({ ...prev, add: false }));
-      }
-    },
-    []
-  );
-
-  const updateCar = useCallback(
-    async (carId: number, carData: UpdateCarRequest): Promise<Car | null> => {
-      const success = await performAction(carId, async () => {
-        return await carsApi.updateCar(carId, carData);
-      });
-
-      return success ? cars.find((car) => car.id === carId) || null : null;
-    },
-    [performAction, cars]
-  );
-
+  // ✅ Delete car function
   const deleteCar = useCallback(async (carId: number): Promise<boolean> => {
     try {
       setActionLoading((prev) => ({ ...prev, [carId]: true }));
 
       await carsApi.deleteCar(carId);
       setCars((prev) => prev.filter((car) => car.id !== carId));
-
-      // ✅ Invalidate cache
-      invalidateCarCache(carId);
 
       return true;
     } catch (err) {
@@ -438,9 +399,7 @@ export function useDealerCars() {
     error,
     actionLoading,
     fetchMyCars,
-    addCar,
-    updateCar,
-    deleteCar,
+    deleteCar, // ✅ הוסף את deleteCar כאן!
     markAsSold,
     toggleAvailability,
     refetch: fetchMyCars,
