@@ -141,12 +141,17 @@ export default function DealerCarDetailsPage() {
 
     try {
       setActionLoading(true);
+
+      // 1. עדכן בשרת
       await carsApi.toggleCarAvailability(car.id, newValue);
 
-      // ✅ שלח event קודם (לפני refetch)
+      // 2. שלח event לעמודים אחרים
       carEvents.emitCarUpdate(car.id, "availability", {
         isAvailable: newValue,
       });
+
+      // 3. ✅ עדכן את הנתונים המקומיים - זה חסר!
+      await refetch();
 
       toast.success(newValue ? "הרכב מוצג כעת לקונים" : "הרכב הוסתר מהקונים");
     } catch (error) {
