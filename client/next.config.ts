@@ -5,8 +5,9 @@ const nextConfig = {
     domains: [
       "localhost",
       "3.79.239.100", // הוסף את IP השרת שלך
-      "your-domain.com",
+      "autix.co.il",
       "d15g18gvoz68b4.amplifyapp.com",
+      "images.autix.co.il", // ✅ הוספנו את הדומיין החסר!
     ],
     remotePatterns: [
       {
@@ -16,6 +17,12 @@ const nextConfig = {
       {
         protocol: "http",
         hostname: "3.79.239.100", // הוסף את IP השרת
+      },
+      {
+        protocol: "https", // ✅ הוספנו HTTPS
+        hostname: "images.autix.co.il", // ✅ הוספנו את הדומיין
+        port: "",
+        pathname: "/**",
       },
     ],
     formats: ["image/webp", "image/avif"],
