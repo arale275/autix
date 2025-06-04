@@ -149,14 +149,18 @@ export class CarsController {
     }
   }
 
-  // server/src/controllers/cars.controller.ts - Fixed getCarById function
-
-  // החלף את הפונקציה getCarById הקיימת עם זו:
   async getCarById(req: Request, res: Response) {
+    console.log("🚗 DEBUG: getCarById called with ID:", req.params.id);
+    console.log(
+      "🔑 DEBUG: Auth header:",
+      req.headers.authorization ? "Present" : "Missing"
+    );
+
     try {
       const { id } = req.params;
 
       // First, try to get the car with any status
+      console.log("🔍 DEBUG: Searching for car with ID:", id);
       const carResult = await pool.query(
         `
       SELECT 
@@ -544,7 +548,6 @@ export class CarsController {
     }
   }
 
-  // החלף את הפונקציה getMyCars עם זו:
   async getMyCars(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
