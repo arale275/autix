@@ -1,4 +1,4 @@
-// components/features/CarFilters.tsx - Car Filtering Component
+// components/features/CarFilters.tsx - Car Filtering Component (Fixed Scrolling)
 import React from "react";
 import { ArrowUpDown, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -58,12 +58,12 @@ export function CarFilters({
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Basic Filters */}
             <div className="flex flex-wrap gap-2 flex-1">
-              {/* Make Filter */}
+              {/* Make Filter - ✅ FIXED: הוספת גלילה */}
               <Select value={filterMake} onValueChange={onFilterMakeChange}>
                 <SelectTrigger className="w-48">
                   <SelectValue placeholder="יצרן" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[200px] overflow-y-auto">
                   <SelectItem value="all">כל היצרנים</SelectItem>
                   {CAR_MANUFACTURERS.map((make) => (
                     <SelectItem key={make} value={make}>

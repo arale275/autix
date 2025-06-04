@@ -1,4 +1,4 @@
-// components/cards/CarCard.tsx - Car Card Component (Fixed with Images)
+// components/cards/CarCard.tsx - Car Card Component (Fixed - No Clock, City Up)
 "use client";
 
 import React from "react";
@@ -15,7 +15,6 @@ import {
   Phone,
   MessageSquare,
   Star,
-  Clock,
   ImageIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -212,14 +211,18 @@ export default function CarCard({
             <h3 className="font-bold text-lg text-gray-900 group-hover:text-blue-600 transition-colors">
               {car.make} {car.model}
             </h3>
+            {/* ✅ FIXED: העיר עברה למעלה ליד השנה */}
             <div className="flex items-center gap-4 text-sm text-gray-600">
               <span className="flex items-center gap-1">
                 <Calendar className="w-4 h-4" />
                 {formatYear(car.year)}
               </span>
-              <span className="flex items-center gap-1">
-                <Clock className="w-4 h-4" />
-              </span>
+              {car.city && (
+                <span className="flex items-center gap-1">
+                  <MapPin className="w-4 h-4" />
+                  {car.city}
+                </span>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -276,13 +279,6 @@ export default function CarCard({
                 <div className="flex items-center gap-1 text-gray-600">
                   <Settings className="w-4 h-4" />
                   <span>{car.transmission}</span>
-                </div>
-              )}
-
-              {car.city && (
-                <div className="flex items-center gap-1 text-gray-600">
-                  <MapPin className="w-4 h-4" />
-                  <span>{car.city}</span>
                 </div>
               )}
             </div>
