@@ -858,9 +858,6 @@ export default function DealerCarsPage() {
     const withoutImages = cars.filter(
       (c) => !c.images || c.images.length === 0
     ).length;
-    const totalValue = cars
-      .filter((c) => c.status === "active" && c.isAvailable)
-      .reduce((sum, car) => sum + car.price, 0);
 
     return {
       total,
@@ -868,7 +865,6 @@ export default function DealerCarsPage() {
       sold,
       available,
       withoutImages,
-      totalValue,
       availableProgress: total > 0 ? (available / total) * 100 : 0,
       soldProgress: total > 0 ? (sold / total) * 100 : 0,
     };
@@ -1107,7 +1103,7 @@ export default function DealerCarsPage() {
       </div>
 
       {/* Enhanced Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <StatCard
           title="סך הכל"
           value={stats.total}
@@ -1146,13 +1142,6 @@ export default function DealerCarsPage() {
           color="orange"
           subtitle="זקוק לתמונות"
           onClick={() => handleStatClick("no-images")}
-        />
-        <StatCard
-          title="ערך מלאי"
-          value={`${Math.round(stats.totalValue / 1000)}K₪`}
-          icon={DollarSign}
-          color="yellow"
-          subtitle="רכבים זמינים"
         />
       </div>
 
