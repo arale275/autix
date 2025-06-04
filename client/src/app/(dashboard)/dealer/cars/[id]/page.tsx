@@ -597,7 +597,7 @@ export default function DealerCarDetailsPage() {
                 ערוך פרטים
               </Button>
 
-              {/* Toggle Switch for Availability - עם shadcn Switch */}
+              {/* Toggle Switch for Availability - Custom but clean */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-gray-900">
@@ -608,14 +608,19 @@ export default function DealerCarDetailsPage() {
                   </span>
                 </div>
 
-                <Switch
-                  checked={car.isAvailable}
-                  onCheckedChange={(checked) => {
-                    handleToggleAvailability();
-                  }}
+                <button
+                  onClick={handleToggleAvailability}
                   disabled={actionLoading[car.id]}
-                  className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-200"
-                />
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 ${
+                    car.isAvailable ? "bg-green-500" : "bg-gray-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
+                      car.isAvailable ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
               </div>
 
               {car.status === "active" && (
