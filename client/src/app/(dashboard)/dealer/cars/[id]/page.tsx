@@ -53,6 +53,7 @@ import { useImages } from "@/hooks/useImages";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import type { Car, CarImage } from "@/lib/api/types";
+import { Switch } from "@/components/ui/switch";
 
 // Type guard to check if image is CarImage object
 const isCarImageObject = (image: string | CarImage): image is CarImage => {
@@ -596,7 +597,7 @@ export default function DealerCarDetailsPage() {
                 ערוך פרטים
               </Button>
 
-              {/* Toggle Switch for Availability - תיקון #1 ו #2 */}
+              {/* Toggle Switch for Availability - עם shadcn Switch */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-gray-900">
@@ -607,24 +608,13 @@ export default function DealerCarDetailsPage() {
                   </span>
                 </div>
 
-                {/* Toggle Switch - תיקון #2 */}
-                <div
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
+                <Switch
+                  checked={car.isAvailable}
+                  onCheckedChange={(checked) => {
                     handleToggleAvailability();
                   }}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors duration-300 ${
-                    car.isAvailable ? "bg-green-500" : "bg-gray-300"
-                  }`}
-                  style={{ zIndex: 1000 }}
-                >
-                  <div
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform duration-300 shadow-lg ${
-                      car.isAvailable ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </div>
+                  disabled={actionLoading[car.id]}
+                />
               </div>
 
               {car.status === "active" && (
