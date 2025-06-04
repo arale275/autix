@@ -414,12 +414,7 @@ export default function DealerCarDetailsPage() {
                 </span>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Badge className={getStatusColor(car.status)}>
-                  {getStatusLabel(car.status)}
-                </Badge>
-                {!car.isAvailable && <Badge variant="secondary">מוסתר</Badge>}
-              </div>
+              {/* Removed duplicate status badges - they appear in sidebar */}
             </div>
 
             {/* Status Info Only */}
@@ -439,48 +434,44 @@ export default function DealerCarDetailsPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Image Gallery */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>תמונות הרכב</span>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline">
-                    {car.images?.length || 0} תמונות
-                  </Badge>
-
-                  <Dialog
-                    open={isImageUploadOpen}
-                    onOpenChange={setIsImageUploadOpen}
-                  >
-                    <DialogTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Upload className="w-4 h-4 mr-1" />
-                        הוסף תמונות
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-2xl">
-                      <DialogHeader>
-                        <DialogTitle>העלאת תמונות לרכב</DialogTitle>
-                        <DialogDescription>
-                          בחר תמונות איכותיות של הרכב ולחץ "העלה" להוספתן לגלריה
-                        </DialogDescription>
-                      </DialogHeader>
-                      <ImageUploader
-                        onImagesChange={handleImagesSelect}
-                        onUploadClick={handleUploadClick}
-                        maxImages={10}
-                        maxFileSize={5}
-                        disabled={uploadingImages}
-                        uploading={uploadingImages}
-                        existingImages={car?.images?.map((img) =>
-                          typeof img === "string" ? img : img.image_url
-                        )}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </CardTitle>
-            </CardHeader>
             <CardContent className="p-4">
+              <div className="relative mb-4">
+                <Dialog
+                  open={isImageUploadOpen}
+                  onOpenChange={setIsImageUploadOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="absolute top-2 left-2 z-10 bg-white/90 hover:bg-white shadow-sm"
+                    >
+                      <Upload className="w-4 h-4 mr-1" />
+                      הוסף תמונות
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                      <DialogTitle>העלאת תמונות לרכב</DialogTitle>
+                      <DialogDescription>
+                        בחר תמונות איכותיות של הרכב ולחץ "העלה" להוספתן לגלריה
+                      </DialogDescription>
+                    </DialogHeader>
+                    <ImageUploader
+                      onImagesChange={handleImagesSelect}
+                      onUploadClick={handleUploadClick}
+                      maxImages={10}
+                      maxFileSize={5}
+                      disabled={uploadingImages}
+                      uploading={uploadingImages}
+                      existingImages={car?.images?.map((img) =>
+                        typeof img === "string" ? img : img.image_url
+                      )}
+                    />
+                  </DialogContent>
+                </Dialog>
+              </div>
+
               <ImageGallery
                 images={normalizeImages(car.images, car.id)}
                 isOwner={true}
@@ -493,10 +484,7 @@ export default function DealerCarDetailsPage() {
 
           {/* Car Details */}
           <Card>
-            <CardHeader>
-              <CardTitle>פרטי הרכב</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="space-y-6 p-6">
               {/* Price */}
               <div className="text-center py-4 bg-blue-50 rounded-lg">
                 <div className="text-3xl font-bold text-blue-600">
@@ -565,6 +553,15 @@ export default function DealerCarDetailsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
+              {/* Visibility Status */}
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-600">זמינות לקונים:</span>
+                  <Badge variant={car.isAvailable ? "default" : "secondary"}>
+                    {car.isAvailable ? "מוצג" : "מוסתר"}
+                  </Badge>
+                </div>
+              </div>
               <Button
                 variant="outline"
                 className="w-full justify-start"
@@ -584,20 +581,25 @@ export default function DealerCarDetailsPage() {
               </Button>
 
               <Button
-                variant="outline"
-                className="w-full justify-start"
+                variant={car.isAvailable ? "default" : "outline"}
+                className={cn(
+                  "w-full justify-start transition-colors",
+                  car.isAvailable
+                    ? "bg-green-600 hover:bg-green-700 text-white"
+                    : "bg-red-50 hover:bg-red-100 text-red-600 border-red-200"
+                )}
                 onClick={handleToggleAvailability}
                 disabled={actionLoading[car.id]}
               >
                 {car.isAvailable ? (
                   <>
-                    <EyeOff className="w-4 h-4 mr-2" />
-                    הסתר מהמכירה
+                    <Eye className="w-4 h-4 mr-2" />
+                    מוצג למכירה
                   </>
                 ) : (
                   <>
-                    <Eye className="w-4 h-4 mr-2" />
-                    הצג למכירה
+                    <EyeOff className="w-4 h-4 mr-2" />
+                    מוסתר מהמכירה
                   </>
                 )}
               </Button>
@@ -614,15 +616,17 @@ export default function DealerCarDetailsPage() {
                 </Button>
               )}
 
-              <Button
-                variant="outline"
-                className="w-full justify-start text-red-600 hover:text-red-700"
-                onClick={handleDelete}
-                disabled={actionLoading[car.id]}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                מחק רכב
-              </Button>
+              {car.status === "active" && (
+                <Button
+                  variant="outline"
+                  className="w-full justify-start text-red-600 hover:text-red-700"
+                  onClick={handleDelete}
+                  disabled={actionLoading[car.id]}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  מחק רכב
+                </Button>
+              )}
             </CardContent>
           </Card>
 
