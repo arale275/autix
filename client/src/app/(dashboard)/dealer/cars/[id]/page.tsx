@@ -1,4 +1,4 @@
-// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers (Fixed)
+// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers (Interactive Badge)
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -8,8 +8,6 @@ import {
   ArrowRight,
   Edit,
   Trash2,
-  Eye,
-  EyeOff,
   CheckCircle,
   Share2,
   Calendar,
@@ -19,15 +17,8 @@ import {
   MapPin,
   Car as CarIcon,
   ChevronLeft,
-  ImageIcon,
-  ExternalLink,
   AlertTriangle,
-  TrendingUp,
-  MessageSquare,
-  Heart,
   Clock,
-  BarChart3,
-  Target,
   Zap,
   Upload,
 } from "lucide-react";
@@ -53,7 +44,6 @@ import { useImages } from "@/hooks/useImages";
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import type { Car, CarImage } from "@/lib/api/types";
-import { Switch } from "@/components/ui/switch";
 
 // Type guard to check if image is CarImage object
 const isCarImageObject = (image: string | CarImage): image is CarImage => {
@@ -78,13 +68,12 @@ const normalizeImages = (
     if (isCarImageObject(image)) {
       return image;
     } else {
-      // Convert string URL to CarImage object
       return {
         id: index + 1,
         car_id: carId,
         image_url: image,
         thumbnail_url: image,
-        is_main: index === 0, // First image is main by default
+        is_main: index === 0,
         display_order: index,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -123,32 +112,6 @@ const getCarAge = (year: number): string => {
   return `${age} שנים`;
 };
 
-const getStatusColor = (status: string): string => {
-  switch (status) {
-    case "active":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "sold":
-      return "bg-purple-100 text-purple-800 border-purple-200";
-    case "deleted":
-      return "bg-red-100 text-red-800 border-red-200";
-    default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
-  }
-};
-
-const getStatusLabel = (status: string): string => {
-  switch (status) {
-    case "active":
-      return "פעיל";
-    case "sold":
-      return "נמכר";
-    case "deleted":
-      return "נמחק";
-    default:
-      return "לא ידוע";
-  }
-};
-
 export default function DealerCarDetailsPage() {
   const params = useParams();
   const router = useRouter();
@@ -162,7 +125,7 @@ export default function DealerCarDetailsPage() {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
 
-  // Hooks - תיקון לשימוש באותו hook
+  // Hooks
   const { car, loading, error, refetch } = useCar(carId);
   const {
     toggleAvailability,
@@ -186,7 +149,6 @@ export default function DealerCarDetailsPage() {
   // פונקציות לניהול תמונות
   const handleSetMainImage = async (imageId: number) => {
     if (!car) return;
-
     const success = await setMainImage(car.id, imageId);
     if (success) {
       refetch();
@@ -195,7 +157,6 @@ export default function DealerCarDetailsPage() {
 
   const handleDeleteImage = async (imageId: number) => {
     if (!car) return;
-
     if (window.confirm("האם אתה בטוח שברצונך למחוק את התמונה?")) {
       const success = await deleteImage(imageId);
       if (success) {
@@ -210,7 +171,6 @@ export default function DealerCarDetailsPage() {
 
   const handleUploadClick = async () => {
     if (selectedFiles.length === 0 || !car) return;
-
     try {
       const success = await uploadMultipleImages(
         car.id,
@@ -228,26 +188,30 @@ export default function DealerCarDetailsPage() {
     }
   };
 
+  // Toggle availability with confirmation for hiding
   const handleToggleAvailability = async () => {
     if (!car) return;
 
+    const currentValue = car.isAvailable ?? true;
+    const newValue = !currentValue;
+
+    // Show confirmation only when hiding the car
+    if (currentValue && !newValue) {
+      const confirmed = window.confirm(
+        "האם אתה בטוח שברצונך להסתיר את הרכב מהקונים?"
+      );
+      if (!confirmed) return;
+    }
+
     try {
-      const currentValue = car.isAvailable ?? true;
-      const newValue = !currentValue;
-
-      console.log("🔄 Toggle:", {
-        from: currentValue,
-        to: newValue,
-      });
-
       const success = await toggleAvailability(car.id, newValue);
-
       if (success) {
-        // Force re-render by updating the page
-        window.location.reload();
+        refetch();
+        toast.success(newValue ? "הרכב מוצג כעת לקונים" : "הרכב הוסתר מהקונים");
       }
     } catch (error) {
-      console.error("💥 Toggle error:", error);
+      console.error("Toggle error:", error);
+      toast.error("שגיאה בשינוי מצב הרכב");
     }
   };
 
@@ -268,7 +232,6 @@ export default function DealerCarDetailsPage() {
 
   const handleDelete = async () => {
     if (!car) return;
-
     if (
       window.confirm(
         "האם אתה בטוח שברצונך למחוק את הרכב? פעולה זו לא ניתנת לביטול."
@@ -284,7 +247,6 @@ export default function DealerCarDetailsPage() {
 
   const handleMarkSold = async () => {
     if (!car) return;
-
     const success = await markAsSold(car.id);
     if (success) {
       toast.success("הרכב סומן כנמכר");
@@ -349,7 +311,6 @@ export default function DealerCarDetailsPage() {
   if (isEditMode) {
     return (
       <div className="container mx-auto px-4 py-6 space-y-6">
-        {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm text-gray-600">
           <Link href="/dealer/cars" className="hover:text-blue-600">
             המלאי שלי
@@ -362,7 +323,6 @@ export default function DealerCarDetailsPage() {
           <span className="text-gray-900">עריכה</span>
         </nav>
 
-        {/* Edit Header */}
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -381,7 +341,6 @@ export default function DealerCarDetailsPage() {
           </CardContent>
         </Card>
 
-        {/* Car Form */}
         <CarForm car={car} onSuccess={handleSaveEdit} mode="edit" />
       </div>
     );
@@ -427,23 +386,46 @@ export default function DealerCarDetailsPage() {
               </div>
             </div>
 
-            {/* Status Badge - תיקון #3 */}
-            <div className="flex items-center gap-2">
-              {car.status === "active" && car.isAvailable && (
-                <Badge className="bg-green-100 text-green-800 border-green-200">
-                  פעיל
-                </Badge>
+            {/* Interactive Status Badge */}
+            <div className="flex flex-col items-end gap-2">
+              {car.status === "active" && (
+                <div className="flex flex-col items-center">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={handleToggleAvailability}
+                      disabled={actionLoading[car.id]}
+                      className={cn(
+                        "px-3 py-1 text-sm font-medium rounded-full border cursor-pointer transition-all duration-200 hover:shadow-md",
+                        car.isAvailable
+                          ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
+                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200",
+                        actionLoading[car.id] && "opacity-50 cursor-not-allowed"
+                      )}
+                    >
+                      {car.isAvailable ? "פעיל" : "מוסתר"}
+                    </button>
+                    <span className="text-gray-400">|</span>
+                    <span
+                      className={cn(
+                        "px-3 py-1 text-sm font-medium rounded-full border opacity-50",
+                        !car.isAvailable
+                          ? "bg-green-100 text-green-800 border-green-200"
+                          : "bg-gray-100 text-gray-800 border-gray-200"
+                      )}
+                    >
+                      {!car.isAvailable ? "פעיל" : "מוסתר"}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">לחץ לשינוי מצב</p>
+                </div>
               )}
-              {car.status === "active" && !car.isAvailable && (
-                <Badge className="bg-gray-100 text-gray-800 border-gray-200">
-                  מוסתר
-                </Badge>
-              )}
+
               {car.status === "sold" && (
                 <Badge className="bg-purple-100 text-purple-800 border-purple-200">
                   נמכר
                 </Badge>
               )}
+
               {car.status === "deleted" && (
                 <Badge className="bg-red-100 text-red-800 border-red-200">
                   נמחק
@@ -596,32 +578,6 @@ export default function DealerCarDetailsPage() {
                 <Edit className="w-4 h-4 mr-2" />
                 ערוך פרטים
               </Button>
-
-              {/* Toggle Switch for Availability - Custom but clean */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-900">
-                    הצגה לקונים
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {car.isAvailable ? "מוצג באתר לקונים" : "מוסתר מהקונים"}
-                  </span>
-                </div>
-
-                <button
-                  onClick={handleToggleAvailability}
-                  disabled={actionLoading[car.id]}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 ${
-                    car.isAvailable ? "bg-green-500" : "bg-gray-300"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-transform ${
-                      car.isAvailable ? "translate-x-6" : "translate-x-1"
-                    }`}
-                  />
-                </button>
-              </div>
 
               {car.status === "active" && (
                 <Button
