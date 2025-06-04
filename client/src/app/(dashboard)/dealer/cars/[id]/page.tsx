@@ -584,19 +584,27 @@ export default function DealerCarDetailsPage() {
                   onClick={handleToggleAvailability}
                   disabled={actionLoading[car.id]}
                   className={cn(
-                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50",
+                    "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 cursor-pointer",
                     car.isAvailable
                       ? "bg-green-500 hover:bg-green-600"
                       : "bg-gray-300 hover:bg-gray-400"
                   )}
+                  type="button"
                 >
                   <span
                     className={cn(
-                      "inline-block h-4 w-4 transform rounded-full bg-white transition-transform",
+                      "inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm",
                       car.isAvailable ? "translate-x-6" : "translate-x-1"
                     )}
                   />
                 </button>
+              </div>
+
+              {/* Debug Info - תמחק אחרי הבדיקה */}
+              <div className="text-xs text-gray-400 p-2 bg-yellow-50 rounded">
+                Debug: car.isAvailable = {car.isAvailable ? "true" : "false"}
+                <br />
+                Status: {car.status}
               </div>
 
               {car.status === "active" && (
