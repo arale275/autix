@@ -302,7 +302,9 @@ export function useDealerCars() {
         setError(null);
 
         const response = await carsApi.getMyCars(params);
+        console.log("📡 fetchMyCars response:", response);
         setCars(response.cars);
+        console.log("🏪 setCars called with:", response.cars);
       } catch (err) {
         const errorMessage = handleApiError(err);
         setError(errorMessage);
