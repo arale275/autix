@@ -70,7 +70,7 @@ export const CAR_MANUFACTURERS_HEBREW = [
   // יצרנים גרמניים
   { value: "Audi", label: "אאודי" },
   { value: "BMW", label: "ב.מ.וו" },
-  { value: "Mercedes-Benz", label: "מרצדס-בנץ" },
+  { value: "Mercedes-Benz", label: "מרצדס" },
   { value: "Porsche", label: "פורשה" },
   { value: "Volkswagen", label: "פולקסווגן" },
   { value: "Opel", label: "אופל" },
@@ -121,7 +121,7 @@ export const CAR_MANUFACTURERS_HEBREW = [
   { value: "SEAT", label: "סיאט" },
 
   // יצרנים צ'כיים
-  { value: "Skoda", label: "שקודה" },
+  { value: "Skoda", label: "סקודה" },
 
   // יצרנים שוודיים
   { value: "Volvo", label: "וולוו" },
@@ -129,7 +129,6 @@ export const CAR_MANUFACTURERS_HEBREW = [
 
   // יצרנים בריטיים
   { value: "Land Rover", label: "לנד רובר" },
-  { value: "Range Rover", label: "ריינג' רובר" },
   { value: "Jaguar", label: "יגואר" },
   { value: "Mini", label: "מיני" },
   { value: "Bentley", label: "בנטלי" },
