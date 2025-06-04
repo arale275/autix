@@ -1,4 +1,4 @@
-// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers (No Tabs)
+// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers (Fixed)
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -424,16 +424,30 @@ export default function DealerCarDetailsPage() {
                   פורסם {new Date(car.createdAt).toLocaleDateString("he-IL")}
                 </span>
               </div>
-
-              {/* Removed duplicate status badges - they appear in sidebar */}
             </div>
 
-            {/* Status Info Only */}
+            {/* Status Badge - תיקון #3 */}
             <div className="flex items-center gap-2">
-              <Badge className={getStatusColor(car.status)}>
-                {getStatusLabel(car.status)}
-              </Badge>
-              {!car.isAvailable && <Badge variant="secondary">מוסתר</Badge>}
+              {car.status === "active" && car.isAvailable && (
+                <Badge className="bg-green-100 text-green-800 border-green-200">
+                  פעיל
+                </Badge>
+              )}
+              {car.status === "active" && !car.isAvailable && (
+                <Badge className="bg-gray-100 text-gray-800 border-gray-200">
+                  מוסתר
+                </Badge>
+              )}
+              {car.status === "sold" && (
+                <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+                  נמכר
+                </Badge>
+              )}
+              {car.status === "deleted" && (
+                <Badge className="bg-red-100 text-red-800 border-red-200">
+                  נמחק
+                </Badge>
+              )}
             </div>
           </div>
         </CardContent>
@@ -582,30 +596,25 @@ export default function DealerCarDetailsPage() {
                 ערוך פרטים
               </Button>
 
-              {/* Toggle Switch for Availability - Debug Version */}
+              {/* Toggle Switch for Availability - תיקון #1 ו #2 */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-gray-900">
                     הצגה לקונים
                   </span>
                   <span className="text-xs text-gray-500">
-                    {car.isAvailable ? "מוצג למכירה" : "מוסתר מהקונים"}
-                  </span>
-                  {/* Debug info */}
-                  <span className="text-xs text-red-500">
-                    Debug: {String(car.isAvailable)}
+                    {car.isAvailable ? "מוצג באתר לקונים" : "מוסתר מהקונים"}
                   </span>
                 </div>
 
-                {/* Manual Toggle Switch */}
+                {/* Toggle Switch - תיקון #2 */}
                 <div
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    console.log("🔥 TOGGLE CLICKED!");
                     handleToggleAvailability();
                   }}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors duration-300 border-2 border-blue-500 ${
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full cursor-pointer transition-colors duration-300 ${
                     car.isAvailable ? "bg-green-500" : "bg-gray-300"
                   }`}
                   style={{ zIndex: 1000 }}
