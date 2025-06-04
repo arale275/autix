@@ -231,7 +231,7 @@ export default function DealerCarDetailsPage() {
     if (!car) return;
 
     try {
-      const currentValue = (car as any).is_available ?? true;
+      const currentValue = car.isAvailable ?? true; // ✅ עכשיו זה יעבוד!
       const newValue = !currentValue;
 
       console.log("🔄 Toggle:", {
@@ -588,9 +588,7 @@ export default function DealerCarDetailsPage() {
                     הצגה לקונים
                   </span>
                   <span className="text-xs text-gray-500">
-                    {(car as any).is_available ?? true
-                      ? "מוצג למכירה"
-                      : "מוסתר מהקונים"}
+                    {car.isAvailable ? "מוצג למכירה" : "מוסתר מהקונים"}
                   </span>
                 </div>
 
@@ -598,7 +596,7 @@ export default function DealerCarDetailsPage() {
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={(car as any).is_available ?? true}
+                    checked={car.isAvailable ?? true}
                     onChange={handleToggleAvailability}
                     disabled={actionLoading[car.id]}
                     className="sr-only peer"
