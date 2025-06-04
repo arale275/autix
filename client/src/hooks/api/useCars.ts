@@ -1,4 +1,4 @@
-// hooks/api/useCars.ts - Cars Data Hook
+// hooks/api/useCars.ts - Cars Data Hook עם Cache Invalidation
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
@@ -65,6 +65,46 @@ interface UseCarsReturn {
   // Current params
   currentParams: CarsSearchParams;
 }
+
+// ✅ Global cache invalidation system
+let globalCarListCallbacks: Array<() => void> = [];
+let globalCarCallbacks: Array<{ carId: number; callback: () => void }> = [];
+
+const registerCarListCallback = (callback: () => void) => {
+  globalCarListCallbacks.push(callback);
+  return () => {
+    globalCarListCallbacks = globalCarListCallbacks.filter(
+      (cb) => cb !== callback
+    );
+  };
+};
+
+const registerCarCallback = (carId: number, callback: () => void) => {
+  globalCarCallbacks.push({ carId, callback });
+  return () => {
+    globalCarCallbacks = globalCarCallbacks.filter(
+      (cb) => cb.callback !== callback
+    );
+  };
+};
+
+// ✅ Cache invalidation functions
+export const invalidateCarCache = (carId?: number) => {
+  // רענון כל רשימות הרכבים
+  globalCarListCallbacks.forEach((callback) => callback());
+
+  // רענון רכב ספציפי אם יש ID
+  if (carId) {
+    globalCarCallbacks
+      .filter((cb) => cb.carId === carId)
+      .forEach((cb) => cb.callback());
+  }
+};
+
+export const invalidateAllCarCaches = () => {
+  globalCarListCallbacks.forEach((callback) => callback());
+  globalCarCallbacks.forEach((cb) => cb.callback());
+};
 
 /**
  * Hook for managing cars data with search, pagination, and caching
@@ -156,6 +196,11 @@ export function useCars(options: UseCarsOptions = {}): UseCarsReturn {
     setError(null);
   }, []);
 
+  // ✅ Register for cache invalidation
+  useEffect(() => {
+    return registerCarListCallback(refetch);
+  }, [refetch]);
+
   // Auto-fetch on mount
   useEffect(() => {
     if (autoFetch) {
@@ -218,6 +263,12 @@ export function useCar(carId: number | null) {
     }
   }, [carId, router]);
 
+  // ✅ Register for cache invalidation
+  useEffect(() => {
+    if (!carId) return;
+    return registerCarCallback(carId, fetchCar);
+  }, [carId, fetchCar]);
+
   useEffect(() => {
     if (carId) {
       fetchCar();
@@ -233,7 +284,7 @@ export function useCar(carId: number | null) {
 }
 
 /**
- * Hook for dealer's car management
+ * Hook for dealer's car management עם Cache Invalidation
  */
 export function useDealerCars() {
   const [cars, setCars] = useState<Car[]>([]);
@@ -266,6 +317,45 @@ export function useDealerCars() {
     [router]
   );
 
+  // ✅ Register for cache invalidation
+  useEffect(() => {
+    return registerCarListCallback(fetchMyCars);
+  }, [fetchMyCars]);
+
+  // ✅ Helper function for actions with cache invalidation
+  const performAction = useCallback(
+    async (
+      carId: number,
+      action: () => Promise<any>,
+      successMessage?: string
+    ): Promise<boolean> => {
+      try {
+        setActionLoading((prev) => ({ ...prev, [carId]: true }));
+
+        const result = await action();
+
+        // ✅ Update local state immediately
+        if (result) {
+          setCars((prev) =>
+            prev.map((car) => (car.id === carId ? result : car))
+          );
+        }
+
+        // ✅ Invalidate cache to sync all components
+        invalidateCarCache(carId);
+
+        return true;
+      } catch (err) {
+        const errorMessage = handleApiError(err);
+        setError(errorMessage);
+        return false;
+      } finally {
+        setActionLoading((prev) => ({ ...prev, [carId]: false }));
+      }
+    },
+    []
+  );
+
   const addCar = useCallback(
     async (carData: CreateCarRequest): Promise<Car | null> => {
       try {
@@ -273,6 +363,9 @@ export function useDealerCars() {
 
         const newCar = await carsApi.addCar(carData);
         setCars((prev) => [newCar, ...prev]);
+
+        // ✅ Invalidate cache for new car
+        invalidateCarCache();
 
         return newCar;
       } catch (err) {
@@ -288,24 +381,13 @@ export function useDealerCars() {
 
   const updateCar = useCallback(
     async (carId: number, carData: UpdateCarRequest): Promise<Car | null> => {
-      try {
-        setActionLoading((prev) => ({ ...prev, [carId]: true }));
+      const success = await performAction(carId, async () => {
+        return await carsApi.updateCar(carId, carData);
+      });
 
-        const updatedCar = await carsApi.updateCar(carId, carData);
-        setCars((prev) =>
-          prev.map((car) => (car.id === carId ? updatedCar : car))
-        );
-
-        return updatedCar;
-      } catch (err) {
-        const errorMessage = handleApiError(err);
-        setError(errorMessage);
-        return null;
-      } finally {
-        setActionLoading((prev) => ({ ...prev, [carId]: false }));
-      }
+      return success ? cars.find((car) => car.id === carId) || null : null;
     },
-    []
+    [performAction, cars]
   );
 
   const deleteCar = useCallback(async (carId: number): Promise<boolean> => {
@@ -315,24 +397,8 @@ export function useDealerCars() {
       await carsApi.deleteCar(carId);
       setCars((prev) => prev.filter((car) => car.id !== carId));
 
-      return true;
-    } catch (err) {
-      const errorMessage = handleApiError(err);
-      setError(errorMessage);
-      return false;
-    } finally {
-      setActionLoading((prev) => ({ ...prev, [carId]: false }));
-    }
-  }, []);
-
-  const markAsSold = useCallback(async (carId: number): Promise<boolean> => {
-    try {
-      setActionLoading((prev) => ({ ...prev, [carId]: true }));
-
-      const updatedCar = await carsApi.markCarAsSold(carId);
-      setCars((prev) =>
-        prev.map((car) => (car.id === carId ? updatedCar : car))
-      );
+      // ✅ Invalidate cache
+      invalidateCarCache(carId);
 
       return true;
     } catch (err) {
@@ -343,30 +409,23 @@ export function useDealerCars() {
       setActionLoading((prev) => ({ ...prev, [carId]: false }));
     }
   }, []);
+
+  const markAsSold = useCallback(
+    async (carId: number): Promise<boolean> => {
+      return await performAction(carId, async () => {
+        return await carsApi.markCarAsSold(carId);
+      });
+    },
+    [performAction]
+  );
 
   const toggleAvailability = useCallback(
     async (carId: number, isAvailable: boolean): Promise<boolean> => {
-      try {
-        setActionLoading((prev) => ({ ...prev, [carId]: true }));
-
-        const updatedCar = await carsApi.toggleCarAvailability(
-          carId,
-          isAvailable
-        );
-        setCars((prev) =>
-          prev.map((car) => (car.id === carId ? updatedCar : car))
-        );
-
-        return true;
-      } catch (err) {
-        const errorMessage = handleApiError(err);
-        setError(errorMessage);
-        return false;
-      } finally {
-        setActionLoading((prev) => ({ ...prev, [carId]: false }));
-      }
+      return await performAction(carId, async () => {
+        return await carsApi.toggleCarAvailability(carId, isAvailable);
+      });
     },
-    []
+    [performAction]
   );
 
   useEffect(() => {

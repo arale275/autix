@@ -46,35 +46,6 @@ const formatYear = (year: number): string => {
   return year.toString();
 };
 
-// Car condition functions
-const getCarCondition = (
-  year: number,
-  mileage: number
-): "חדש" | "מעולה" | "טוב" | "סביר" => {
-  const age = new Date().getFullYear() - year;
-  const avgMileagePerYear = mileage / Math.max(age, 1);
-
-  if (age <= 1 && mileage < 20000) return "חדש";
-  if (age <= 3 && avgMileagePerYear < 15000) return "מעולה";
-  if (age <= 7 && avgMileagePerYear < 20000) return "טוב";
-  return "סביר";
-};
-
-const getConditionColor = (condition: string): string => {
-  switch (condition) {
-    case "חדש":
-      return "bg-green-100 text-green-800 border-green-200";
-    case "מעולה":
-      return "bg-blue-100 text-blue-800 border-blue-200";
-    case "טוב":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200";
-    case "סביר":
-      return "bg-orange-100 text-orange-800 border-orange-200";
-    default:
-      return "bg-gray-100 text-gray-800 border-gray-200";
-  }
-};
-
 // ✅ Component Interface
 export interface CarCardProps {
   car: Car;
@@ -98,8 +69,6 @@ export default function CarCard({
   className,
 }: CarCardProps) {
   const { isFavorite, toggleFavorite } = useFavorites();
-  const condition = getCarCondition(car.year, car.mileage || 0);
-  const conditionColor = getConditionColor(condition);
 
   // ✅ FIXED: משתמש באותה לוגיקה כמו בעמוד הרכב הספציפי
   const normalizedImages = normalizeImages(car.images, car.id);
@@ -147,7 +116,6 @@ export default function CarCard({
           {/* Header with Badges */}
           <div className="flex justify-between items-start mb-2">
             <div className="flex flex-wrap gap-1">
-              <Badge className={conditionColor}>{condition}</Badge>
               {car.isFeatured && (
                 <Badge className="bg-purple-100 text-purple-800 border-purple-200">
                   <Star className="w-3 h-3 mr-1" />
