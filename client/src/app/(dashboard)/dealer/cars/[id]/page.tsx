@@ -231,7 +231,7 @@ export default function DealerCarDetailsPage() {
     if (!car) return;
 
     try {
-      const currentValue = car.isAvailable ?? true; // ✅ עכשיו זה יעבוד!
+      const currentValue = car.isAvailable ?? true;
       const newValue = !currentValue;
 
       console.log("🔄 Toggle:", {
@@ -242,7 +242,8 @@ export default function DealerCarDetailsPage() {
       const success = await toggleAvailability(car.id, newValue);
 
       if (success) {
-        await refetch();
+        // Force re-render by updating the page
+        window.location.reload();
       }
     } catch (error) {
       console.error("💥 Toggle error:", error);
