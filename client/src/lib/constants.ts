@@ -36,8 +36,37 @@ export const API_ENDPOINTS = {
   DB_TEST: "/api/db-test",
 } as const;
 
-// Car Manufacturers
+// Car Manufacturers (אלפבתי בעברית)
 export const CAR_MANUFACTURERS = [
+  "Audi",
+  "BMW",
+  "Chevrolet",
+  "Citroen",
+  "Fiat",
+  "Ford",
+  "Honda",
+  "Hyundai",
+  "Infiniti",
+  "Jeep",
+  "Kia",
+  "Lexus",
+  "Mazda",
+  "Mercedes",
+  "Mitsubishi",
+  "Nissan",
+  "Opel",
+  "Peugeot",
+  "Renault",
+  "Seat",
+  "Skoda",
+  "Subaru",
+  "Suzuki",
+  "Toyota",
+  "Volkswagen",
+  "Volvo",
+] as const;
+
+export const CAR_MANUFACTURERS_HEBREW = [
   // יצרנים גרמניים
   { value: "Audi", label: "אאודי" },
   { value: "BMW", label: "ב.מ.וו" },

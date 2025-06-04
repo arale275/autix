@@ -16,6 +16,7 @@ import {
   AVAILABILITY_OPTIONS,
   SORT_OPTIONS,
 } from "@/lib/car-utils";
+import { CAR_MANUFACTURERS_HEBREW } from "@/lib/constants";
 
 interface CarFiltersProps {
   filterMake: string;
@@ -65,9 +66,12 @@ export function CarFilters({
                 </SelectTrigger>
                 <SelectContent className="max-h-[200px] overflow-y-auto">
                   <SelectItem value="all">כל היצרנים</SelectItem>
-                  {CAR_MANUFACTURERS.map((make) => (
-                    <SelectItem key={make} value={make}>
-                      {make}
+                  {CAR_MANUFACTURERS_HEBREW.map((manufacturer) => (
+                    <SelectItem
+                      key={manufacturer.value}
+                      value={manufacturer.value}
+                    >
+                      {manufacturer.label}
                     </SelectItem>
                   ))}
                 </SelectContent>
