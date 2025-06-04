@@ -3,6 +3,7 @@
 
 import { apiClient } from "./client";
 import { API_ENDPOINTS } from "../constants";
+import { normalizeCarsResponse, normalizeCarFromAPI } from "./normalizers";
 import type {
   Car,
   CarsResponse,
@@ -36,10 +37,12 @@ export const carsApi = {
    * Public endpoint - no auth required
    */
   getCar: async (id: number): Promise<Car> => {
-    const response = await apiClient.get<Car>(API_ENDPOINTS.CAR_BY_ID(id));
+    const response = await apiClient.get<any>(API_ENDPOINTS.CAR_BY_ID(id)); // ← שנה ל-any
 
     console.log(`✅ Fetched car ${id}`);
-    return response;
+
+    // ✅ הוסף נרמול:
+    return normalizeCarFromAPI(response);
   },
 
   /**
@@ -69,13 +72,15 @@ export const carsApi = {
   getMyCars: async (
     params: Partial<CarsSearchParams> = {}
   ): Promise<CarsResponse> => {
-    const response = await apiClient.getWithParams<CarsResponse>(
+    const response = await apiClient.getWithParams<any>( // ← שנה מ-CarsResponse ל-any
       API_ENDPOINTS.MY_CARS,
       params
     );
 
     console.log(`✅ Fetched ${response.cars.length} of my cars`);
-    return response;
+
+    // ✅ הוסף נרמול כאן:
+    return normalizeCarsResponse(response);
   },
 
   /**
@@ -94,13 +99,15 @@ export const carsApi = {
    * Requires authentication and ownership
    */
   updateCar: async (id: number, carData: UpdateCarRequest): Promise<Car> => {
-    const response = await apiClient.put<Car>(
+    const response = await apiClient.put<any>( // ← שנה ל-any
       API_ENDPOINTS.CAR_BY_ID(id),
       carData
     );
 
     console.log(`✅ Updated car ${id}`);
-    return response;
+
+    // ✅ הוסף נרמול:
+    return normalizeCarFromAPI(response);
   },
 
   /**
@@ -133,13 +140,15 @@ export const carsApi = {
     id: number,
     isAvailable: boolean
   ): Promise<Car> => {
-    const response = await apiClient.put<Car>(
+    const response = await apiClient.put<any>( // ← שנה ל-any
       `${API_ENDPOINTS.CAR_BY_ID(id)}/availability`,
       { isAvailable }
     );
 
     console.log(`✅ Toggled car ${id} availability to ${isAvailable}`);
-    return response;
+
+    // ✅ הוסף נרמול:
+    return normalizeCarFromAPI(response);
   },
 
   /**
