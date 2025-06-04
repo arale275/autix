@@ -21,6 +21,8 @@ import {
   Clock,
   Zap,
   Upload,
+  MessageSquare,
+  ImageIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +34,7 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/loading-spinner";
@@ -124,6 +127,12 @@ export default function DealerCarDetailsPage() {
   const [uploadingImages, setUploadingImages] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deleteData, setDeleteData] = useState<{
+    inquiries: number;
+    images: number;
+    loading: boolean;
+  }>({ inquiries: 0, images: 0, loading: false });
 
   // Hooks
   const { car, loading, error, refetch } = useCar(carId);
@@ -207,7 +216,9 @@ export default function DealerCarDetailsPage() {
       const success = await toggleAvailability(car.id, newValue);
       if (success) {
         refetch();
-        toast.success(newValue ? "הרכב מוצג כעת לקונים" : "הרכב הוסתר מהקונים");
+        toast.success(
+          newValue ? "הרכב מוצג כעת לקונים" : "הרכב הוסתר מהקונים"
+        );
       }
     } catch (error) {
       console.error("Toggle error:", error);
@@ -369,20 +380,12 @@ export default function DealerCarDetailsPage() {
                 {car.make} {car.model} {car.year}
               </h1>
               <div className="flex items-center gap-4 text-gray-600 mb-4">
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-4 h-4" />
-                  {car.year} ({getCarAge(car.year)})
-                </span>
                 {car.city && (
                   <span className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
                     {car.city}
                   </span>
                 )}
-                <span className="flex items-center gap-1">
-                  <Clock className="w-4 h-4" />
-                  פורסם {new Date(car.createdAt).toLocaleDateString("he-IL")}
-                </span>
               </div>
             </div>
 
@@ -419,13 +422,13 @@ export default function DealerCarDetailsPage() {
                   <p className="text-xs text-gray-500 mt-1">לחץ לשינוי מצב</p>
                 </div>
               )}
-
+              
               {car.status === "sold" && (
                 <Badge className="bg-purple-100 text-purple-800 border-purple-200">
                   נמכר
                 </Badge>
               )}
-
+              
               {car.status === "deleted" && (
                 <Badge className="bg-red-100 text-red-800 border-red-200">
                   נמחק
@@ -440,51 +443,53 @@ export default function DealerCarDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Car Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Image Gallery */}
+          {/* Image Gallery - רק אם הרכב פעיל */}
           <Card>
             <CardContent className="p-4">
-              <div className="relative mb-4">
-                <Dialog
-                  open={isImageUploadOpen}
-                  onOpenChange={setIsImageUploadOpen}
-                >
-                  <DialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="absolute top-2 left-2 z-10 bg-white/90 hover:bg-white shadow-sm"
-                    >
-                      <Upload className="w-4 h-4 mr-1" />
-                      הוסף תמונות
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-2xl">
-                    <DialogHeader>
-                      <DialogTitle>העלאת תמונות לרכב</DialogTitle>
-                      <DialogDescription>
-                        בחר תמונות איכותיות של הרכב ולחץ "העלה" להוספתן לגלריה
-                      </DialogDescription>
-                    </DialogHeader>
-                    <ImageUploader
-                      onImagesChange={handleImagesSelect}
-                      onUploadClick={handleUploadClick}
-                      maxImages={10}
-                      maxFileSize={5}
-                      disabled={uploadingImages}
-                      uploading={uploadingImages}
-                      existingImages={car?.images?.map((img) =>
-                        typeof img === "string" ? img : img.image_url
-                      )}
-                    />
-                  </DialogContent>
-                </Dialog>
-              </div>
+              {car.status === "active" && (
+                <div className="relative mb-4">
+                  <Dialog
+                    open={isImageUploadOpen}
+                    onOpenChange={setIsImageUploadOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="absolute top-2 left-2 z-10 bg-white/90 hover:bg-white shadow-sm"
+                      >
+                        <Upload className="w-4 h-4 mr-1" />
+                        הוסף תמונות
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>העלאת תמונות לרכב</DialogTitle>
+                        <DialogDescription>
+                          בחר תמונות איכותיות של הרכב ולחץ "העלה" להוספתן לגלריה
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ImageUploader
+                        onImagesChange={handleImagesSelect}
+                        onUploadClick={handleUploadClick}
+                        maxImages={10}
+                        maxFileSize={5}
+                        disabled={uploadingImages}
+                        uploading={uploadingImages}
+                        existingImages={car?.images?.map((img) =>
+                          typeof img === "string" ? img : img.image_url
+                        )}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              )}
 
               <ImageGallery
                 images={normalizeImages(car.images, car.id)}
-                isOwner={true}
-                onSetMain={handleSetMainImage}
-                onDelete={handleDeleteImage}
+                isOwner={car.status === "active"} 
+                onSetMain={car.status === "active" ? handleSetMainImage : undefined}
+                onDelete={car.status === "active" ? handleDeleteImage : undefined}
                 className="space-y-4"
               />
             </CardContent>
@@ -493,57 +498,93 @@ export default function DealerCarDetailsPage() {
           {/* Car Details */}
           <Card>
             <CardContent className="space-y-6 p-6">
-              {/* Price */}
-              <div className="text-center py-4 bg-blue-50 rounded-lg">
-                <div className="text-3xl font-bold text-blue-600">
+              {/* Price - בולט ומרכזי */}
+              <div className="text-center py-6 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="text-4xl font-bold text-blue-600">
                   {formatPrice(car.price)}
+                </div>
+                <div className="text-sm text-blue-500 mt-1">מחיר המכירה</div>
+              </div>
+
+              {/* מפרטי הרכב - גריד 2x4 */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* שורה עליונה */}
+                <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                  <Calendar className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                  <div className="text-xs text-gray-600 mb-1">שנתון</div>
+                  <div className="font-semibold text-gray-900">{car.year}</div>
+                </div>
+
+                <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                  <Gauge className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                  <div className="text-xs text-gray-600 mb-1">קילומטראז'</div>
+                  <div className="font-semibold text-gray-900">
+                    {car.mileage ? formatMileage(car.mileage) : "לא צוין"}
+                  </div>
+                </div>
+
+                <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                  <CarIcon className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                  <div className="text-xs text-gray-600 mb-1">יד</div>
+                  <div className="font-semibold text-gray-900">
+                    {(car as any).hand || "לא צוין"}
+                  </div>
+                </div>
+
+                <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                  <Settings className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                  <div className="text-xs text-gray-600 mb-1">נפח מנוע</div>
+                  <div className="font-semibold text-gray-900">
+                    {(car as any).engineSize ? `${(car as any).engineSize}cc` : "לא צוין"}
+                  </div>
+                </div>
+
+                {/* שורה תחתונה */}
+                <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                  <Fuel className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                  <div className="text-xs text-gray-600 mb-1">סוג דלק</div>
+                  <div className="font-semibold text-gray-900">
+                    {car.fuelType || "לא צוין"}
+                  </div>
+                </div>
+
+                <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                  <Settings className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                  <div className="text-xs text-gray-600 mb-1">תיבת הילוכים</div>
+                  <div className="font-semibold text-gray-900">
+                    {car.transmission || "לא צוין"}
+                  </div>
+                </div>
+
+                <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                  <MapPin className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                  <div className="text-xs text-gray-600 mb-1">עיר</div>
+                  <div className="font-semibold text-gray-900">
+                    {car.city || "לא צוין"}
+                  </div>
+                </div>
+
+                <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                  <div className="w-5 h-5 mx-auto mb-2 rounded-full bg-gray-400"></div>
+                  <div className="text-xs text-gray-600 mb-1">צבע</div>
+                  <div className="font-semibold text-gray-900">
+                    {car.color || "לא צוין"}
+                  </div>
                 </div>
               </div>
 
-              {/* Key Details */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {car.mileage && (
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <Gauge className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                    <div className="text-sm text-gray-600">קילומטראז'</div>
-                    <div className="font-semibold">
-                      {formatMileage(car.mileage)}
-                    </div>
-                  </div>
-                )}
-
-                {car.fuelType && (
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <Fuel className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                    <div className="text-sm text-gray-600">סוג דלק</div>
-                    <div className="font-semibold">{car.fuelType}</div>
-                  </div>
-                )}
-
-                {car.transmission && (
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <Settings className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                    <div className="text-sm text-gray-600">תיבת הילוכים</div>
-                    <div className="font-semibold">{car.transmission}</div>
-                  </div>
-                )}
-
-                {car.color && (
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <CarIcon className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                    <div className="text-sm text-gray-600">צבע</div>
-                    <div className="font-semibold">{car.color}</div>
-                  </div>
-                )}
-              </div>
-
-              {/* Description */}
+              {/* תיאור הרכב */}
               {car.description && (
-                <div>
-                  <h3 className="font-semibold mb-2">תיאור הרכב</h3>
-                  <p className="text-gray-700 whitespace-pre-wrap">
-                    {car.description}
-                  </p>
+                <div className="pt-4 border-t border-gray-200">
+                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4" />
+                    תיאור הרכב
+                  </h3>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {car.description}
+                    </p>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -552,34 +593,34 @@ export default function DealerCarDetailsPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Quick Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="w-5 h-5" />
-                פעולות מהירות
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={handleShare}
-              >
-                <Share2 className="w-4 h-4 mr-2" />
-                שתף רכב
-              </Button>
+          {/* Quick Actions - רק אם הרכב פעיל */}
+          {car.status === "active" && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5" />
+                  פעולות מהירות
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={handleShare}
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  שתף רכב
+                </Button>
 
-              <Button
-                variant="outline"
-                className="w-full justify-start"
-                onClick={handleEdit}
-              >
-                <Edit className="w-4 h-4 mr-2" />
-                ערוך פרטים
-              </Button>
+                <Button
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={handleEdit}
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  ערוך פרטים
+                </Button>
 
-              {car.status === "active" && (
                 <Button
                   variant="outline"
                   className="w-full justify-start"
@@ -589,9 +630,7 @@ export default function DealerCarDetailsPage() {
                   <CheckCircle className="w-4 h-4 mr-2" />
                   סמן כנמכר
                 </Button>
-              )}
 
-              {car.status === "active" && (
                 <Button
                   variant="outline"
                   className="w-full justify-start text-red-600 hover:text-red-700"
@@ -601,26 +640,63 @@ export default function DealerCarDetailsPage() {
                   <Trash2 className="w-4 h-4 mr-2" />
                   מחק רכב
                 </Button>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
-          {/* Performance Tips */}
-          <Card className="bg-yellow-50 border-yellow-200">
-            <CardHeader>
-              <CardTitle className="text-sm text-yellow-800">
-                💡 טיפים לשיפור ביצועים
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <ul className="text-xs text-yellow-700 space-y-1">
-                <li>• הוסף עוד תמונות איכותיות</li>
-                <li>• עדכן את התיאור עם פרטים נוספים</li>
-                <li>• בדוק שהמחיר תחרותי</li>
-                <li>• הגב במהירות לפניות</li>
-              </ul>
-            </CardContent>
-          </Card>
+          {/* מידע על רכב נמכר */}
+          {car.status === "sold" && (
+            <Card className="bg-purple-50 border-purple-200">
+              <CardHeader>
+                <CardTitle className="text-sm text-purple-800 flex items-center gap-2">
+                  <CheckCircle className="w-5 h-5" />
+                  רכב נמכר
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-purple-700">
+                  הרכב הזה נמכר בהצלחה ואינו זמין יותר לקונים. 
+                  נתונים אלה נשמרים לצורך מעקב וניהול.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* מידע על רכב נמחק */}
+          {car.status === "deleted" && (
+            <Card className="bg-red-50 border-red-200">
+              <CardHeader>
+                <CardTitle className="text-sm text-red-800 flex items-center gap-2">
+                  <Trash2 className="w-5 h-5" />
+                  רכב נמחק
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-red-700">
+                  הרכב הזה נמחק מהמערכת ואינו מוצג לקונים.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Performance Tips - רק אם הרכב פעיל */}
+          {car.status === "active" && (
+            <Card className="bg-yellow-50 border-yellow-200">
+              <CardHeader>
+                <CardTitle className="text-sm text-yellow-800">
+                  💡 טיפים לשיפור ביצועים
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <ul className="text-xs text-yellow-700 space-y-1">
+                  <li>• הוסף עוד תמונות איכותיות</li>
+                  <li>• עדכן את התיאור עם פרטים נוספים</li>
+                  <li>• בדוק שהמחיר תחרותי</li>
+                  <li>• הגב במהירות לפניות</li>
+                </ul>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>
