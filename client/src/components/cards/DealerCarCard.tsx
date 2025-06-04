@@ -4,11 +4,7 @@ import Link from "next/link";
 import { Star, ImageIcon, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import CarCard from "@/components/cards/CarCard";
-import {
-  getStatusColor,
-  getStatusLabel,
-  getDaysOnMarket,
-} from "@/lib/car-utils";
+import { getDaysOnMarket, getCarDisplayStatus } from "@/lib/car-utils";
 import { cn } from "@/lib/utils";
 import type { Car } from "@/lib/api/types";
 
@@ -61,9 +57,12 @@ export function DealerCarCard({
 
       {/* Status Badges overlay */}
       <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-        <Badge className={getStatusColor(car.status)}>
-          {getStatusLabel(car.status)}
-        </Badge>
+        {(() => {
+          const displayStatus = getCarDisplayStatus(car);
+          return (
+            <Badge className={displayStatus.color}>{displayStatus.label}</Badge>
+          );
+        })()}
 
         {car.isFeatured && (
           <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">

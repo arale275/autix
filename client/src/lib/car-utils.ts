@@ -181,3 +181,39 @@ export const filterCars = (
 
   return filtered;
 };
+
+export function getCarDisplayStatus(car: Car) {
+  if (car.status === "sold") {
+    return {
+      label: "נמכר",
+      color: "bg-purple-100 text-purple-800 border-purple-200",
+    };
+  }
+
+  if (car.status === "deleted") {
+    return {
+      label: "נמחק",
+      color: "bg-red-100 text-red-800 border-red-200",
+    };
+  }
+
+  if (car.status === "active" && car.isAvailable) {
+    return {
+      label: "פעיל",
+      color: "bg-green-100 text-green-800 border-green-200",
+    };
+  }
+
+  if (car.status === "active" && !car.isAvailable) {
+    return {
+      label: "מוסתר",
+      color: "bg-gray-100 text-gray-800 border-gray-200",
+    };
+  }
+
+  // Fallback
+  return {
+    label: "לא ידוע",
+    color: "bg-gray-100 text-gray-800 border-gray-200",
+  };
+}
