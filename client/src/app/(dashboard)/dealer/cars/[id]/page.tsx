@@ -614,6 +614,7 @@ export default function DealerCarDetailsPage() {
                     handleToggleAvailability();
                   }}
                   disabled={actionLoading[car.id]}
+                  className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-gray-200"
                 />
               </div>
 
