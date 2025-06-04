@@ -1,4 +1,4 @@
-// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers
+// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers (No Tabs)
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
@@ -34,7 +34,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
@@ -71,7 +70,7 @@ const normalizeImages = (
   carId: number
 ): { main: CarImage | null; gallery: CarImage[]; count: number } => {
   if (!images || images.length === 0) {
-    return { main: null, gallery: [], count: 0 }; // ✅ הוסף count
+    return { main: null, gallery: [], count: 0 };
   }
 
   const carImages: CarImage[] = images.map((image, index) => {
@@ -92,13 +91,13 @@ const normalizeImages = (
     }
   });
 
-  const main = carImages.find((img) => img.is_main) || carImages[0] || null; // ✅ שיפור לוגיקה
+  const main = carImages.find((img) => img.is_main) || carImages[0] || null;
   const gallery = carImages.filter((img) => !img.is_main);
 
   return {
     main,
     gallery,
-    count: carImages.length, // ✅ הוסף count אמיתי
+    count: carImages.length,
   };
 };
 
@@ -157,11 +156,10 @@ export default function DealerCarDetailsPage() {
   const carId = parseInt(params.id as string);
 
   // State
-  const [activeTab, setActiveTab] = useState("overview");
-  const [isEditing, setIsEditing] = useState(false);
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   // Hooks
   const { car, loading, error, refetch } = useCar(carId);
@@ -174,10 +172,9 @@ export default function DealerCarDetailsPage() {
   } = useDealerCars();
   const { setMainImage, deleteImage, uploadMultipleImages } = useImages();
 
-  // Check ownership - תיקון הבעיה המקורית
+  // Check ownership
   useEffect(() => {
     if (car && user) {
-      // ✅ תיקון: השתמש ב-dealer_user_id במקום dealerId
       if (user.userType === "dealer" && car.dealer_user_id !== user.id) {
         toast.error("אין לך הרשאה לצפות ברכב זה");
         router.push("/dealer/cars");
@@ -206,13 +203,12 @@ export default function DealerCarDetailsPage() {
     }
   };
 
-  // תיקון הפונקציות עם בדיקת null
   const handleImagesSelect = (files: File[]) => {
     setSelectedFiles(files);
   };
 
   const handleUploadClick = async () => {
-    if (selectedFiles.length === 0 || !car) return; // ✅ הוסף בדיקת !car
+    if (selectedFiles.length === 0 || !car) return;
 
     try {
       const success = await uploadMultipleImages(
@@ -233,19 +229,16 @@ export default function DealerCarDetailsPage() {
 
   // Actions
   const handleEdit = () => {
-    setIsEditing(true);
-    setActiveTab("edit");
+    setIsEditMode(true);
   };
 
   const handleCancelEdit = () => {
-    setIsEditing(false);
-    setActiveTab("overview");
+    setIsEditMode(false);
   };
 
   const handleSaveEdit = () => {
-    setIsEditing(false);
-    setActiveTab("overview");
-    refetch(); // Refresh car data
+    setIsEditMode(false);
+    refetch();
     toast.success("הרכב עודכן בהצלחה");
   };
 
@@ -340,6 +333,49 @@ export default function DealerCarDetailsPage() {
     );
   }
 
+  // Edit Mode
+  if (isEditMode) {
+    return (
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        {/* Breadcrumb */}
+        <nav className="flex items-center gap-2 text-sm text-gray-600">
+          <Link href="/dealer/cars" className="hover:text-blue-600">
+            המלאי שלי
+          </Link>
+          <ChevronLeft className="w-4 h-4" />
+          <Link href={`/dealer/cars/${car.id}`} className="hover:text-blue-600">
+            {car.make} {car.model} {car.year}
+          </Link>
+          <ChevronLeft className="w-4 h-4" />
+          <span className="text-gray-900">עריכה</span>
+        </nav>
+
+        {/* Edit Header */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  עריכת פרטי הרכב
+                </h1>
+                <p className="text-gray-600 mt-1">
+                  {car.make} {car.model} {car.year}
+                </p>
+              </div>
+              <Button variant="outline" onClick={handleCancelEdit}>
+                ביטול
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Car Form */}
+        <CarForm car={car} onSuccess={handleSaveEdit} mode="edit" />
+      </div>
+    );
+  }
+
+  // View Mode
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
       {/* Breadcrumb */}
@@ -444,257 +480,176 @@ export default function DealerCarDetailsPage() {
         </CardContent>
       </Card>
 
-      {/* Main Content Tabs */}
-      <Tabs
-        value={activeTab}
-        onValueChange={setActiveTab}
-        className="space-y-6"
-      >
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">סקירה</TabsTrigger>
-          <TabsTrigger value="analytics">סטטיסטיקות</TabsTrigger>
-          <TabsTrigger value="edit">עריכה</TabsTrigger>
-        </TabsList>
-
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Car Details */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Image Gallery */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    <span>תמונות הרכב</span>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">
-                        {car.images?.length || 0} תמונות
-                      </Badge>
-                      {/* ✅ כפתור העלאת תמונות */}
-
-                      <Dialog
-                        open={isImageUploadOpen}
-                        onOpenChange={setIsImageUploadOpen}
-                      >
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <Upload className="w-4 h-4 mr-1" />
-                            הוסף תמונות
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>העלאת תמונות לרכב</DialogTitle>
-                            <DialogDescription>
-                              בחר תמונות איכותיות של הרכב ולחץ "העלה" להוספתן
-                              לגלריה
-                            </DialogDescription>
-                          </DialogHeader>
-                          <ImageUploader
-                            onImagesChange={handleImagesSelect}
-                            onUploadClick={handleUploadClick}
-                            maxImages={10}
-                            maxFileSize={5}
-                            disabled={uploadingImages}
-                            uploading={uploadingImages}
-                            existingImages={car?.images?.map((img) =>
-                              typeof img === "string" ? img : img.image_url
-                            )}
-                          />
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4">
-                  {(() => {
-                    const normalized = normalizeImages(car.images, car.id);
-                    console.log("🔍 Car images:", car.images);
-                    console.log("🔍 Normalized:", normalized);
-                    console.log("🔍 Count:", normalized.count);
-                    console.log("🔍 Main:", normalized.main);
-                    console.log("🔍 Gallery:", normalized.gallery);
-                    return null;
-                  })()}
-
-                  <ImageGallery
-                    images={normalizeImages(car.images, car.id)}
-                    isOwner={true}
-                    onSetMain={handleSetMainImage}
-                    onDelete={handleDeleteImage}
-                    className="space-y-4"
-                  />
-                </CardContent>
-              </Card>
-
-              {/* Car Details */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>פרטי הרכב</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Price */}
-                  <div className="text-center py-4 bg-blue-50 rounded-lg">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {formatPrice(car.price)}
-                    </div>
-                  </div>
-
-                  {/* Key Details */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {car.mileage && (
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <Gauge className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                        <div className="text-sm text-gray-600">קילומטראז'</div>
-                        <div className="font-semibold">
-                          {formatMileage(car.mileage)}
-                        </div>
-                      </div>
-                    )}
-
-                    {car.fuelType && (
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <Fuel className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                        <div className="text-sm text-gray-600">סוג דלק</div>
-                        <div className="font-semibold">{car.fuelType}</div>
-                      </div>
-                    )}
-
-                    {car.transmission && (
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <Settings className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                        <div className="text-sm text-gray-600">
-                          תיבת הילוכים
-                        </div>
-                        <div className="font-semibold">{car.transmission}</div>
-                      </div>
-                    )}
-
-                    {car.color && (
-                      <div className="text-center p-3 bg-gray-50 rounded-lg">
-                        <CarIcon className="w-6 h-6 text-gray-600 mx-auto mb-1" />
-                        <div className="text-sm text-gray-600">צבע</div>
-                        <div className="font-semibold">{car.color}</div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Description */}
-                  {car.description && (
-                    <div>
-                      <h3 className="font-semibold mb-2">תיאור הרכב</h3>
-                      <p className="text-gray-700 whitespace-pre-wrap">
-                        {car.description}
-                      </p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-              {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Zap className="w-5 h-5" />
-                    פעולות מהירות
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() =>
-                      window.open(`/buyer/cars/${car.id}`, "_blank")
-                    }
-                  >
-                    <ExternalLink className="w-4 h-4 mr-2" />
-                    צפה כקונה
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={handleEdit}
-                  >
-                    <Edit className="w-4 h-4 mr-2" />
-                    ערוך פרטים
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start"
-                    onClick={() => setActiveTab("analytics")}
-                  >
-                    <TrendingUp className="w-4 h-4 mr-2" />
-                    סטטיסטיקות
-                  </Button>
-                </CardContent>
-              </Card>
-
-              {/* Performance Tips */}
-              <Card className="bg-yellow-50 border-yellow-200">
-                <CardHeader>
-                  <CardTitle className="text-sm text-yellow-800">
-                    💡 טיפים לשיפור ביצועים
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <ul className="text-xs text-yellow-700 space-y-1">
-                    <li>• הוסף עוד תמונות איכותיות</li>
-                    <li>• עדכן את התיאור עם פרטים נוספים</li>
-                    <li>• בדוק שהמחיר תחרותי</li>
-                    <li>• הגב במהירות לפניות</li>
-                  </ul>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Analytics Tab */}
-        <TabsContent value="analytics" className="space-y-6">
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Car Details */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Image Gallery */}
           <Card>
             <CardHeader>
-              <CardTitle>סטטיסטיקות הרכב</CardTitle>
+              <CardTitle className="flex items-center justify-between">
+                <span>תמונות הרכב</span>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline">
+                    {car.images?.length || 0} תמונות
+                  </Badge>
+
+                  <Dialog
+                    open={isImageUploadOpen}
+                    onOpenChange={setIsImageUploadOpen}
+                  >
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Upload className="w-4 h-4 mr-1" />
+                        הוסף תמונות
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-2xl">
+                      <DialogHeader>
+                        <DialogTitle>העלאת תמונות לרכב</DialogTitle>
+                        <DialogDescription>
+                          בחר תמונות איכותיות של הרכב ולחץ "העלה" להוספתן לגלריה
+                        </DialogDescription>
+                      </DialogHeader>
+                      <ImageUploader
+                        onImagesChange={handleImagesSelect}
+                        onUploadClick={handleUploadClick}
+                        maxImages={10}
+                        maxFileSize={5}
+                        disabled={uploadingImages}
+                        uploading={uploadingImages}
+                        existingImages={car?.images?.map((img) =>
+                          typeof img === "string" ? img : img.image_url
+                        )}
+                      />
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-center py-12 text-gray-500">
-                <BarChart3 className="w-12 h-12 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">
-                  סטטיסטיקות בפיתוח
-                </h3>
-                <p>מידע על צפיות, פניות ומועדפים יתווסף בעתיד</p>
-              </div>
+            <CardContent className="p-4">
+              <ImageGallery
+                images={normalizeImages(car.images, car.id)}
+                isOwner={true}
+                onSetMain={handleSetMainImage}
+                onDelete={handleDeleteImage}
+                className="space-y-4"
+              />
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Edit Tab */}
-        <TabsContent value="edit">
-          {isEditing ? (
-            <CarForm car={car} onSuccess={handleSaveEdit} mode="edit" />
-          ) : (
-            <Card>
-              <CardContent className="p-12 text-center">
-                <Edit className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  עריכת פרטי הרכב
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  לחץ על כפתור העריכה כדי לערוך את פרטי הרכב
-                </p>
-                <Button onClick={handleEdit}>
-                  <Edit className="w-4 h-4 mr-2" />
-                  התחל עריכה
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-      </Tabs>
+          {/* Car Details */}
+          <Card>
+            <CardHeader>
+              <CardTitle>פרטי הרכב</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Price */}
+              <div className="text-center py-4 bg-blue-50 rounded-lg">
+                <div className="text-3xl font-bold text-blue-600">
+                  {formatPrice(car.price)}
+                </div>
+              </div>
+
+              {/* Key Details */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {car.mileage && (
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <Gauge className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+                    <div className="text-sm text-gray-600">קילומטראז'</div>
+                    <div className="font-semibold">
+                      {formatMileage(car.mileage)}
+                    </div>
+                  </div>
+                )}
+
+                {car.fuelType && (
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <Fuel className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+                    <div className="text-sm text-gray-600">סוג דלק</div>
+                    <div className="font-semibold">{car.fuelType}</div>
+                  </div>
+                )}
+
+                {car.transmission && (
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <Settings className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+                    <div className="text-sm text-gray-600">תיבת הילוכים</div>
+                    <div className="font-semibold">{car.transmission}</div>
+                  </div>
+                )}
+
+                {car.color && (
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <CarIcon className="w-6 h-6 text-gray-600 mx-auto mb-1" />
+                    <div className="text-sm text-gray-600">צבע</div>
+                    <div className="font-semibold">{car.color}</div>
+                  </div>
+                )}
+              </div>
+
+              {/* Description */}
+              {car.description && (
+                <div>
+                  <h3 className="font-semibold mb-2">תיאור הרכב</h3>
+                  <p className="text-gray-700 whitespace-pre-wrap">
+                    {car.description}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-6">
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5" />
+                פעולות מהירות
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => window.open(`/buyer/cars/${car.id}`, "_blank")}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                צפה כקונה
+              </Button>
+
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={handleEdit}
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                ערוך פרטים
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Performance Tips */}
+          <Card className="bg-yellow-50 border-yellow-200">
+            <CardHeader>
+              <CardTitle className="text-sm text-yellow-800">
+                💡 טיפים לשיפור ביצועים
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <ul className="text-xs text-yellow-700 space-y-1">
+                <li>• הוסף עוד תמונות איכותיות</li>
+                <li>• עדכן את התיאור עם פרטים נוספים</li>
+                <li>• בדוק שהמחיר תחרותי</li>
+                <li>• הגב במהירות לפניות</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

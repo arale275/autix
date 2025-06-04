@@ -1,8 +1,9 @@
-// components/cards/CarCard.tsx - Car Card Component (Fixed)
+// components/cards/CarCard.tsx - Car Card Component (Fixed with Images)
 "use client";
 
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   Eye,
   Heart,
@@ -15,6 +16,7 @@ import {
   MessageSquare,
   Star,
   Clock,
+  ImageIcon,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,7 +28,7 @@ import {
 } from "@/components/ui/card";
 import { useFavorites } from "@/hooks/ui/useLocalStorage";
 import { cn } from "@/lib/utils";
-import type { Car } from "@/lib/api/types";
+import type { Car, CarImage } from "@/lib/api/types";
 
 // ✅ Fixed Format Functions
 const formatPrice = (price: number): string => {
@@ -82,6 +84,39 @@ const getConditionColor = (condition: string): string => {
   }
 };
 
+// ✅ Helper function to get main image URL
+const getMainImageUrl = (
+  images: (string | CarImage)[] | undefined
+): string | null => {
+  if (!images || images.length === 0) {
+    return null;
+  }
+
+  // Look for main image
+  const mainImage = images.find((img) => {
+    if (typeof img === "string") {
+      return false; // If it's a string, we can't know if it's main
+    }
+    return img.is_main;
+  });
+
+  if (mainImage && typeof mainImage !== "string") {
+    return mainImage.image_url;
+  }
+
+  // Fallback to first image
+  const firstImage = images[0];
+  if (typeof firstImage === "string") {
+    return firstImage;
+  }
+  return firstImage.image_url;
+};
+
+// ✅ Helper function to get images count
+const getImagesCount = (images: (string | CarImage)[] | undefined): number => {
+  return images?.length || 0;
+};
+
 // ✅ Fixed Component Interface
 export interface CarCardProps {
   car: Car;
@@ -108,6 +143,10 @@ export default function CarCard({
   const condition = getCarCondition(car.year, car.mileage || 0);
   const conditionColor = getConditionColor(condition);
 
+  // ✅ Get main image and count
+  const mainImageUrl = getMainImageUrl(car.images);
+  const imagesCount = getImagesCount(car.images);
+
   const handleContact = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -124,7 +163,7 @@ export default function CarCard({
     onView?.(car);
   };
 
-  // ✅ Fixed Grid Layout
+  // ✅ Fixed Grid Layout with Image Support
   if (viewMode === "grid") {
     return (
       <Card
@@ -187,11 +226,25 @@ export default function CarCard({
         </CardHeader>
 
         <CardContent className="p-4 pt-2">
-          {/* Car Image Placeholder */}
-          <div className="relative bg-gray-100 rounded-lg mb-4 aspect-video flex items-center justify-center">
-            <Eye className="w-8 h-8 text-gray-400" />
-            <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
-              {Array.isArray(car.images) ? car.images.length : 0} תמונות
+          {/* ✅ Car Image - Fixed to show actual image */}
+          <div className="relative bg-gray-100 rounded-lg mb-4 aspect-video overflow-hidden">
+            {mainImageUrl ? (
+              <Image
+                src={mainImageUrl}
+                alt={`${car.make} ${car.model} ${car.year}`}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <ImageIcon className="w-8 h-8 text-gray-400" />
+              </div>
+            )}
+
+            {/* Images Count Badge */}
+            <div className="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+              {imagesCount} תמונות
             </div>
           </div>
 
@@ -266,7 +319,7 @@ export default function CarCard({
     );
   }
 
-  // ✅ List Layout
+  // ✅ List Layout - Fixed to show actual image
   return (
     <Card
       className={cn(
@@ -277,9 +330,21 @@ export default function CarCard({
     >
       <CardContent className="p-4">
         <div className="flex items-center gap-4">
-          {/* Car Image */}
-          <div className="w-24 h-16 bg-gray-100 rounded flex-shrink-0 flex items-center justify-center">
-            <Eye className="w-6 h-6 text-gray-400" />
+          {/* ✅ Car Image - Fixed to show actual image */}
+          <div className="w-24 h-16 bg-gray-100 rounded flex-shrink-0 overflow-hidden relative">
+            {mainImageUrl ? (
+              <Image
+                src={mainImageUrl}
+                alt={`${car.make} ${car.model} ${car.year}`}
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                sizes="96px"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <ImageIcon className="w-6 h-6 text-gray-400" />
+              </div>
+            )}
           </div>
 
           {/* Car Info */}
@@ -300,6 +365,12 @@ export default function CarCard({
                     <span className="flex items-center gap-1">
                       <MapPin className="w-3 h-3" />
                       {car.city}
+                    </span>
+                  )}
+                  {imagesCount > 0 && (
+                    <span className="flex items-center gap-1">
+                      <ImageIcon className="w-3 h-3" />
+                      {imagesCount} תמונות
                     </span>
                   )}
                 </div>

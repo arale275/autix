@@ -1,4 +1,4 @@
-// src/components/cards/ImageGallery.tsx
+// src/components/cards/ImageGallery.tsx - Fixed Version
 "use client";
 
 import React, { useState } from "react";
@@ -8,6 +8,7 @@ import {
   X,
   Star,
   MoreHorizontal,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -74,14 +75,23 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
     }
   };
 
-  const handleDelete = (imageId: number) => {
-    if (onDelete) {
+  // ✅ Fixed: Added event.stopPropagation() to prevent modal opening
+  const handleDelete = (imageId: number, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+
+    if (onDelete && window.confirm("האם אתה בטוח שברצונך למחוק את התמונה?")) {
       onDelete(imageId);
     }
-    closeModal();
   };
 
-  const handleSetMain = (imageId: number) => {
+  // ✅ Fixed: Added event.stopPropagation() to prevent modal opening
+  const handleSetMain = (imageId: number, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation();
+    }
+
     if (onSetMain) {
       onSetMain(imageId);
     }
@@ -113,11 +123,13 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
               onClick={() => openModal(0)}
             />
 
+            {/* Main Image Badge */}
             <div className="absolute top-2 left-2 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
               <Star className="w-3 h-3" />
               ראשית
             </div>
 
+            {/* Owner Actions - Fixed */}
             {isOwner && (
               <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <DropdownMenu>
@@ -125,14 +137,15 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                     <Button
                       variant="secondary"
                       size="sm"
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 bg-white/90 hover:bg-white shadow-sm"
+                      onClick={(e) => e.stopPropagation()} // ✅ Prevent modal opening
                     >
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem
-                      onClick={() => handleDelete(images.main!.id)}
+                      onClick={(e) => handleDelete(images.main!.id, e)}
                       className="text-red-600"
                     >
                       מחק תמונה
@@ -142,9 +155,11 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
               </div>
             )}
 
-            <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 rounded-lg transition-opacity flex items-center justify-center">
-              <div className="bg-white bg-opacity-80 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <ChevronRight className="w-6 h-6" />
+            {/* ✅ Fixed: Moved view hint to bottom */}
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="bg-black/70 text-white px-3 py-1 rounded-full text-xs flex items-center gap-1">
+                <Eye className="w-3 h-3" />
+                לחץ לצפייה מלאה
               </div>
             </div>
           </div>
@@ -167,6 +182,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                   onClick={() => openModal(images.main ? index + 1 : index)}
                 />
 
+                {/* Owner Actions for Gallery Images - Fixed */}
                 {isOwner && (
                   <div className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <DropdownMenu>
@@ -174,19 +190,20 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                         <Button
                           variant="secondary"
                           size="sm"
-                          className="h-6 w-6 p-0"
+                          className="h-6 w-6 p-0 bg-white/90 hover:bg-white shadow-sm"
+                          onClick={(e) => e.stopPropagation()} // ✅ Prevent modal opening
                         >
                           <MoreHorizontal className="h-3 w-3" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => handleSetMain(image.id)}
+                          onClick={(e) => handleSetMain(image.id, e)}
                         >
                           קבע כראשית
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleDelete(image.id)}
+                          onClick={(e) => handleDelete(image.id, e)}
                           className="text-red-600"
                         >
                           מחק תמונה
@@ -196,17 +213,27 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                   </div>
                 )}
 
+                {/* Hover overlay */}
                 <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-opacity" />
+
+                {/* ✅ View hint for gallery images */}
+                <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="bg-black/70 text-white px-2 py-0.5 rounded text-xs">
+                    לחץ לצפייה
+                  </div>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
 
+      {/* Modal for Full Size Images */}
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-4xl p-0 bg-black">
           {selectedImageIndex !== null && allImages[selectedImageIndex] && (
             <div className="relative">
+              {/* Close Button */}
               <Button
                 variant="ghost"
                 size="sm"
@@ -216,12 +243,14 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                 <X className="h-4 w-4" />
               </Button>
 
+              {/* Main Image */}
               <img
                 src={allImages[selectedImageIndex].image_url}
                 alt={`תמונה ${selectedImageIndex + 1}`}
                 className="w-full max-h-[80vh] object-contain"
               />
 
+              {/* Navigation Arrows */}
               {allImages.length > 1 && (
                 <>
                   {selectedImageIndex > 0 && (
@@ -248,6 +277,7 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                 </>
               )}
 
+              {/* Image Info */}
               <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white px-3 py-2 rounded">
                 <div className="text-sm">
                   {selectedImageIndex + 1} מתוך {allImages.length}
@@ -256,6 +286,44 @@ export const ImageGallery: React.FC<ImageGalleryProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* ✅ Owner Actions in Modal */}
+              {isOwner && (
+                <div className="absolute top-4 left-4 z-10">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="bg-black bg-opacity-50 text-white hover:bg-opacity-70"
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start">
+                      {!allImages[selectedImageIndex].is_main && (
+                        <DropdownMenuItem
+                          onClick={() => {
+                            handleSetMain(allImages[selectedImageIndex].id);
+                            closeModal();
+                          }}
+                        >
+                          קבע כראשית
+                        </DropdownMenuItem>
+                      )}
+                      <DropdownMenuItem
+                        onClick={() => {
+                          handleDelete(allImages[selectedImageIndex].id);
+                          closeModal();
+                        }}
+                        className="text-red-600"
+                      >
+                        מחק תמונה
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
