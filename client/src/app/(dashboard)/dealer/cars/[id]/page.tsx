@@ -1,31 +1,25 @@
-// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers (Interactive Badge)
+// app/(dashboard)/dealer/cars/[id]/page.tsx - Refactored Car Details Page
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
-  Edit,
-  Trash2,
-  CheckCircle,
-  Share2,
+  ChevronLeft,
+  AlertTriangle,
+  Upload,
+  MessageSquare,
   Calendar,
   Gauge,
   Fuel,
   Settings,
   MapPin,
   Car as CarIcon,
-  ChevronLeft,
-  AlertTriangle,
-  Clock,
-  Zap,
-  Upload,
-  MessageSquare,
-  ImageIcon,
+  CheckCircle,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -34,86 +28,28 @@ import {
   DialogTitle,
   DialogTrigger,
   DialogDescription,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import CarForm from "@/components/forms/CarForm";
 import { ImageGallery } from "@/components/cards/ImageGallery";
 import { ImageUploader } from "@/components/forms/ImageUploader";
+import { CarStatusBadge } from "@/components/features/CarStatusBadge";
+import { CarActions } from "@/components/features/CarActions";
 import { useCar } from "@/hooks/api/useCars";
 import { useDealerCars } from "@/hooks/api/useCars";
 import { useImages } from "@/hooks/useImages";
 import { useAuth } from "@/contexts/AuthContext";
-import { cn } from "@/lib/utils";
-import type { Car, CarImage } from "@/lib/api/types";
-
-// Type guard to check if image is CarImage object
-const isCarImageObject = (image: string | CarImage): image is CarImage => {
-  return (
-    typeof image === "object" &&
-    image !== null &&
-    "id" in image &&
-    "image_url" in image
-  );
-};
-
-// Helper function to convert images to CarImage format
-const normalizeImages = (
-  images: (string | CarImage)[] | undefined,
-  carId: number
-): { main: CarImage | null; gallery: CarImage[]; count: number } => {
-  if (!images || images.length === 0) {
-    return { main: null, gallery: [], count: 0 };
-  }
-
-  const carImages: CarImage[] = images.map((image, index) => {
-    if (isCarImageObject(image)) {
-      return image;
-    } else {
-      return {
-        id: index + 1,
-        car_id: carId,
-        image_url: image,
-        thumbnail_url: image,
-        is_main: index === 0,
-        display_order: index,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-    }
-  });
-
-  const main = carImages.find((img) => img.is_main) || carImages[0] || null;
-  const gallery = carImages.filter((img) => !img.is_main);
-
-  return {
-    main,
-    gallery,
-    count: carImages.length,
-  };
-};
-
-// Format Functions
-const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat("he-IL", {
-    style: "currency",
-    currency: "ILS",
-    minimumFractionDigits: 0,
-  }).format(price);
-};
-
-const formatMileage = (mileage: number): string => {
-  return new Intl.NumberFormat("he-IL").format(mileage) + ' ק"מ';
-};
-
-const getCarAge = (year: number): string => {
-  const currentYear = new Date().getFullYear();
-  const age = currentYear - year;
-  if (age === 0) return "חדש";
-  if (age === 1) return "שנה";
-  return `${age} שנים`;
-};
+import {
+  formatPrice,
+  formatMileage,
+  formatEngineSize,
+  formatTransmission,
+  formatFuelType,
+  formatCarTitle,
+} from "@/lib/formatters";
+import { normalizeImages } from "@/lib/car-utils";
+import type { Car } from "@/lib/api/types";
 
 export default function DealerCarDetailsPage() {
   const params = useParams();
@@ -124,25 +60,13 @@ export default function DealerCarDetailsPage() {
 
   // State
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
-  const [uploadingImages, setUploadingImages] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [deleteData, setDeleteData] = useState<{
-    inquiries: number;
-    images: number;
-    loading: boolean;
-  }>({ inquiries: 0, images: 0, loading: false });
 
   // Hooks
   const { car, loading, error, refetch } = useCar(carId);
-  const {
-    toggleAvailability,
-    actionLoading,
-    updateCar,
-    deleteCar,
-    markAsSold,
-  } = useDealerCars();
+  const { toggleAvailability, actionLoading, deleteCar, markAsSold } =
+    useDealerCars();
   const { setMainImage, deleteImage, uploadMultipleImages } = useImages();
 
   // Check ownership
@@ -155,7 +79,7 @@ export default function DealerCarDetailsPage() {
     }
   }, [car, user, router]);
 
-  // פונקציות לניהול תמונות
+  // Image management functions
   const handleSetMainImage = async (imageId: number) => {
     if (!car) return;
     const success = await setMainImage(car.id, imageId);
@@ -197,14 +121,13 @@ export default function DealerCarDetailsPage() {
     }
   };
 
-  // Toggle availability with confirmation for hiding
+  // Car actions
   const handleToggleAvailability = async () => {
     if (!car) return;
 
     const currentValue = car.isAvailable ?? true;
     const newValue = !currentValue;
 
-    // Show confirmation only when hiding the car
     if (currentValue && !newValue) {
       const confirmed = window.confirm(
         "האם אתה בטוח שברצונך להסתיר את הרכב מהקונים?"
@@ -224,7 +147,6 @@ export default function DealerCarDetailsPage() {
     }
   };
 
-  // Actions
   const handleEdit = () => {
     setIsEditMode(true);
   };
@@ -257,9 +179,12 @@ export default function DealerCarDetailsPage() {
   const handleMarkSold = async () => {
     if (!car) return;
 
-    // הוספת confirmation dialog
     const confirmed = window.confirm(
-      `האם אתה בטוח שברצונך לסמן את הרכב ${car.make} ${car.model} ${car.year} כנמכר?\n\nלאחר הסימון:\n• הרכב יוסתר מהקונים\n• לא ניתן לקבל פניות חדשות\n• הסטטוס ישתנה ל"נמכר"\n\nפעולה זו לא ניתנת לביטול .`
+      `האם אתה בטוח שברצונך לסמן את הרכב ${formatCarTitle(
+        car.make,
+        car.model,
+        car.year
+      )} כנמכר?\n\nלאחר הסימון:\n• הרכב יוסתר מהקונים\n• לא ניתן לקבל פניות חדשות\n• הסטטוס ישתנה ל"נמכר"\n\nפעולה זו לא ניתנת לביטול.`
     );
 
     if (!confirmed) return;
@@ -273,7 +198,9 @@ export default function DealerCarDetailsPage() {
 
   const handleShare = async () => {
     const url = `${window.location.origin}/buyer/cars/${carId}`;
-    const title = car ? `${car.make} ${car.model} ${car.year}` : "רכב למכירה";
+    const title = car
+      ? formatCarTitle(car.make, car.model, car.year)
+      : "רכב למכירה";
 
     if (navigator.share) {
       try {
@@ -334,7 +261,7 @@ export default function DealerCarDetailsPage() {
           </Link>
           <ChevronLeft className="w-4 h-4" />
           <Link href={`/dealer/cars/${car.id}`} className="hover:text-blue-600">
-            {car.make} {car.model} {car.year}
+            {formatCarTitle(car.make, car.model, car.year)}
           </Link>
           <ChevronLeft className="w-4 h-4" />
           <span className="text-gray-900">עריכה</span>
@@ -348,7 +275,7 @@ export default function DealerCarDetailsPage() {
                   עריכת פרטי הרכב
                 </h1>
                 <p className="text-gray-600 mt-1">
-                  {car.make} {car.model} {car.year}
+                  {formatCarTitle(car.make, car.model, car.year)}
                 </p>
               </div>
               <Button variant="outline" onClick={handleCancelEdit}>
@@ -373,7 +300,7 @@ export default function DealerCarDetailsPage() {
         </Link>
         <ChevronLeft className="w-4 h-4" />
         <span className="text-gray-900">
-          {car.make} {car.model} {car.year}
+          {formatCarTitle(car.make, car.model, car.year)}
         </span>
       </nav>
 
@@ -383,7 +310,7 @@ export default function DealerCarDetailsPage() {
           <div className="flex items-start justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {car.make} {car.model} {car.year}
+                {formatCarTitle(car.make, car.model, car.year)}
               </h1>
               <div className="flex items-center gap-4 text-gray-600 mb-4">
                 {car.city && (
@@ -395,52 +322,15 @@ export default function DealerCarDetailsPage() {
               </div>
             </div>
 
-            {/* Interactive Status Badge */}
-            <div className="flex flex-col items-end gap-2">
-              {car.status === "active" && (
-                <div className="flex flex-col items-center">
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleToggleAvailability}
-                      disabled={actionLoading[car.id]}
-                      className={cn(
-                        "px-3 py-1 text-sm font-medium rounded-full border cursor-pointer transition-all duration-200 hover:shadow-md",
-                        car.isAvailable
-                          ? "bg-green-100 text-green-800 border-green-200 hover:bg-green-200"
-                          : "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-200",
-                        actionLoading[car.id] && "opacity-50 cursor-not-allowed"
-                      )}
-                    >
-                      {car.isAvailable ? "פעיל" : "מוסתר"}
-                    </button>
-                    <span className="text-gray-400">|</span>
-                    <span
-                      className={cn(
-                        "px-3 py-1 text-sm font-medium rounded-full border opacity-50",
-                        !car.isAvailable
-                          ? "bg-green-100 text-green-800 border-green-200"
-                          : "bg-gray-100 text-gray-800 border-gray-200"
-                      )}
-                    >
-                      {!car.isAvailable ? "פעיל" : "מוסתר"}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">לחץ לשינוי מצב</p>
-                </div>
-              )}
-
-              {car.status === "sold" && (
-                <Badge className="bg-purple-100 text-purple-800 border-purple-200">
-                  נמכר
-                </Badge>
-              )}
-
-              {car.status === "deleted" && (
-                <Badge className="bg-red-100 text-red-800 border-red-200">
-                  נמחק
-                </Badge>
-              )}
-            </div>
+            {/* Status Badge */}
+            <CarStatusBadge
+              car={car}
+              interactive={car.status === "active"}
+              onToggleAvailability={
+                car.status === "active" ? handleToggleAvailability : undefined
+              }
+              loading={actionLoading[car.id]}
+            />
           </div>
         </CardContent>
       </Card>
@@ -449,7 +339,7 @@ export default function DealerCarDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Car Details */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Image Gallery - רק אם הרכב פעיל */}
+          {/* Image Gallery */}
           <Card>
             <CardContent className="p-4">
               {car.status === "active" && (
@@ -480,8 +370,8 @@ export default function DealerCarDetailsPage() {
                         onUploadClick={handleUploadClick}
                         maxImages={10}
                         maxFileSize={5}
-                        disabled={uploadingImages}
-                        uploading={uploadingImages}
+                        disabled={false}
+                        uploading={false}
                         existingImages={car?.images?.map((img) =>
                           typeof img === "string" ? img : img.image_url
                         )}
@@ -505,10 +395,10 @@ export default function DealerCarDetailsPage() {
             </CardContent>
           </Card>
 
-          {/* Car Details */}
+          {/* Car Specifications */}
           <Card>
             <CardContent className="space-y-6 p-6">
-              {/* Price - בולט ומרכזי */}
+              {/* Price */}
               <div className="text-center py-6 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="text-4xl font-bold text-blue-600">
                   {formatPrice(car.price)}
@@ -516,9 +406,8 @@ export default function DealerCarDetailsPage() {
                 <div className="text-sm text-blue-500 mt-1">מחיר המכירה</div>
               </div>
 
-              {/* מפרטי הרכב - גריד 2x4 */}
+              {/* Specifications Grid */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {/* שורה עליונה */}
                 <div className="text-center p-4 bg-gray-50 rounded-lg border">
                   <Calendar className="w-5 h-5 text-gray-600 mx-auto mb-2" />
                   <div className="text-xs text-gray-600 mb-1">שנתון</div>
@@ -545,18 +434,15 @@ export default function DealerCarDetailsPage() {
                   <Settings className="w-5 h-5 text-gray-600 mx-auto mb-2" />
                   <div className="text-xs text-gray-600 mb-1">נפח מנוע</div>
                   <div className="font-semibold text-gray-900">
-                    {(car as any).engineSize
-                      ? `${(car as any).engineSize}L`
-                      : "לא צוין"}
+                    {formatEngineSize((car as any).engineSize)}
                   </div>
                 </div>
 
-                {/* שורה תחתונה */}
                 <div className="text-center p-4 bg-gray-50 rounded-lg border">
                   <Fuel className="w-5 h-5 text-gray-600 mx-auto mb-2" />
                   <div className="text-xs text-gray-600 mb-1">סוג דלק</div>
                   <div className="font-semibold text-gray-900">
-                    {car.fuelType || "לא צוין"}
+                    {formatFuelType(car.fuelType)}
                   </div>
                 </div>
 
@@ -564,7 +450,7 @@ export default function DealerCarDetailsPage() {
                   <Settings className="w-5 h-5 text-gray-600 mx-auto mb-2" />
                   <div className="text-xs text-gray-600 mb-1">תיבת הילוכים</div>
                   <div className="font-semibold text-gray-900">
-                    {car.transmission || "לא צוין"}
+                    {formatTransmission(car.transmission)}
                   </div>
                 </div>
 
@@ -585,7 +471,7 @@ export default function DealerCarDetailsPage() {
                 </div>
               </div>
 
-              {/* תיאור הרכב */}
+              {/* Description */}
               {car.description && (
                 <div className="pt-4 border-t border-gray-200">
                   <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
@@ -605,58 +491,17 @@ export default function DealerCarDetailsPage() {
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Quick Actions - רק אם הרכב פעיל */}
-          {car.status === "active" && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Zap className="w-5 h-5" />
-                  פעולות מהירות
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={handleShare}
-                >
-                  <Share2 className="w-4 h-4 mr-2" />
-                  שתף רכב
-                </Button>
+          {/* Quick Actions */}
+          <CarActions
+            car={car}
+            onShare={handleShare}
+            onEdit={handleEdit}
+            onMarkSold={handleMarkSold}
+            onDelete={handleDelete}
+            loading={actionLoading[car.id]}
+          />
 
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  onClick={handleEdit}
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  ערוך פרטים
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                  onClick={handleMarkSold}
-                  disabled={actionLoading[car.id]}
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  סמן כנמכר
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                  onClick={handleDelete}
-                  disabled={actionLoading[car.id]}
-                >
-                  <Trash2 className="w-4 h-4 mr-2" />
-                  מחק רכב
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* מידע על רכב נמכר */}
+          {/* Status Information Cards */}
           {car.status === "sold" && (
             <Card className="bg-purple-50 border-purple-200">
               <CardHeader>
@@ -674,7 +519,6 @@ export default function DealerCarDetailsPage() {
             </Card>
           )}
 
-          {/* מידע על רכב נמחק */}
           {car.status === "deleted" && (
             <Card className="bg-red-50 border-red-200">
               <CardHeader>
@@ -691,7 +535,7 @@ export default function DealerCarDetailsPage() {
             </Card>
           )}
 
-          {/* Performance Tips - רק אם הרכב פעיל */}
+          {/* Performance Tips */}
           {car.status === "active" && (
             <Card className="bg-yellow-50 border-yellow-200">
               <CardHeader>
