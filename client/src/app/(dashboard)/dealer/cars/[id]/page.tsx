@@ -271,21 +271,12 @@ export default function DealerCarDetailsPage() {
   const handleToggleAvailability = async () => {
     if (!car) return;
 
-    const currentValue = car.isAvailable ?? true; // ברירת מחדל true אם undefined
+    const currentValue = car.isAvailable ?? true;
     const newValue = !currentValue;
-
-    console.log("🔄 Before toggle:", {
-      currentAvailable: currentValue,
-      willChangeTo: newValue,
-      carIsAvailable: car.isAvailable,
-    });
 
     const success = await toggleAvailability(car.id, newValue);
     if (success) {
-      console.log("✅ Toggle success, refetching...");
       refetch();
-    } else {
-      console.log("❌ Toggle failed");
     }
   };
 
@@ -580,13 +571,6 @@ export default function DealerCarDetailsPage() {
                 ערוך פרטים
               </Button>
 
-              {/* Debug Info - תמחק אחרי הבדיקה */}
-              <div className="text-xs text-gray-400 p-2 bg-yellow-50 rounded">
-                Debug: car.isAvailable = {String(car.isAvailable)}
-                <br />
-                Status: {car.status}
-              </div>
-
               {/* Toggle Switch for Availability */}
               <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div className="flex flex-col">
@@ -594,7 +578,7 @@ export default function DealerCarDetailsPage() {
                     הצגה לקונים
                   </span>
                   <span className="text-xs text-gray-500">
-                    {car.isAvailable ? "מוצג למכירה" : "מוסתר מהקונים"}
+                    {car.isAvailable ?? true ? "מוצג למכירה" : "מוסתר מהקונים"}
                   </span>
                 </div>
 
@@ -603,7 +587,7 @@ export default function DealerCarDetailsPage() {
                   disabled={actionLoading[car.id]}
                   className={cn(
                     "relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 cursor-pointer",
-                    car.isAvailable
+                    car.isAvailable ?? true
                       ? "bg-green-500 hover:bg-green-600"
                       : "bg-gray-300 hover:bg-gray-400"
                   )}
@@ -612,7 +596,9 @@ export default function DealerCarDetailsPage() {
                   <span
                     className={cn(
                       "inline-block h-4 w-4 transform rounded-full bg-white transition-transform shadow-sm",
-                      car.isAvailable ? "translate-x-6" : "translate-x-1"
+                      car.isAvailable ?? true
+                        ? "translate-x-6"
+                        : "translate-x-1"
                     )}
                   />
                 </button>
