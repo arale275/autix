@@ -219,7 +219,6 @@ export default function CarCard({
               </span>
               <span className="flex items-center gap-1">
                 <Clock className="w-4 h-4" />
-                {getCarAge(car.year)}
               </span>
             </div>
           </div>
