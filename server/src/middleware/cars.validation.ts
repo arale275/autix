@@ -153,6 +153,26 @@ export const validateAddCar = (
   ) {
     errors.push("יד הרכב לא תקינה");
   }
+  // ✅ הוסף validation עבור features (תוספות)
+  if (req.body.features) {
+    if (!Array.isArray(req.body.features)) {
+      errors.push("תוספות חייבות להיות מערך");
+    } else {
+      // בדוק שכל תוספת היא string
+      const invalidFeatures = req.body.features.filter(
+        (feature: any) =>
+          typeof feature !== "string" || feature.trim().length === 0
+      );
+
+      if (invalidFeatures.length > 0) {
+        errors.push("כל התוספות חייבות להיות טקסט לא ריק");
+      }
+
+      if (req.body.features.length > 20) {
+        errors.push("מספר התוספות מוגבל ל-20");
+      }
+    }
+  }
   next();
 };
 
@@ -320,6 +340,26 @@ export const validateUpdateCar = (
     ].includes(req.body.hand)
   ) {
     errors.push("יד הרכב לא תקינה");
+  }
+  // ✅ הוסף validation עבור features (תוספות)
+  if (req.body.features) {
+    if (!Array.isArray(req.body.features)) {
+      errors.push("תוספות חייבות להיות מערך");
+    } else {
+      // בדוק שכל תוספת היא string
+      const invalidFeatures = req.body.features.filter(
+        (feature: any) =>
+          typeof feature !== "string" || feature.trim().length === 0
+      );
+
+      if (invalidFeatures.length > 0) {
+        errors.push("כל התוספות חייבות להיות טקסט לא ריק");
+      }
+
+      if (req.body.features.length > 20) {
+        errors.push("מספר התוספות מוגבל ל-20");
+      }
+    }
   }
   next();
 };

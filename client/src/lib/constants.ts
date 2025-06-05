@@ -68,105 +68,113 @@ export const CAR_MANUFACTURERS = [
 
 // Car Manufacturers Hebrew (מורחב ומעודכן)
 export const CAR_MANUFACTURERS_HEBREW = [
-  // יצרנים גרמניים
+  // א
+  { value: "Acura", label: "אקורה" },
+  { value: "Alfa Romeo", label: "אלפא רומיאו" },
+  { value: "Aston Martin", label: "אסטון מרטין" },
   { value: "Audi", label: "אאודי" },
-  { value: "BMW", label: "ב.מ.וו" },
-  { value: "Mercedes-Benz", label: "מרצדס" },
-  { value: "Porsche", label: "פורשה" },
-  { value: "Volkswagen", label: "פולקסווגן" },
+  { value: "Infiniti", label: "אינפיניטי" },
+  { value: "Isuzu", label: "איסוזו" },
   { value: "Opel", label: "אופל" },
 
-  // יצרנים יפניים
-  { value: "Toyota", label: "טויוטה" },
-  { value: "Honda", label: "הונדה" },
-  { value: "Nissan", label: "ניסאן" },
-  { value: "Mazda", label: "מאזדה" },
-  { value: "Mitsubishi", label: "מיצובישי" },
-  { value: "Subaru", label: "סובארו" },
-  { value: "Suzuki", label: "סוזוקי" },
-  { value: "Lexus", label: "לקסוס" },
-  { value: "Infiniti", label: "אינפיניטי" },
-  { value: "Acura", label: "אקורה" },
-
-  // יצרנים קוריאניים
-  { value: "Hyundai", label: "יונדאי" },
-  { value: "Kia", label: "קיה" },
-  { value: "Genesis", label: "ג'נסיס" },
-  { value: "Daewoo", label: "דאוו" },
-  { value: "SsangYong", label: "סאנגיונג" },
-
-  // יצרנים אמריקאים
-  { value: "Ford", label: "פורד" },
-  { value: "Chevrolet", label: "שברולט" },
-  { value: "Jeep", label: "ג'יפ" },
-  { value: "Chrysler", label: "קרייזלר" },
-  { value: "Dodge", label: "דודג'" },
-  { value: "Cadillac", label: "קדילק" },
-  { value: "Lincoln", label: "לינקולן" },
-  { value: "Buick", label: "ביואיק" },
-
-  // יצרנים איטלקיים
-  { value: "Fiat", label: "פיאט" },
-  { value: "Alfa Romeo", label: "אלפא רומיאו" },
-  { value: "Lancia", label: "לאנצ'יה" },
-  { value: "Ferrari", label: "פרארי" },
-  { value: "Lamborghini", label: "למבורגיני" },
-  { value: "Maserati", label: "מזראטי" },
-
-  // יצרנים צרפתיים
-  { value: "Peugeot", label: "פיז'ו" },
-  { value: "Renault", label: "רנו" },
-  { value: "Citroen", label: "סיטרואן" },
-
-  // יצרנים ספרדיים
-  { value: "SEAT", label: "סיאט" },
-
-  // יצרנים צ'כיים
-  { value: "Skoda", label: "סקודה" },
-
-  // יצרנים שוודיים
-  { value: "Volvo", label: "וולוו" },
-  { value: "Saab", label: "סאאב" },
-
-  // יצרנים בריטיים
-  { value: "Land Rover", label: "לנד רובר" },
-  { value: "Jaguar", label: "יגואר" },
-  { value: "Mini", label: "מיני" },
+  // ב
+  { value: "BMW", label: "ב.מ.וו" },
   { value: "Bentley", label: "בנטלי" },
-  { value: "Rolls-Royce", label: "רולס רויס" },
-  { value: "MG", label: "MG" },
-
-  // יצרנים רומניים
-  { value: "Dacia", label: "דאצ'יה" },
-
-  // יצרנים הודיים
-  { value: "Tata", label: "טאטא" },
-
-  // יצרנים מלזיים
-  { value: "Proton", label: "פרוטון" },
-
-  // יצרנים סיניים
+  { value: "Buick", label: "ביואיק" },
   { value: "BYD", label: "BYD" },
+
+  // ג
+  { value: "Genesis", label: "ג'נסיס" },
   { value: "Geely", label: "ג'ילי" },
-  { value: "Chery", label: "צ'רי" },
+  { value: "Jeep", label: "ג'יפ" },
   { value: "Great Wall", label: "גרייט וול" },
-  { value: "Haval", label: "האוול" },
-  { value: "Lynk & Co", label: "לינק אנד קו" },
 
-  // יצרנים חשמליים/חדשים
-  { value: "Tesla", label: "טסלה" },
-  { value: "Polestar", label: "פולסטאר" },
-  { value: "Lucid", label: "לוסיד" },
-  { value: "Rivian", label: "ריוויאן" },
-
-  // יצרנים שכבר לא פעילים בישראל
-  { value: "Isuzu", label: "איסוזו" },
+  // ד
+  { value: "Dacia", label: "דאצ'יה" },
+  { value: "Daewoo", label: "דאוו" },
+  { value: "Dodge", label: "דודג'" },
   { value: "Daihatsu", label: "דייהטסו" },
 
-  // מותגי יוקרה נוספים
-  { value: "McLaren", label: "מקלארן" },
-  { value: "Aston Martin", label: "אסטון מרטין" },
+  // ה
+  { value: "Honda", label: "הונדה" },
+  { value: "Haval", label: "האוול" },
+
+  // ו
+  { value: "Volvo", label: "וולוו" },
+
+  // ז
+
+  // ח
+  { value: "Chery", label: "צ'רי" },
+
+  // ט
+  { value: "Toyota", label: "טויוטה" },
+  { value: "Tesla", label: "טסלה" },
+  { value: "Tata", label: "טאטא" },
+
+  // י
+  { value: "Hyundai", label: "יונדאי" },
+  { value: "Jaguar", label: "יגואר" },
+
+  // כ
+  { value: "Kia", label: "קיה" },
+  { value: "Chrysler", label: "קרייזלר" },
+  { value: "Cadillac", label: "קדילק" },
+
+  // ל
+  { value: "Lexus", label: "לקסוס" },
+  { value: "Land Rover", label: "לנד רובר" },
+  { value: "Lancia", label: "לאנצ'יה" },
+  { value: "Lincoln", label: "לינקולן" },
+  { value: "Lamborghini", label: "למבורגיני" },
+  { value: "Lynk & Co", label: "לינק אנד קו" },
+  { value: "Lucid", label: "לוסיד" },
   { value: "Lotus", label: "לוטוס" },
+
+  // מ
+  { value: "Mazda", label: "מאזדה" },
+  { value: "Mercedes-Benz", label: "מרצדס" },
+  { value: "Mitsubishi", label: "מיצובישי" },
+  { value: "Mini", label: "מיני" },
+  { value: "Maserati", label: "מזראטי" },
+  { value: "McLaren", label: "מקלארן" },
+  { value: "MG", label: "MG" },
+
+  // נ
+  { value: "Nissan", label: "ניסאן" },
+
+  // ס
+  { value: "Subaru", label: "סובארו" },
+  { value: "Suzuki", label: "סוזוקי" },
+  { value: "Citroen", label: "סיטרואן" },
+  { value: "SEAT", label: "סיאט" },
+  { value: "Skoda", label: "סקודה" },
+  { value: "Saab", label: "סאאב" },
+  { value: "SsangYong", label: "סאנגיונג" },
+
+  // ע
+
+  // פ
+  { value: "Volkswagen", label: "פולקסווגן" },
+  { value: "Ford", label: "פורד" },
+  { value: "Porsche", label: "פורשה" },
+  { value: "Peugeot", label: "פיז'ו" },
+  { value: "Fiat", label: "פיאט" },
+  { value: "Ferrari", label: "פרארי" },
+  { value: "Proton", label: "פרוטון" },
+  { value: "Polestar", label: "פולסטאר" },
+
+  // צ
+
+  // ק
+
+  // ר
+  { value: "Renault", label: "רנו" },
+  { value: "Rolls-Royce", label: "רולס רויס" },
+  { value: "Rivian", label: "ריוויאן" },
+
+  // ש
+  { value: "Chevrolet", label: "שברולט" },
 ] as const;
 
 // ✅ Engine Sizes (גדלי מנוע מורחבים)
@@ -349,114 +357,143 @@ export const MILEAGE_RANGES = [
 
 // ✅ Israeli Cities (רשימת ערים מורחבת)
 export const ISRAELI_CITIES = [
-  // ערים מרכזיות
-  "תל אביב",
-  "ירושלים",
-  "חיפה",
-  "ראשון לציון",
-  "פתח תקווה",
-  "אשדוד",
-  "נתניה",
-  "באר שבע",
-  "בני ברק",
-  "חולון",
-  "רמת גן",
-  "אשקלון",
-  "רחובות",
-  "בת ים",
-
-  // אזור המרכז
-  "כפר סבא",
-  "הרצליה",
-  "רעננה",
-  "הוד השרון",
-  "רמת השרון",
-  "גבעתיים",
-  "יהוד מונוסון",
+  // א
+  "אביעזר",
+  "אילת",
   "אור יהודה",
+  "אור עקיבא",
+  "אופקים",
   "אזור",
+  "אלעד",
+  "אריאל",
+  "אשדוד",
+  "אשקלון",
+
+  // ב
+  "באר יעקב",
+  "באר שבע",
+  "באקה אל גרביה",
+  "בית שאן",
+  "בית שמש",
+  "בנימינה",
+  "בני ברק",
+  "בת ים",
+  "ביתר עילית",
+
+  // ג
+  "גבעת שמואל",
+  "גבעתיים",
   "גדרה",
-  "נס ציונה",
-  "ויצמן",
-  "מזכרת בתיה",
-  "קרית עקרון",
-  "יבנה",
   "גן יבנה",
 
-  // אזור השפלה והדרום
-  "קריית גת",
-  "קריית מלאכי",
-  "שדרות",
-  "נתיבות",
-  "אופקים",
+  // ד
   "דימונה",
-  "ערד",
-  "מצפה רמון",
-  "אילת",
 
-  // אזור הצפון
+  // ה
+  "הוד השרון",
+  "הרצליה",
+
+  // ו
+  "ויצמן",
+
+  // ז
+  "זכרון יעקב",
+
+  // ח
   "חדרה",
-  "נהריה",
-  "עכו",
-  "קריית שמונה",
-  "מעלות תרשיחא",
-  "צפת",
+  "חולון",
+  "חיפה",
+
+  // ט
   "טבריה",
-  "נצרת",
-  "עפולה",
-  "בית שאן",
-  "קריית ביאליק",
-  "קריית ים",
-  "קריית מוצקין",
-  "קריית אתא",
+  "טייבה",
+  "תירה",
 
-  // יהודה ושומרון
-  "מודיעין",
-  "מודיעין עילית",
-  "בית שמש",
-  "מעלה אדומים",
-  "ביתר עילית",
-  "אפרת",
-  "אריאל",
-  "קרני שומרון",
+  // י
+  "יבנה",
+  "יהוד מונוסון",
+  "יקנעם",
+  "ירושלים",
+
+  // כ
+  "כפר ברא",
+  "כפר יונה",
+  "כפר קאסם",
+  "כפר סבא",
   "כוכב יעקב",
-  "אלעד",
-  "עמנואל",
+  "כרמיאל",
 
-  // גוש דן מורחב
-  "קריית אונו",
-  "ראש העין",
-  "רמלה",
+  // ל
   "לוד",
 
-  // ערים נוספות
-  "באר יעקב",
-  "תל מונד",
+  // מ
+  "מגדל העמק",
+  "מודיעין",
+  "מודיעין עילית",
+  "מזכרת בתיה",
+  "מכמורת",
+  "מעלה אדומים",
+  "מעלות תרשיחא",
+  "מצפה רמון",
+
+  // נ
+  "נהריה",
+  "נס ציונה",
+  "נתיבות",
+  "נתניה",
+  "נצרת",
+
+  // ס
+  "סכנין",
+
+  // ע
+  "עכו",
+  "עפולה",
+  "עמנואל",
+  "ערד",
+
+  // פ
+  "פתח תקווה",
+  "פרדס חנה כרכור",
+
+  // צ
   "צורן",
   "צוקי ים",
-  "כרמיאל",
-  "מגדל העמק",
-  "יקנעם",
-  "קצרין",
-  "זכרון יעקב",
-  "בנימינה",
-  "גבעת שמואל",
-  "קדימה צורן",
-  "שוהם",
-  "מכמורת",
-  "כפר יונה",
-  "פרדס חנה כרכור",
-  "אור עקיבא",
+  "צפת",
 
-  // ערים ערביות
-  "כפר קאסם",
-  "תירה",
-  "טייבה",
-  "כפר ברא",
-  "באקה אל גרביה",
-  "אום אל פחם",
+  // ק
+  "קדימה צורן",
+  "קטרין",
+  "קצרין",
+  "קריאל",
+  "קריית אונו",
+  "קריית אתא",
+  "קריית ביאליק",
+  "קריית גת",
+  "קריית ים",
+  "קריית מוצקין",
+  "קריית מלאכי",
+  "קריית עקרון",
+  "קריות שמונה",
+  "קרני שומרון",
+
+  // ר
+  "ראש העין",
+  "ראשון לציון",
+  "רחובות",
+  "רמלה",
+  "רמת גן",
+  "רמת השרון",
+  "רעננה",
+
+  // ש
+  "שדרות",
+  "שוהם",
   "שפרעם",
-  "סכנין",
+
+  // ת
+  "תל אביב",
+  "תל מונד",
 ] as const;
 
 // ✅ Additional Car Features (תכונות נוספות)

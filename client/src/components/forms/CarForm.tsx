@@ -34,6 +34,7 @@ import {
   CAR_CONDITIONS,
   CAR_HANDS,
   BODY_TYPES,
+  CAR_FEATURES,
   DEFAULTS,
 } from "@/lib/constants";
 
@@ -65,16 +66,29 @@ export default function CarForm({
     mileage: car?.mileage?.toString() || "",
     fuelType: car?.fuelType || "",
     transmission: car?.transmission || "",
-    condition: car?.condition || "", // ✅ עכשיו עובד אחרי עדכון הטיפוס והDB
+    condition: car?.condition || "",
     hand: car?.hand || "",
     color: car?.color || "",
     description: car?.description || "",
     city: car?.city || "",
     engineSize: car?.engineSize || "",
-    bodyType: car?.bodyType || "", // ✅ עכשיו עובד אחרי עדכון הטיפוס והDB
+    bodyType: car?.bodyType || "",
+    features: car?.features || [],
   });
 
-  const handleChange = (field: string, value: string) => {
+  const handleFeatureToggle = (featureValue: string) => {
+    // ✅ טיפוס מפורש
+    const currentFeatures = formData.features || [];
+    const isSelected = currentFeatures.includes(featureValue);
+
+    const updatedFeatures = isSelected
+      ? currentFeatures.filter((f: string) => f !== featureValue) // ✅ טיפוס מפורש
+      : [...currentFeatures, featureValue];
+
+    handleChange("features", updatedFeatures);
+  };
+
+  const handleChange = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -567,6 +581,218 @@ export default function CarForm({
               </div>
             </div>
 
+            {/* תוספות ואביזרים */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold border-b pb-2">
+                תוספות ואביזרים
+              </h3>
+
+              <div className="text-sm text-gray-600 mb-4">
+                בחר את התוספות והאביזרים הקיימים ברכב (אופציונלי)
+              </div>
+
+              {/* חלוקה לקטגוריות */}
+              <div className="space-y-6">
+                {/* בטיחות */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    🛡️ בטיחות
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {CAR_FEATURES.filter(
+                      (
+                        f: { value: string; label: string } // ✅ טיפוס מפורש
+                      ) =>
+                        [
+                          "abs",
+                          "airbags",
+                          "esp",
+                          "parking_sensors",
+                          "reverse_camera",
+                          "360_camera",
+                          "blind_spot",
+                          "lane_assist",
+                          "cruise_control",
+                          "adaptive_cruise",
+                        ].includes(f.value)
+                    ).map((feature) => (
+                      <label
+                        key={feature.value}
+                        className="flex items-center gap-2 p-2 border rounded-md hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.features.includes(feature.value)}
+                          onChange={() => handleFeatureToggle(feature.value)}
+                          className="rounded text-blue-600"
+                        />
+                        <span className="text-sm">{feature.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* נוחות */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    🛋️ נוחות
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {CAR_FEATURES.filter((f) =>
+                      [
+                        "leather_seats",
+                        "heated_seats",
+                        "cooled_seats",
+                        "electric_seats",
+                        "sunroof",
+                        "panoramic_roof",
+                        "automatic_parking",
+                        "keyless",
+                        "remote_start",
+                      ].includes(f.value)
+                    ).map((feature) => (
+                      <label
+                        key={feature.value}
+                        className="flex items-center gap-2 p-2 border rounded-md hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.features.includes(feature.value)}
+                          onChange={() => handleFeatureToggle(feature.value)}
+                          className="rounded text-blue-600"
+                        />
+                        <span className="text-sm">{feature.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* מולטימדיה */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    📱 מולטימדיה
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {CAR_FEATURES.filter((f) =>
+                      [
+                        "gps",
+                        "bluetooth",
+                        "usb",
+                        "aux",
+                        "wireless_charging",
+                        "premium_audio",
+                        "rear_entertainment",
+                        "android_auto",
+                        "apple_carplay",
+                      ].includes(f.value)
+                    ).map((feature) => (
+                      <label
+                        key={feature.value}
+                        className="flex items-center gap-2 p-2 border rounded-md hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.features.includes(feature.value)}
+                          onChange={() => handleFeatureToggle(feature.value)}
+                          className="rounded text-blue-600"
+                        />
+                        <span className="text-sm">{feature.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* אקלים */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    ❄️ אקלים
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {CAR_FEATURES.filter((f) =>
+                      [
+                        "air_conditioning",
+                        "dual_zone_ac",
+                        "rear_ac",
+                        "heated_steering",
+                      ].includes(f.value)
+                    ).map((feature) => (
+                      <label
+                        key={feature.value}
+                        className="flex items-center gap-2 p-2 border rounded-md hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.features.includes(feature.value)}
+                          onChange={() => handleFeatureToggle(feature.value)}
+                          className="rounded text-blue-600"
+                        />
+                        <span className="text-sm">{feature.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* חיצוני */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
+                    🚗 חיצוני
+                  </h4>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {CAR_FEATURES.filter((f) =>
+                      [
+                        "alloy_wheels",
+                        "led_lights",
+                        "xenon_lights",
+                        "fog_lights",
+                        "roof_rails",
+                        "tow_bar",
+                      ].includes(f.value)
+                    ).map((feature) => (
+                      <label
+                        key={feature.value}
+                        className="flex items-center gap-2 p-2 border rounded-md hover:bg-gray-50 cursor-pointer"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={formData.features.includes(feature.value)}
+                          onChange={() => handleFeatureToggle(feature.value)}
+                          className="rounded text-blue-600"
+                        />
+                        <span className="text-sm">{feature.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* סיכום תוספות */}
+              {formData.features &&
+                formData.features.length > 0 && ( // ✅ בדיקת קיום
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <div className="text-sm font-medium text-blue-900 mb-2">
+                      תוספות נבחרות ({formData.features.length}):
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {formData.features.map((featureValue: string) => {
+                        // ✅ טיפוס מפורש
+                        const feature = CAR_FEATURES.find(
+                          (f: { value: string; label: string }) =>
+                            f.value === featureValue
+                        ); // ✅ טיפוס מפורש
+                        return (
+                          <span
+                            key={featureValue}
+                            className="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded"
+                          >
+                            {feature?.label || featureValue}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+            </div>
+
             {/* כפתורי פעולה */}
             <div className="flex gap-4 pt-4">
               <Button type="submit" disabled={loading} className="flex-1">
@@ -679,6 +905,13 @@ export default function CarForm({
                     <strong>עיר:</strong> {formData.city}
                   </div>
                 </div>
+                {formData.features &&
+                  formData.features.length > 0 && ( // ✅ בדיקת קיום
+                    <div>
+                      <strong>תוספות:</strong> {formData.features.length} תוספות
+                      נבחרו
+                    </div>
+                  )}
                 <div className="pt-2 border-t">
                   <strong>תמונות:</strong> {selectedImages.length} תמונות נבחרו
                 </div>

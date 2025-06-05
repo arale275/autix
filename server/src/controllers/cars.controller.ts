@@ -96,10 +96,9 @@ export class CarsController {
 
       // שאילתה עיקרית עם השדות החדשים
       const carsQuery = `
-        SELECT 
-          c.id, c.make, c.model, c.year, c.price, c.mileage,
-          c.fuel_type, c.transmission, c.color, c.description,
-          c.images, c.city, c.hand, c.engine_size, c.created_at, c.updated_at,
+        SELECT c.id, c.make, c.model, c.year, c.price, c.mileage,
+       c.fuel_type, c.transmission, c.color, c.description,
+       c.images, c.city, c.hand, c.engine_size, c.features, c.created_at, c.updated_at,
           d.business_name as dealer_name,
           u.first_name || ' ' || u.last_name as dealer_contact,
           u.phone as dealer_phone
@@ -298,8 +297,11 @@ export class CarsController {
         description,
         images,
         city,
-        hand, // ✅ השדה החדש
-        engineSize, // ✅ השדה החדש
+        hand,
+        engineSize,
+        features,
+        condition,
+        body_type,
       } = req.body;
 
       const carResult = await pool.query(
@@ -307,7 +309,7 @@ export class CarsController {
         INSERT INTO cars (
           dealer_id, make, model, year, price, mileage, 
           fuel_type, transmission, color, description, images, city,
-          hand, engine_size
+          hand, engine_size, features, condition, body_type
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
         RETURNING *
         `,
@@ -324,8 +326,11 @@ export class CarsController {
           description,
           JSON.stringify(images || []),
           city,
-          hand, // ✅ השדה החדש
-          engineSize, // ✅ השדה החדש
+          hand,
+          engineSize,
+          JSON.stringify(features || []),
+          condition,
+          body_type,
         ]
       );
 
@@ -380,8 +385,11 @@ export class CarsController {
         images,
         city,
         status,
-        hand, // ✅ השדה החדש
-        engineSize, // ✅ השדה החדש
+        hand,
+        engineSize,
+        features,
+        condition,
+        body_type,
       } = req.body;
 
       const updateResult = await pool.query(
@@ -401,6 +409,9 @@ export class CarsController {
           status = COALESCE($13, status),
           hand = COALESCE($14, hand),
           engine_size = COALESCE($15, engine_size),
+          features = COALESCE($16, features),
+          condition = COALESCE($17, condition),
+          body_type = COALESCE($18, body_type),
           updated_at = CURRENT_TIMESTAMP
         WHERE id = $1
         RETURNING *
@@ -419,8 +430,11 @@ export class CarsController {
           images ? JSON.stringify(images) : null,
           city,
           status,
-          hand, // ✅ השדה החדש
-          engineSize, // ✅ השדה החדש
+          hand,
+          engineSize,
+          features ? JSON.stringify(features) : null,
+          condition, 
+          body_type, 
         ]
       );
 

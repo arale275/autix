@@ -102,6 +102,7 @@ export interface Car {
   isFeatured: boolean;
   createdAt: string;
   updatedAt?: string;
+  features?: string[];
   // Joined data
   dealer?: {
     id: number;

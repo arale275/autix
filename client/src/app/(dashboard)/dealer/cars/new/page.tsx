@@ -387,46 +387,6 @@ export default function NewCarPage() {
               </div>
             </CardContent>
           </Card>
-
-          {/* Enhanced Alternative Actions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">פעולות נוספות</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Link href="/dealer/cars" className="block">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  disabled={isPublishing}
-                >
-                  <ArrowRight className="w-4 h-4 mr-2" />
-                  חזור לרכבים שלי
-                </Button>
-              </Link>
-
-              <Link href="/dealer/home" className="block">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start"
-                  disabled={isPublishing}
-                >
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  לדף הבית
-                </Button>
-              </Link>
-
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                onClick={handleCancel}
-                disabled={isPublishing}
-              >
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                ביטול פרסום
-              </Button>
-            </CardContent>
-          </Card>
         </div>
       </div>
 
