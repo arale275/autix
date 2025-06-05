@@ -437,32 +437,6 @@ export default function DealerInquiriesPage() {
               </Select>
             </div>
           )}
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={loading || isRefreshing}
-            className="flex items-center gap-2"
-          >
-            <RefreshCw
-              className={cn(
-                "h-4 w-4",
-                (loading || isRefreshing) && "animate-spin"
-              )}
-            />
-            רענן
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-            className="flex items-center gap-2"
-          >
-            <Settings className="h-4 w-4" />
-            מתקדם
-          </Button>
         </div>
       </div>
 
@@ -506,57 +480,6 @@ export default function DealerInquiriesPage() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">דחופות</p>
-                <p className="text-2xl font-bold text-red-900">
-                  {enhancedStats.urgent}
-                </p>
-                <p className="text-xs text-red-600">מעל 24 שעות</p>
-              </div>
-              <div className="p-3 rounded-full bg-red-50">
-                <Clock className="h-6 w-6 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">היום</p>
-                <p className="text-2xl font-bold text-purple-900">
-                  {enhancedStats.today}
-                </p>
-                <p className="text-xs text-purple-600">פניות חדשות</p>
-              </div>
-              <div className="p-3 rounded-full bg-purple-50">
-                <Calendar className="h-6 w-6 text-purple-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">אחוז מענה</p>
-                <p className="text-2xl font-bold text-orange-900">
-                  {enhancedStats.responseRate}%
-                </p>
-                <p className="text-xs text-orange-600">ביצועים</p>
-              </div>
-              <div className="p-3 rounded-full bg-orange-50">
-                <TrendingUp className="h-6 w-6 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-shadow">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
                 <p className="text-sm font-medium text-gray-600">סה״כ</p>
                 <p className="text-2xl font-bold text-gray-900">
                   {enhancedStats.total}
@@ -570,157 +493,6 @@ export default function DealerInquiriesPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Enhanced Search and Filters */}
-      <Card className="mb-6">
-        <CardHeader className="pb-4">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            חיפוש וסינון
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Basic Filters Row */}
-            <div className="flex flex-col lg:flex-row gap-4">
-              {/* Search Input */}
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="חפש לפי הודעה, שם קונה, מייל או רכב..."
-                    value={filters.search}
-                    onChange={(e) => updateFilter("search", e.target.value)}
-                    className="pr-10"
-                  />
-                </div>
-              </div>
-
-              {/* Quick Filters */}
-              <div className="flex gap-2">
-                <Select
-                  value={filters.status}
-                  onValueChange={(value) => updateFilter("status", value)}
-                >
-                  <SelectTrigger className="w-36">
-                    <SelectValue placeholder="סטטוס" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">כל הסטטוסים</SelectItem>
-                    <SelectItem value="new">חדשות</SelectItem>
-                    <SelectItem value="responded">נענו</SelectItem>
-                    <SelectItem value="closed">סגורות</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={filters.sortBy}
-                  onValueChange={(value) => updateFilter("sortBy", value)}
-                >
-                  <SelectTrigger className="w-36">
-                    <SelectValue placeholder="מיון" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="created_at">תאריך</SelectItem>
-                    <SelectItem value="buyer_name">שם קונה</SelectItem>
-                    <SelectItem value="car">רכב</SelectItem>
-                    <SelectItem value="status">סטטוס</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    updateFilter(
-                      "sortOrder",
-                      filters.sortOrder === "asc" ? "desc" : "asc"
-                    )
-                  }
-                >
-                  {filters.sortOrder === "asc" ? (
-                    <SortAsc className="h-4 w-4" />
-                  ) : (
-                    <SortDesc className="h-4 w-4" />
-                  )}
-                </Button>
-
-                <Button onClick={handleSearch} disabled={loading}>
-                  <Search className="h-4 w-4 mr-2" />
-                  חפש
-                </Button>
-              </div>
-            </div>
-
-            {/* Advanced Filters */}
-            {showAdvancedFilters && (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t">
-                <Select
-                  value={filters.dateRange}
-                  onValueChange={(value) => updateFilter("dateRange", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="טווח תאריכים" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">כל התאריכים</SelectItem>
-                    <SelectItem value="today">היום</SelectItem>
-                    <SelectItem value="week">השבוע האחרון</SelectItem>
-                    <SelectItem value="month">החודש האחרון</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={filters.carMake}
-                  onValueChange={(value) => updateFilter("carMake", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="יצרן רכב" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">כל היצרנים</SelectItem>
-                    {availableCarMakes.map((make) => (
-                      <SelectItem key={make} value={make}>
-                        {make}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select
-                  value={filters.priority}
-                  onValueChange={(value) => updateFilter("priority", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="עדיפות" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">כל הרמות</SelectItem>
-                    <SelectItem value="urgent">דחוף (מעל 24 שעות)</SelectItem>
-                    <SelectItem value="high">גבוה (12-24 שעות)</SelectItem>
-                    <SelectItem value="normal">רגיל (עד 12 שעות)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-
-            {/* Filter Actions */}
-            <div className="flex items-center justify-between pt-2">
-              <div className="text-sm text-gray-600">
-                {filteredInquiries.length !== inquiries.length && (
-                  <span>
-                    מציג {filteredInquiries.length} מתוך {inquiries.length}{" "}
-                    פניות
-                  </span>
-                )}
-              </div>
-              <Button variant="ghost" size="sm" onClick={clearAllFilters}>
-                נקה כל הפילטרים
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Enhanced Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -749,15 +521,6 @@ export default function DealerInquiriesPage() {
             {tabCounts.responded > 0 && (
               <Badge variant="secondary" className="text-xs">
                 {tabCounts.responded}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="closed" className="flex items-center gap-2">
-            <XCircle className="h-4 w-4" />
-            סגורות
-            {tabCounts.closed > 0 && (
-              <Badge variant="secondary" className="text-xs">
-                {tabCounts.closed}
               </Badge>
             )}
           </TabsTrigger>
@@ -931,87 +694,6 @@ export default function DealerInquiriesPage() {
         )}
       </Tabs>
 
-      {/* Performance Tips */}
-      {enhancedStats.responseRate < 80 && inquiries.length > 0 && (
-        <Card className="mt-6 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-amber-800">
-              <Zap className="h-5 w-5" />
-              💡 טיפים לשיפור שירות הלקוחות
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {enhancedStats.new > 0 && (
-                <div className="p-4 bg-white rounded-lg border border-amber-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Bell className="w-5 h-5 text-amber-600" />
-                    <h4 className="font-medium text-amber-800">מענה מיידי</h4>
-                  </div>
-                  <p className="text-sm text-amber-700">
-                    יש לך {enhancedStats.new} פניות חדשות. מענה תוך שעה מגדיל
-                    סיכויי מכירה ב-70%!
-                  </p>
-                </div>
-              )}
-
-              {enhancedStats.urgent > 0 && (
-                <div className="p-4 bg-white rounded-lg border border-red-200">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Clock className="w-5 h-5 text-red-600" />
-                    <h4 className="font-medium text-red-800">פניות דחופות</h4>
-                  </div>
-                  <p className="text-sm text-red-700">
-                    {enhancedStats.urgent} פניות ממתינות מעל 24 שעות. טפל בהן
-                    בדחיפות!
-                  </p>
-                </div>
-              )}
-
-              <div className="p-4 bg-white rounded-lg border border-amber-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <Star className="w-5 h-5 text-amber-600" />
-                  <h4 className="font-medium text-amber-800">תבניות תגובה</h4>
-                </div>
-                <p className="text-sm text-amber-700">
-                  השתמש בתבניות מוכנות למענה מהיר ומקצועי לפניות נפוצות
-                </p>
-              </div>
-
-              <div className="p-4 bg-white rounded-lg border border-amber-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <Phone className="w-5 h-5 text-amber-600" />
-                  <h4 className="font-medium text-amber-800">שיחת טלפון</h4>
-                </div>
-                <p className="text-sm text-amber-700">
-                  לפניות רציניות, שיחת טלפון יוצרת חיבור אישי ומגדילה אמון
-                </p>
-              </div>
-
-              <div className="p-4 bg-white rounded-lg border border-amber-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <Car className="w-5 h-5 text-amber-600" />
-                  <h4 className="font-medium text-amber-800">פרטים נוספים</h4>
-                </div>
-                <p className="text-sm text-amber-700">
-                  ספק מידע מפורט על הרכב, מצבו, שירותים וציוד נוסף
-                </p>
-              </div>
-
-              <div className="p-4 bg-white rounded-lg border border-amber-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-5 h-5 text-amber-600" />
-                  <h4 className="font-medium text-amber-800">מעקב ביצועים</h4>
-                </div>
-                <p className="text-sm text-amber-700">
-                  אחוז המענה שלך: {enhancedStats.responseRate}%. המטרה: מעל 80%
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Loading Overlay */}
       {loading && inquiries.length > 0 && (
         <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
@@ -1042,50 +724,6 @@ export default function DealerInquiriesPage() {
                 </p>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Weekly Summary */}
-      {enhancedStats.week > 0 && (
-        <Card className="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-800">
-              <BarChart3 className="h-5 w-5" />
-              סיכום השבוע
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-700 mb-1">
-                  {enhancedStats.week}
-                </div>
-                <p className="text-sm text-blue-600">פניות השבוע</p>
-              </div>
-
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-700 mb-1">
-                  {enhancedStats.today}
-                </div>
-                <p className="text-sm text-blue-600">פניות היום</p>
-              </div>
-
-              <div className="text-center">
-                <div className="text-3xl font-bold text-blue-700 mb-1">
-                  {Math.round(enhancedStats.week / 7)}
-                </div>
-                <p className="text-sm text-blue-600">ממוצע יומי</p>
-              </div>
-            </div>
-
-            {enhancedStats.week > enhancedStats.responded && (
-              <div className="mt-4 p-3 bg-blue-100 rounded-lg">
-                <p className="text-sm text-blue-800 text-center">
-                  💪 המשך כך! פניות רבות מעידות על עניין גבוה ברכבים שלך
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
       )}
