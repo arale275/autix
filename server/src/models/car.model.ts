@@ -19,6 +19,9 @@ export class CarModel {
       transmission,
       color,
       description,
+      condition,
+      body_type,
+      hand,
     } = carData;
 
     const query = `
@@ -40,6 +43,9 @@ export class CarModel {
       transmission,
       color,
       description,
+      condition,
+      body_type,
+      hand,
     ];
 
     const result = await pool.query(query, values);
@@ -115,6 +121,27 @@ export class CarModel {
     if (filters.dealer_id) {
       query += ` AND user_id = $${paramCount}`;
       values.push(filters.dealer_id);
+      paramCount++;
+    }
+
+    // ✅ הוסף פילטר condition
+    if (filters.condition) {
+      query += ` AND condition = $${paramCount}`;
+      values.push(filters.condition);
+      paramCount++;
+    }
+
+    // ✅ הוסף פילטר body_type
+    if (filters.body_type) {
+      query += ` AND body_type = $${paramCount}`;
+      values.push(filters.body_type);
+      paramCount++;
+    }
+
+    // ✅ הוסף פילטר hand
+    if (filters.hand) {
+      query += ` AND hand = $${paramCount}`;
+      values.push(filters.hand);
       paramCount++;
     }
 

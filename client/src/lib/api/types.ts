@@ -78,7 +78,6 @@ export interface Buyer {
   createdAt: string;
 }
 
-// Car types
 export interface Car {
   id: number;
   dealerId?: number;
@@ -96,7 +95,9 @@ export interface Car {
   status: "active" | "sold" | "deleted";
   city?: string;
   engineSize?: string;
-  hand?: string; // ✅ השדה החדש - יד ראשונה/שנייה/שלישית+
+  hand?: string; // ✅ קיים - יד ראשונה/שנייה/שלישית+
+  condition?: string; // ✅ חדש - מצב הרכב (חדש/משומש/מעולה וכו')
+  bodyType?: string; // ✅ חדש - סוג מרכב (סדאן/SUV/האצ'בק וכו')
   isAvailable: boolean;
   isFeatured: boolean;
   createdAt: string;

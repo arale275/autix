@@ -91,7 +91,68 @@ export const validateAddCar = (
       errors: errors,
     });
   }
+  // ✅ הוסף validation עבור condition (מצב רכב)
+  if (
+    req.body.condition &&
+    ![
+      "new",
+      "demo",
+      "excellent",
+      "very_good",
+      "good",
+      "fair",
+      "needs_repair",
+      "accident",
+      "for_parts",
+    ].includes(req.body.condition)
+  ) {
+    errors.push("מצב הרכב לא תקין");
+  }
 
+  // ✅ הוסף validation עבור bodyType (סוג מרכב)
+  if (
+    req.body.bodyType &&
+    ![
+      "sedan",
+      "hatchback",
+      "suv",
+      "crossover",
+      "station_wagon",
+      "coupe",
+      "convertible",
+      "pickup",
+      "van",
+      "minivan",
+      "mpv",
+      "roadster",
+      "targa",
+      "limousine",
+      "other",
+    ].includes(req.body.bodyType)
+  ) {
+    errors.push("סוג מרכב לא תקין");
+  }
+
+  // ✅ הוסף validation עבור hand (יד מורחבת)
+  if (
+    req.body.hand &&
+    ![
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10+",
+      "unknown",
+    ].includes(req.body.hand)
+  ) {
+    errors.push("יד הרכב לא תקינה");
+  }
   next();
 };
 
@@ -198,6 +259,67 @@ export const validateUpdateCar = (
       errors: errors,
     });
   }
+  // ✅ condition validation
+  if (
+    req.body.condition &&
+    ![
+      "new",
+      "demo",
+      "excellent",
+      "very_good",
+      "good",
+      "fair",
+      "needs_repair",
+      "accident",
+      "for_parts",
+    ].includes(req.body.condition)
+  ) {
+    errors.push("מצב הרכב לא תקין");
+  }
 
+  // ✅ bodyType validation
+  if (
+    req.body.bodyType &&
+    ![
+      "sedan",
+      "hatchback",
+      "suv",
+      "crossover",
+      "station_wagon",
+      "coupe",
+      "convertible",
+      "pickup",
+      "van",
+      "minivan",
+      "mpv",
+      "roadster",
+      "targa",
+      "limousine",
+      "other",
+    ].includes(req.body.bodyType)
+  ) {
+    errors.push("סוג מרכב לא תקין");
+  }
+
+  // ✅ hand validation מורחב
+  if (
+    req.body.hand &&
+    ![
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10+",
+      "unknown",
+    ].includes(req.body.hand)
+  ) {
+    errors.push("יד הרכב לא תקינה");
+  }
   next();
 };

@@ -1,4 +1,4 @@
-// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details & Management Page for Dealers (Clean)
+// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details Page for Dealers (View Only)
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -6,20 +6,15 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowRight,
-  Edit,
   CheckCircle,
-  Share2,
   Calendar,
   Gauge,
   Fuel,
   Settings,
   MapPin,
   Car as CarIcon,
-  ChevronLeft,
   AlertTriangle,
-  Zap,
   Upload,
-  MessageSquare,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -34,7 +29,6 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import CarForm from "@/components/forms/CarForm";
 import { ImageGallery } from "@/components/cards/ImageGallery";
 import { ImageUploader } from "@/components/forms/ImageUploader";
 import { CarStatusBadge } from "@/components/features/CarStatusBadge";
@@ -62,10 +56,9 @@ export default function DealerCarDetailsPage() {
 
   const carId = parseInt(params.id as string);
 
-  // State
+  // State - רק למה שנחוץ לצפייה
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [isEditMode, setIsEditMode] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   // Hooks
@@ -88,7 +81,6 @@ export default function DealerCarDetailsPage() {
     const success = await setMainImage(car.id, imageId);
     if (success) {
       refetch();
-      // ✅ שליחת event
       carEvents.emitCarUpdate(car.id, "image", { imageId });
     }
   };
@@ -142,15 +134,12 @@ export default function DealerCarDetailsPage() {
     try {
       setActionLoading(true);
 
-      // 1. עדכן בשרת
       await carsApi.toggleCarAvailability(car.id, newValue);
 
-      // 2. שלח event לעמודים אחרים
       carEvents.emitCarUpdate(car.id, "availability", {
         isAvailable: newValue,
       });
 
-      // 3. ✅ עדכן את הנתונים המקומיים - זה חסר!
       await refetch();
 
       toast.success(newValue ? "הרכב מוצג כעת לקונים" : "הרכב הוסתר מהקונים");
@@ -164,29 +153,10 @@ export default function DealerCarDetailsPage() {
 
   // Actions
   const handleEdit = () => {
-    setIsEditMode(true);
+    // 🔄 השינוי הגדול - ניווט לדף עריכה נפרד
+    router.push(`/dealer/cars/${carId}/edit`);
   };
 
-  const handleCancelEdit = () => {
-    setIsEditMode(false);
-  };
-
-  const handleSaveEdit = () => {
-    if (!car) return; // ✅ הוסף בדיקה
-
-    setIsEditMode(false);
-    refetch();
-
-    // ✅ הוסף event
-    carEvents.emitCarUpdate(car.id, "update", {
-      action: "edit_completed",
-      carId: car.id,
-    });
-
-    toast.success("הרכב עודכן בהצלחה");
-  };
-
-  // ✅ Delete עם API ישיר
   const handleDelete = async () => {
     if (!car) return;
     if (
@@ -198,7 +168,6 @@ export default function DealerCarDetailsPage() {
         setActionLoading(true);
         await carsApi.deleteCar(car.id);
 
-        // ✅ הוסף event
         carEvents.emitCarUpdate(car.id, "delete", {
           action: "car_deleted",
           carId: car.id,
@@ -215,7 +184,6 @@ export default function DealerCarDetailsPage() {
     }
   };
 
-  // ✅ Mark as sold עם API ישיר
   const handleMarkSold = async () => {
     if (!car) return;
 
@@ -228,7 +196,6 @@ export default function DealerCarDetailsPage() {
       setActionLoading(true);
       await carsApi.updateCar(car.id, { status: "sold" });
 
-      // ✅ שלח event
       carEvents.emitCarUpdate(car.id, "status", { status: "sold" });
 
       await refetch();
@@ -287,7 +254,7 @@ export default function DealerCarDetailsPage() {
             <Link href="/dealer/cars">
               <Button>
                 <ArrowRight className="w-4 h-4 mr-2" />
-                חזור למלאי
+                חזור לרכבים שלי
               </Button>
             </Link>
           </CardContent>
@@ -296,46 +263,7 @@ export default function DealerCarDetailsPage() {
     );
   }
 
-  // Edit Mode
-  if (isEditMode) {
-    return (
-      <div className="container mx-auto px-4 py-6 space-y-6">
-        <nav className="flex items-center gap-2 text-sm text-gray-600">
-          <Link href="/dealer/cars" className="hover:text-blue-600">
-            הרכבים שלי
-          </Link>
-          <ChevronLeft className="w-4 h-4" />
-          <Link href={`/dealer/cars/${car.id}`} className="hover:text-blue-600">
-            {formatCarTitle(car.make, car.model, car.year)}
-          </Link>
-          <ChevronLeft className="w-4 h-4" />
-          <span className="text-gray-900">עריכה</span>
-        </nav>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  עריכת פרטי הרכב
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  {formatCarTitle(car.make, car.model, car.year)}
-                </p>
-              </div>
-              <Button variant="outline" onClick={handleCancelEdit}>
-                ביטול
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <CarForm car={car} onSuccess={handleSaveEdit} mode="edit" />
-      </div>
-    );
-  }
-
-  // View Mode
+  // View Mode - רק צפייה, אין עוד edit mode
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
       {/* Car Header */}

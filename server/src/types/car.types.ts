@@ -6,14 +6,54 @@ export interface Car {
   year: number;
   price: number;
   mileage: number;
-  fuel_type: "gasoline" | "diesel" | "hybrid" | "electric";
-  transmission: "manual" | "automatic";
+  fuel_type: "gasoline" | "diesel" | "hybrid" | "electric" | "lpg"; // ✅ הוסף lpg
+  transmission: "manual" | "automatic" | "cvt" | "semi-automatic"; // ✅ הוסף cvt, semi-automatic
   color: string;
   description?: string;
   image_urls?: string[];
   is_available: boolean;
   created_at: Date;
   updated_at: Date;
+  // ✅ השדות החדשים:
+  condition?:
+    | "new"
+    | "demo"
+    | "excellent"
+    | "very_good"
+    | "good"
+    | "fair"
+    | "needs_repair"
+    | "accident"
+    | "for_parts";
+  body_type?:
+    | "sedan"
+    | "hatchback"
+    | "suv"
+    | "crossover"
+    | "station_wagon"
+    | "coupe"
+    | "convertible"
+    | "pickup"
+    | "van"
+    | "minivan"
+    | "mpv"
+    | "roadster"
+    | "targa"
+    | "limousine"
+    | "other";
+  hand?:
+    | "0"
+    | "1"
+    | "2"
+    | "3"
+    | "4"
+    | "5"
+    | "6"
+    | "7"
+    | "8"
+    | "9"
+    | "10+"
+    | "unknown";
 }
 
 export interface CreateCarRequest {
@@ -22,11 +62,51 @@ export interface CreateCarRequest {
   year: number;
   price: number;
   mileage: number;
-  fuel_type: "gasoline" | "diesel" | "hybrid" | "electric";
-  transmission: "manual" | "automatic";
+  fuel_type: "gasoline" | "diesel" | "hybrid" | "electric" | "lpg"; // ✅ מעודכן
+  transmission: "manual" | "automatic" | "cvt" | "semi-automatic"; // ✅ מעודכן
   color: string;
   description?: string;
   image_urls?: string[];
+  // ✅ השדות החדשים:
+  condition?:
+    | "new"
+    | "demo"
+    | "excellent"
+    | "very_good"
+    | "good"
+    | "fair"
+    | "needs_repair"
+    | "accident"
+    | "for_parts";
+  body_type?:
+    | "sedan"
+    | "hatchback"
+    | "suv"
+    | "crossover"
+    | "station_wagon"
+    | "coupe"
+    | "convertible"
+    | "pickup"
+    | "van"
+    | "minivan"
+    | "mpv"
+    | "roadster"
+    | "targa"
+    | "limousine"
+    | "other";
+  hand?:
+    | "0"
+    | "1"
+    | "2"
+    | "3"
+    | "4"
+    | "5"
+    | "6"
+    | "7"
+    | "8"
+    | "9"
+    | "10+"
+    | "unknown";
 }
 
 export interface UpdateCarRequest extends Partial<CreateCarRequest> {
@@ -46,4 +126,8 @@ export interface CarFilters {
   color?: string;
   dealer_id?: number;
   is_available?: boolean;
+  // ✅ פילטרים חדשים:
+  condition?: string;
+  body_type?: string;
+  hand?: string;
 }

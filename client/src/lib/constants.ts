@@ -1,4 +1,4 @@
-// lib/constants.ts - קבועים למערכת
+// lib/constants.ts - קבועים למערכת (מעודכן ומורחב)
 "use client";
 
 // API Endpoints
@@ -36,7 +36,7 @@ export const API_ENDPOINTS = {
   DB_TEST: "/api/db-test",
 } as const;
 
-// Car Manufacturers (אלפבתי בעברית)
+// Car Manufacturers (אלפבתי באנגלית)
 export const CAR_MANUFACTURERS = [
   "Audi",
   "BMW",
@@ -66,6 +66,7 @@ export const CAR_MANUFACTURERS = [
   "Volvo",
 ] as const;
 
+// Car Manufacturers Hebrew (מורחב ומעודכן)
 export const CAR_MANUFACTURERS_HEBREW = [
   // יצרנים גרמניים
   { value: "Audi", label: "אאודי" },
@@ -168,7 +169,92 @@ export const CAR_MANUFACTURERS_HEBREW = [
   { value: "Lotus", label: "לוטוס" },
 ] as const;
 
-// Fuel Types
+// ✅ Engine Sizes (גדלי מנוע מורחבים)
+export const ENGINE_SIZES = [
+  { value: "1.0", label: "1.0 ליטר" },
+  { value: "1.1", label: "1.1 ליטר" },
+  { value: "1.2", label: "1.2 ליטר" },
+  { value: "1.3", label: "1.3 ליטר" },
+  { value: "1.4", label: "1.4 ליטר" },
+  { value: "1.5", label: "1.5 ליטר" },
+  { value: "1.6", label: "1.6 ליטר" },
+  { value: "1.7", label: "1.7 ליטר" },
+  { value: "1.8", label: "1.8 ליטר" },
+  { value: "1.9", label: "1.9 ליטר" },
+  { value: "2.0", label: "2.0 ליטר" },
+  { value: "2.2", label: "2.2 ליטר" },
+  { value: "2.4", label: "2.4 ליטר" },
+  { value: "2.5", label: "2.5 ליטר" },
+  { value: "2.7", label: "2.7 ליטר" },
+  { value: "3.0", label: "3.0 ליטר" },
+  { value: "3.2", label: "3.2 ליטר" },
+  { value: "3.5", label: "3.5 ליטר" },
+  { value: "3.6", label: "3.6 ליטר" },
+  { value: "3.8", label: "3.8 ליטר" },
+  { value: "4.0", label: "4.0 ליטר" },
+  { value: "4.2", label: "4.2 ליטר" },
+  { value: "4.4", label: "4.4 ליטר" },
+  { value: "4.6", label: "4.6 ליטר" },
+  { value: "5.0", label: "5.0 ליטר" },
+  { value: "5.2", label: "5.2 ליטר" },
+  { value: "5.7", label: "5.7 ליטר" },
+  { value: "6.0", label: "6.0 ליטר" },
+  { value: "6.2", label: "6.2 ליטר" },
+  { value: "6.3", label: "6.3 ליטר" },
+  { value: "6.7", label: "6.7 ליטר" },
+  { value: "electric", label: "חשמלי" },
+  { value: "other", label: "אחר" },
+] as const;
+
+// ✅ Car Conditions (מצב הרכב מורחב)
+export const CAR_CONDITIONS = [
+  { value: "new", label: "חדש מהסוכנות" },
+  { value: "demo", label: "רכב הדגמה" },
+  { value: "excellent", label: "במצב מעולה" },
+  { value: "very_good", label: "במצב טוב מאוד" },
+  { value: "good", label: "במצב טוב" },
+  { value: "fair", label: "במצב סביר" },
+  { value: "needs_repair", label: "זקוק לתיקונים" },
+  { value: "accident", label: "לאחר תאונה" },
+  { value: "for_parts", label: "למכירת חלקים" },
+] as const;
+
+// ✅ Car Hands (יד מורחבת)
+export const CAR_HANDS = [
+  { value: "0", label: "קילומטר" },
+  { value: "1", label: "יד ראשונה" },
+  { value: "2", label: "יד שנייה" },
+  { value: "3", label: "יד שלישית" },
+  { value: "4", label: "יד רביעית" },
+  { value: "5", label: "יד חמישית" },
+  { value: "6", label: "יד שישית" },
+  { value: "7", label: "יד שביעית" },
+  { value: "8", label: "יד שמינית" },
+  { value: "9", label: "יד תשיעית" },
+  { value: "10+", label: "יד עשירית ומעלה" },
+  { value: "unknown", label: "לא ידוע" },
+] as const;
+
+// ✅ Body Types (סוגי מרכב)
+export const BODY_TYPES = [
+  { value: "sedan", label: "סדאן" },
+  { value: "hatchback", label: "האצ'בק" },
+  { value: "suv", label: "SUV" },
+  { value: "crossover", label: "קרוסאובר" },
+  { value: "station_wagon", label: "סטיישן" },
+  { value: "coupe", label: "קופה" },
+  { value: "convertible", label: "גג נפתח" },
+  { value: "pickup", label: "טנדר" },
+  { value: "van", label: "מסחרי" },
+  { value: "minivan", label: "מיניוון" },
+  { value: "mpv", label: "MPV" },
+  { value: "roadster", label: "רודסטר" },
+  { value: "targa", label: "טארגה" },
+  { value: "limousine", label: "לימוזינה" },
+  { value: "other", label: "אחר" },
+] as const;
+
+// Fuel Types (מעודכן)
 export const FUEL_TYPES = [
   { value: "gasoline", label: "בנזין" },
   { value: "diesel", label: "דיזל" },
@@ -177,7 +263,7 @@ export const FUEL_TYPES = [
   { value: "lpg", label: "גז" },
 ] as const;
 
-// Transmission Types
+// Transmission Types (מעודכן)
 export const TRANSMISSION_TYPES = [
   { value: "manual", label: "ידנית" },
   { value: "automatic", label: "אוטומטית" },
@@ -185,7 +271,7 @@ export const TRANSMISSION_TYPES = [
   { value: "semi-automatic", label: "חצי אוטומטית" },
 ] as const;
 
-// Colors
+// Colors (מעודכן)
 export const CAR_COLORS = [
   { value: "white", label: "לבן" },
   { value: "black", label: "שחור" },
@@ -226,57 +312,224 @@ export const CAR_YEARS = Array.from(
   (_, i) => new Date().getFullYear() + 1 - i
 );
 
-// Price ranges for filters
+// ✅ Price ranges (מורחבות)
 export const PRICE_RANGES = [
-  { value: "0-50000", label: "עד 50,000 ₪" },
-  { value: "50000-100000", label: "50,000-100,000 ₪" },
-  { value: "100000-150000", label: "100,000-150,000 ₪" },
-  { value: "150000-200000", label: "150,000-200,000 ₪" },
-  { value: "200000-300000", label: "200,000-300,000 ₪" },
-  { value: "300000+", label: "מעל 300,000 ₪" },
+  { value: "0-30000", label: "עד 30,000 ₪" },
+  { value: "30000-50000", label: "30,000-50,000 ₪" },
+  { value: "50000-70000", label: "50,000-70,000 ₪" },
+  { value: "70000-100000", label: "70,000-100,000 ₪" },
+  { value: "100000-120000", label: "100,000-120,000 ₪" },
+  { value: "120000-150000", label: "120,000-150,000 ₪" },
+  { value: "150000-180000", label: "150,000-180,000 ₪" },
+  { value: "180000-220000", label: "180,000-220,000 ₪" },
+  { value: "220000-250000", label: "220,000-250,000 ₪" },
+  { value: "250000-300000", label: "250,000-300,000 ₪" },
+  { value: "300000-400000", label: "300,000-400,000 ₪" },
+  { value: "400000-500000", label: "400,000-500,000 ₪" },
+  { value: "500000-700000", label: "500,000-700,000 ₪" },
+  { value: "700000-1000000", label: "700,000-1,000,000 ₪" },
+  { value: "1000000+", label: "מעל 1,000,000 ₪" },
 ] as const;
 
-// Mileage ranges
+// ✅ Mileage ranges (מורחבות)
 export const MILEAGE_RANGES = [
-  { value: "0-20000", label: 'עד 20,000 ק"מ' },
-  { value: "20000-50000", label: '20,000-50,000 ק"מ' },
-  { value: "50000-100000", label: '50,000-100,000 ק"מ' },
-  { value: "100000-150000", label: '100,000-150,000 ק"מ' },
-  { value: "150000+", label: 'מעל 150,000 ק"מ' },
+  { value: "0-5000", label: 'עד 5,000 ק"מ' },
+  { value: "5000-10000", label: '5,000-10,000 ק"מ' },
+  { value: "10000-20000", label: '10,000-20,000 ק"מ' },
+  { value: "20000-30000", label: '20,000-30,000 ק"מ' },
+  { value: "30000-50000", label: '30,000-50,000 ק"מ' },
+  { value: "50000-70000", label: '50,000-70,000 ק"מ' },
+  { value: "70000-100000", label: '70,000-100,000 ק"מ' },
+  { value: "100000-120000", label: '100,000-120,000 ק"מ' },
+  { value: "120000-150000", label: '120,000-150,000 ק"מ' },
+  { value: "150000-200000", label: '150,000-200,000 ק"מ' },
+  { value: "200000-250000", label: '200,000-250,000 ק"מ' },
+  { value: "250000+", label: 'מעל 250,000 ק"מ' },
 ] as const;
 
-// Israeli Cities (ערים מרכזיות)
+// ✅ Israeli Cities (רשימת ערים מורחבת)
 export const ISRAELI_CITIES = [
+  // ערים מרכזיות
+  "תל אביב",
+  "ירושלים",
+  "חיפה",
+  "ראשון לציון",
+  "פתח תקווה",
   "אשדוד",
-  "אשקלון",
+  "נתניה",
   "באר שבע",
   "בני ברק",
-  "בת ים",
-  "גבעתיים",
-  "הוד השרון",
-  "הרצליה",
   "חולון",
-  "חיפה",
-  "טבריה",
-  "יקנעם",
-  "ירושלים",
-  "כפר סבא",
-  "מודיעין",
-  "נהריה",
-  "נס ציונה",
-  "נתניה",
-  "עכו",
-  "פתח תקווה",
-  "צפת",
-  "קריית גת",
-  "קריית מוצקין",
-  "ראש העין",
-  "ראשון לציון",
-  "רחובות",
-  "רמלה",
   "רמת גן",
+  "אשקלון",
+  "רחובות",
+  "בת ים",
+
+  // אזור המרכז
+  "כפר סבא",
+  "הרצליה",
+  "רעננה",
+  "הוד השרון",
   "רמת השרון",
-  "תל אביב",
+  "גבעתיים",
+  "יהוד מונוסון",
+  "אור יהודה",
+  "אזור",
+  "גדרה",
+  "נס ציונה",
+  "ויצמן",
+  "מזכרת בתיה",
+  "קרית עקרון",
+  "יבנה",
+  "גן יבנה",
+
+  // אזור השפלה והדרום
+  "קריית גת",
+  "קריית מלאכי",
+  "שדרות",
+  "נתיבות",
+  "אופקים",
+  "דימונה",
+  "ערד",
+  "מצפה רמון",
+  "אילת",
+
+  // אזור הצפון
+  "חדרה",
+  "נהריה",
+  "עכו",
+  "קריית שמונה",
+  "מעלות תרשיחא",
+  "צפת",
+  "טבריה",
+  "נצרת",
+  "עפולה",
+  "בית שאן",
+  "קריית ביאליק",
+  "קריית ים",
+  "קריית מוצקין",
+  "קריית אתא",
+
+  // יהודה ושומרון
+  "מודיעין",
+  "מודיעין עילית",
+  "בית שמש",
+  "מעלה אדומים",
+  "ביתר עילית",
+  "אפרת",
+  "אריאל",
+  "קרני שומרון",
+  "כוכב יעקב",
+  "אלעד",
+  "עמנואל",
+
+  // גוש דן מורחב
+  "קריית אונו",
+  "ראש העין",
+  "רמלה",
+  "לוד",
+
+  // ערים נוספות
+  "באר יעקב",
+  "תל מונד",
+  "צורן",
+  "צוקי ים",
+  "כרמיאל",
+  "מגדל העמק",
+  "יקנעם",
+  "קצרין",
+  "זכרון יעקב",
+  "בנימינה",
+  "גבעת שמואל",
+  "קדימה צורן",
+  "שוהם",
+  "מכמורת",
+  "כפר יונה",
+  "פרדס חנה כרכור",
+  "אור עקיבא",
+
+  // ערים ערביות
+  "כפר קאסם",
+  "תירה",
+  "טייבה",
+  "כפר ברא",
+  "באקה אל גרביה",
+  "אום אל פחם",
+  "שפרעם",
+  "סכנין",
+] as const;
+
+// ✅ Additional Car Features (תכונות נוספות)
+export const CAR_FEATURES = [
+  // בטיחות
+  { value: "abs", label: "ABS" },
+  { value: "airbags", label: "כריות אוויר" },
+  { value: "esp", label: "יציבות אלקטרונית" },
+  { value: "parking_sensors", label: "חיישני חניה" },
+  { value: "reverse_camera", label: "מצלמת רוחה" },
+  { value: "360_camera", label: "מצלמה 360" },
+  { value: "blind_spot", label: "ניטור נקודה עיוורת" },
+  { value: "lane_assist", label: "סיוע נתיב" },
+  { value: "cruise_control", label: "בקרת שיוט" },
+  { value: "adaptive_cruise", label: "בקרת שיוט מסתגלת" },
+
+  // נוחות
+  { value: "leather_seats", label: "ריפוד עור" },
+  { value: "heated_seats", label: "מושבים מחוממים" },
+  { value: "cooled_seats", label: "מושבים מקוררים" },
+  { value: "electric_seats", label: "מושבים חשמליים" },
+  { value: "sunroof", label: "חלון גג" },
+  { value: "panoramic_roof", label: "גג פנורמי" },
+  { value: "automatic_parking", label: "חניה אוטומטית" },
+  { value: "keyless", label: "התנעה ללא מפתח" },
+  { value: "remote_start", label: "התנעה מרחוק" },
+
+  // מולטימדיה
+  { value: "gps", label: "GPS ניווט" },
+  { value: "bluetooth", label: "Bluetooth" },
+  { value: "usb", label: "חיבור USB" },
+  { value: "aux", label: "חיבור AUX" },
+  { value: "wireless_charging", label: "טעינה אלחוטית" },
+  { value: "premium_audio", label: "מערכת שמע מתקדמת" },
+  { value: "rear_entertainment", label: "בידור אחורי" },
+  { value: "android_auto", label: "Android Auto" },
+  { value: "apple_carplay", label: "Apple CarPlay" },
+
+  // אקלים
+  { value: "air_conditioning", label: "מזגן" },
+  { value: "dual_zone_ac", label: "מזגן דו אזורי" },
+  { value: "rear_ac", label: "מזגן אחורי" },
+  { value: "heated_steering", label: "הגה מחומם" },
+
+  // חיצוני
+  { value: "alloy_wheels", label: "חישוקי סגסוגת" },
+  { value: "led_lights", label: "פנסי LED" },
+  { value: "xenon_lights", label: "פנסי קסנון" },
+  { value: "fog_lights", label: "פנסי ערפל" },
+  { value: "roof_rails", label: "מתלי גג" },
+  { value: "tow_bar", label: "וו גרירה" },
+] as const;
+
+// ✅ Test Results (תוצאות מבדקים)
+export const TEST_RESULTS = [
+  { value: "valid", label: "תקף" },
+  { value: "expires_soon", label: "פג תוקף בקרוב" },
+  { value: "expired", label: "פג תוקף" },
+  { value: "pending", label: "ממתין למבדק" },
+  { value: "unknown", label: "לא ידוע" },
+] as const;
+
+// ✅ Previous Ownership (בעלות קודמת)
+export const PREVIOUS_OWNERSHIP = [
+  { value: "private", label: "בעלות פרטית" },
+  { value: "company", label: "רכב חברה" },
+  { value: "lease", label: "ליסינג" },
+  { value: "rental", label: "השכרה" },
+  { value: "taxi", label: "מונית" },
+  { value: "driving_school", label: "בית ספר לנהיגה" },
+  { value: "police", label: "משטרה" },
+  { value: "government", label: "ממשלתי" },
+  { value: "unknown", label: "לא ידוע" },
 ] as const;
 
 // Sort Options
@@ -424,7 +677,7 @@ export const COLORS = {
   },
 } as const;
 
-// Local Storage Keys (already defined in localStorage.ts but exported here for convenience)
+// Local Storage Keys
 export const STORAGE_KEYS = {
   TOKEN: "auth_token",
   USER: "user_data",
@@ -432,6 +685,7 @@ export const STORAGE_KEYS = {
   SAVED_CARS: "savedCars",
   THEME: "theme",
   LANGUAGE: "language",
+  CAR_DRAFT: "car_draft", // ✅ הוספה לשמירת טיוטות
 } as const;
 
 // Image placeholders
@@ -441,7 +695,7 @@ export const PLACEHOLDERS = {
   DEALER_LOGO: "/images/dealer-placeholder.png",
 } as const;
 
-// Feature flags (for future use)
+// Feature flags
 export const FEATURES = {
   ENABLE_NOTIFICATIONS: true,
   ENABLE_CHAT: false,
@@ -449,6 +703,8 @@ export const FEATURES = {
   ENABLE_FINANCING: false,
   ENABLE_INSURANCE: false,
   ENABLE_ANALYTICS: true,
+  ENABLE_AUTO_SAVE: true, // ✅ הוספה לאוטו-שמירה
+  ENABLE_PRICE_VALIDATION: true, // ✅ הוספה לבדיקת מחירים
 } as const;
 
 // External URLs
@@ -470,6 +726,7 @@ export const DEFAULTS = {
   API_TIMEOUT: 10000, // ms
   IMAGE_QUALITY: 80,
   MAX_UPLOAD_SIZE: 5 * 1024 * 1024, // 5MB
+  AUTO_SAVE_DELAY: 2000, // ✅ הוספה לאוטו-שמירה
 
   // Car defaults
   CAR_IMAGES_LIMIT: 10,
@@ -513,9 +770,50 @@ export const ANIMATIONS = {
   VERY_SLOW: 1000,
 } as const;
 
+// ✅ Form Progress Thresholds (לmeter התקדמות)
+export const FORM_PROGRESS = {
+  REQUIRED_FIELDS: [
+    "make",
+    "model",
+    "year",
+    "price",
+    "mileage",
+    "fuelType",
+    "transmission",
+    "condition",
+    "hand",
+    "city",
+  ],
+  OPTIONAL_BONUS: {
+    engineSize: 5,
+    color: 5,
+    bodyType: 5,
+    description: 10,
+    features: 15,
+    images: 20,
+  },
+  EXCELLENT_THRESHOLD: 90,
+  GOOD_THRESHOLD: 70,
+  FAIR_THRESHOLD: 50,
+} as const;
+
+// ✅ Price Validation Ranges (לבדיקת מחירים)
+export const PRICE_VALIDATION = {
+  SUSPICIOUS_LOW_THRESHOLD: 0.7, // 70% מהמחיר הממוצע
+  SUSPICIOUS_HIGH_THRESHOLD: 1.5, // 150% מהמחיר הממוצע
+  DEPRECIATION_RATE: 0.15, // 15% בשנה
+  MIN_SAMPLE_SIZE: 3, // מינימום רכבים דומים לחישוב
+} as const;
+
+// Export all as default
 export default {
   API_ENDPOINTS,
   CAR_MANUFACTURERS,
+  CAR_MANUFACTURERS_HEBREW,
+  ENGINE_SIZES,
+  CAR_CONDITIONS,
+  CAR_HANDS,
+  BODY_TYPES,
   FUEL_TYPES,
   TRANSMISSION_TYPES,
   CAR_COLORS,
@@ -526,6 +824,9 @@ export default {
   PRICE_RANGES,
   MILEAGE_RANGES,
   ISRAELI_CITIES,
+  CAR_FEATURES,
+  TEST_RESULTS,
+  PREVIOUS_OWNERSHIP,
   SORT_OPTIONS,
   PAGINATION,
   VALIDATION,
@@ -541,4 +842,6 @@ export default {
   REGEX,
   BREAKPOINTS,
   ANIMATIONS,
+  FORM_PROGRESS,
+  PRICE_VALIDATION,
 };

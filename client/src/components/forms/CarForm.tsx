@@ -21,168 +21,29 @@ import { Car } from "@/lib/api/types";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 
+// ✅ Import from central constants file (מעודכן עם כל הנתונים החדשים)
+import {
+  CAR_MANUFACTURERS_HEBREW,
+  FUEL_TYPES,
+  TRANSMISSION_TYPES,
+  CAR_COLORS,
+  ISRAELI_CITIES,
+  CAR_YEARS,
+  VALIDATION,
+  ENGINE_SIZES,
+  CAR_CONDITIONS,
+  CAR_HANDS,
+  BODY_TYPES,
+  DEFAULTS,
+} from "@/lib/constants";
+
 interface CarFormProps {
   car?: Car;
   mode?: "create" | "edit";
-  onSuccess?: () => void;
+  onSuccess?: (carId?: number) => void; // ✅ הוספת carId לcallback
 }
 
-// נתונים לתפריטים הנפתחים
-const CAR_MAKES = [
-  "טויוטה",
-  "הונדה",
-  "מזדה",
-  "ניסאן",
-  "יונדיי",
-  "קיה",
-  "מיצובישי",
-  "סובארו",
-  "BMW",
-  "מרצדס",
-  "אאודי",
-  "פולקסווגן",
-  "סקודה",
-  "סיאט",
-  "פיג'ו",
-  "רנו",
-  "פורד",
-  "שברולט",
-  "אופל",
-  "סיטרואן",
-  "פיאט",
-  "אלפא רומיאו",
-  "לקסוס",
-  "אינפיניטי",
-  "אקורה",
-  "וולוו",
-  "לנד רובר",
-  "יגואר",
-  "פורשה",
-  "מיני",
-  "ג'יפ",
-  "דודג'",
-  "קדילק",
-  "לינקולן",
-  "טסלא",
-  "BYD",
-  "MG",
-];
-
-const CITIES = [
-  "תל אביב",
-  "ירושלים",
-  "חיפה",
-  "ראשון לציון",
-  "פתח תקווה",
-  "אשדוד",
-  "נתניה",
-  "באר שבע",
-  "בני ברק",
-  "חולון",
-  "רמת גן",
-  "אשקלון",
-  "רחובות",
-  "בת ים",
-  "כפר סבא",
-  "הרצליה",
-  "חדרה",
-  "מודיעין",
-  "לוד",
-  "רעננה",
-  "נהריה",
-  "אילת",
-  "אריאל",
-  "גבעתיים",
-  "קריית אתא",
-  "עכו",
-  "קריית גת",
-  "קריית מוצקין",
-  "קריית ים",
-  "קריית ביאליק",
-  "קריית מלאכי",
-  "עפולה",
-  "נצרת",
-  "טבריה",
-  "צפת",
-  "דימונה",
-  "אור יהודה",
-  "יהוד מונוסון",
-  "גדרה",
-  "נס ציונה",
-  "אלעד",
-  "בית שמש",
-  "מעלה אדומים",
-  "קרני שומרון",
-];
-
-const COLORS = [
-  "לבן",
-  "שחור",
-  "כסף",
-  "אפור",
-  "כחול",
-  "אדום",
-  "ירוק",
-  "חום",
-  "זהוב",
-  "ברונזה",
-  "סגול",
-  "ורוד",
-  "צהוב",
-  "כתום",
-  "בז'",
-  "שמפניה",
-];
-
-const ENGINE_SIZES = [
-  "1.0",
-  "1.2",
-  "1.3",
-  "1.4",
-  "1.5",
-  "1.6",
-  "1.8",
-  "2.0",
-  "2.2",
-  "2.4",
-  "2.5",
-  "2.7",
-  "3.0",
-  "3.2",
-  "3.5",
-  "4.0",
-  "4.2",
-  "4.4",
-  "4.6",
-  "5.0",
-  "5.2",
-  "5.7",
-  "6.0",
-  "6.2",
-];
-
-const FUEL_TYPES = [
-  { value: "gasoline", label: "בנזין" },
-  { value: "diesel", label: "דיזל" },
-  { value: "hybrid", label: "היברידי" },
-  { value: "electric", label: "חשמלי" },
-];
-
-const TRANSMISSION_TYPES = [
-  { value: "manual", label: "ידני" },
-  { value: "automatic", label: "אוטומטי" },
-];
-
-const CONDITION_TYPES = [
-  { value: "new", label: "חדש" },
-  { value: "used", label: "משומש" },
-];
-
-const HAND_TYPES = [
-  { value: "1", label: "יד ראשונה" },
-  { value: "2", label: "יד שנייה" },
-  { value: "3+", label: "יד שלישית ומעלה" },
-];
+// ✅ הסרת ההגדרות המקומיות - הכל מגיע מהקובץ המרכזי כעת
 
 export default function CarForm({
   car,
@@ -204,12 +65,13 @@ export default function CarForm({
     mileage: car?.mileage?.toString() || "",
     fuelType: car?.fuelType || "",
     transmission: car?.transmission || "",
-    condition: "", // השדה לא קיים ב-Car type עדיין, נתחיל עם ערך ריק
+    condition: car?.condition || "", // ✅ עכשיו עובד אחרי עדכון הטיפוס והDB
     hand: car?.hand || "",
     color: car?.color || "",
     description: car?.description || "",
     city: car?.city || "",
     engineSize: car?.engineSize || "",
+    bodyType: car?.bodyType || "", // ✅ עכשיו עובד אחרי עדכון הטיפוס והDB
   });
 
   const handleChange = (field: string, value: string) => {
@@ -231,14 +93,21 @@ export default function CarForm({
     }
     if (
       !formData.year ||
-      parseInt(formData.year) < 1990 ||
-      parseInt(formData.year) > 2025
+      parseInt(formData.year) < VALIDATION.CAR_YEAR_MIN ||
+      parseInt(formData.year) > VALIDATION.CAR_YEAR_MAX
     ) {
-      toast.error("שנת ייצור לא תקינה (1990-2025)");
+      toast.error(
+        `שנת ייצור לא תקינה (${VALIDATION.CAR_YEAR_MIN}-${VALIDATION.CAR_YEAR_MAX})`
+      );
       return false;
     }
-    if (!formData.price || parseInt(formData.price) <= 0) {
-      toast.error("מחיר חייב להיות גדול מאפס");
+    if (
+      !formData.price ||
+      parseInt(formData.price) < VALIDATION.CAR_PRICE_MIN
+    ) {
+      toast.error(
+        `מחיר חייב להיות גדול מ-${VALIDATION.CAR_PRICE_MIN.toLocaleString()} ₪`
+      );
       return false;
     }
     if (!formData.mileage || parseInt(formData.mileage) < 0) {
@@ -305,7 +174,6 @@ export default function CarForm({
             selectedImages
           );
 
-          // תיקון השגיאה - בדיקה אם זה array או boolean
           if (Array.isArray(uploadResult) && uploadResult.length > 0) {
             toast.success(`${uploadResult.length} תמונות הועלו בהצלחה!`);
           } else if (uploadResult === true) {
@@ -322,7 +190,7 @@ export default function CarForm({
       }
 
       if (onSuccess) {
-        onSuccess();
+        onSuccess(carResult?.id); // ✅ העברת carId לcallback
       } else {
         router.push("/dealer/cars");
       }
@@ -346,7 +214,7 @@ export default function CarForm({
 
   // פונקציה לקבלת תווית מתפריט
   const getLabelByValue = (
-    options: { value: string; label: string }[],
+    options: readonly { readonly value: string; readonly label: string }[],
     value: string
   ) => {
     return options.find((option) => option.value === value)?.label || value;
@@ -435,9 +303,12 @@ export default function CarForm({
                       <SelectValue placeholder="בחר יצרן" />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
-                      {CAR_MAKES.map((make) => (
-                        <SelectItem key={make} value={make}>
-                          {make}
+                      {CAR_MANUFACTURERS_HEBREW.map((manufacturer) => (
+                        <SelectItem
+                          key={manufacturer.value}
+                          value={manufacturer.label}
+                        >
+                          {manufacturer.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -457,15 +328,22 @@ export default function CarForm({
 
                 <div className="space-y-2">
                   <Label htmlFor="year">שנת יצור *</Label>
-                  <Input
-                    id="year"
-                    type="number"
-                    min="1990"
-                    max="2025"
+                  <Select
                     value={formData.year}
-                    onChange={(e) => handleChange("year", e.target.value)}
+                    onValueChange={(value) => handleChange("year", value)}
                     required
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="בחר שנה" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {CAR_YEARS.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">
@@ -473,7 +351,8 @@ export default function CarForm({
                   <Input
                     id="price"
                     type="number"
-                    min="0"
+                    min={VALIDATION.CAR_PRICE_MIN}
+                    max={VALIDATION.CAR_PRICE_MAX}
                     value={formData.price}
                     onChange={(e) => handleChange("price", e.target.value)}
                     placeholder="150000"
@@ -487,6 +366,7 @@ export default function CarForm({
                     id="mileage"
                     type="number"
                     min="0"
+                    max={VALIDATION.CAR_MILEAGE_MAX}
                     value={formData.mileage}
                     onChange={(e) => handleChange("mileage", e.target.value)}
                     placeholder="50000"
@@ -504,9 +384,9 @@ export default function CarForm({
                       <SelectValue placeholder="בחר צבע" />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
-                      {COLORS.map((color) => (
-                        <SelectItem key={color} value={color}>
-                          {color}
+                      {CAR_COLORS.map((color) => (
+                        <SelectItem key={color.value} value={color.label}>
+                          {color.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -575,7 +455,7 @@ export default function CarForm({
                       <SelectValue placeholder="בחר מצב" />
                     </SelectTrigger>
                     <SelectContent>
-                      {CONDITION_TYPES.map((type) => (
+                      {CAR_CONDITIONS.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
                         </SelectItem>
@@ -595,7 +475,7 @@ export default function CarForm({
                       <SelectValue placeholder="בחר יד" />
                     </SelectTrigger>
                     <SelectContent>
-                      {HAND_TYPES.map((type) => (
+                      {CAR_HANDS.map((type) => (
                         <SelectItem key={type.value} value={type.value}>
                           {type.label}
                         </SelectItem>
@@ -615,8 +495,27 @@ export default function CarForm({
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
                       {ENGINE_SIZES.map((size) => (
-                        <SelectItem key={size} value={size}>
-                          {size} ליטר
+                        <SelectItem key={size.value} value={size.value}>
+                          {size.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>סוג מרכב</Label>
+                  <Select
+                    value={formData.bodyType}
+                    onValueChange={(value) => handleChange("bodyType", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="בחר סוג מרכב" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-60">
+                      {BODY_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          {type.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -634,7 +533,7 @@ export default function CarForm({
                       <SelectValue placeholder="בחר עיר" />
                     </SelectTrigger>
                     <SelectContent className="max-h-60">
-                      {CITIES.map((city) => (
+                      {ISRAELI_CITIES.map((city) => (
                         <SelectItem key={city} value={city}>
                           {city}
                         </SelectItem>
@@ -657,9 +556,14 @@ export default function CarForm({
                   id="description"
                   value={formData.description}
                   onChange={(e) => handleChange("description", e.target.value)}
-                  placeholder="פרטים נוספים על הרכב, ציוד מיוחד, מצב כללי, שדרוגים, היסטוריית תחזוקה..."
+                  placeholder={DEFAULTS.CAR_DESCRIPTION_PLACEHOLDER}
                   rows={4}
+                  maxLength={VALIDATION.DESCRIPTION_MAX_LENGTH}
                 />
+                <div className="text-xs text-gray-500 text-left">
+                  {formData.description.length}/
+                  {VALIDATION.DESCRIPTION_MAX_LENGTH} תווים
+                </div>
               </div>
             </div>
 
@@ -748,15 +652,22 @@ export default function CarForm({
                   </div>
                   <div>
                     <strong>מצב:</strong>{" "}
-                    {getLabelByValue(CONDITION_TYPES, formData.condition)}
+                    {getLabelByValue(CAR_CONDITIONS, formData.condition)}
                   </div>
                   <div>
                     <strong>יד:</strong>{" "}
-                    {getLabelByValue(HAND_TYPES, formData.hand)}
+                    {getLabelByValue(CAR_HANDS, formData.hand)}
                   </div>
+                  {formData.bodyType && (
+                    <div>
+                      <strong>סוג מרכב:</strong>{" "}
+                      {getLabelByValue(BODY_TYPES, formData.bodyType)}
+                    </div>
+                  )}
                   {formData.engineSize && (
                     <div>
-                      <strong>נפח מנוע:</strong> {formData.engineSize} ליטר
+                      <strong>נפח מנוע:</strong>{" "}
+                      {getLabelByValue(ENGINE_SIZES, formData.engineSize)}
                     </div>
                   )}
                   {formData.color && (
