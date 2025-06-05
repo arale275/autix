@@ -28,7 +28,6 @@ import { useDealerCars } from "@/hooks/api/useCars";
 import { useAuth } from "@/contexts/AuthContext";
 import { filterCars, calculateCarStats } from "@/lib/car-utils";
 import type { Car } from "@/lib/api/types";
-// ❌ הוסר import של carEvents
 
 export default function DealerCarsPage() {
   const { user } = useAuth();
@@ -55,8 +54,6 @@ export default function DealerCarsPage() {
     "✅ After normalization - Car 9:",
     cars.find((car) => car.id === 9)?.isAvailable
   );
-
-  // ❌ הוסר useEffect - העדכונים יקרו אוטומטית דרך cache invalidation!
 
   // Filtered and sorted cars
   const filteredCars = useMemo(() => {
@@ -153,15 +150,6 @@ export default function DealerCarsPage() {
 
   return (
     <div className="w-full px-4 py-6 space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-600 mb-2">
-        <Link href="/dealer/home" className="hover:text-blue-600">
-          לוח בקרה
-        </Link>
-        <ChevronLeft className="w-4 h-4" />
-        <span className="text-gray-900 font-medium">הרכבים שלי</span>
-      </nav>
-
       {/* Page Header */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>

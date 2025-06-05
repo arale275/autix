@@ -41,11 +41,6 @@ const BENEFITS = [
     title: "מכירה מהירה",
     description: "רכבים איכותיים נמכרים בממוצע תוך 14 ימים בפלטפורמה",
   },
-  {
-    icon: <Star className="w-6 h-6 text-yellow-600" />,
-    title: "כלים מתקדמים",
-    description: "מערכת ניהול מלאי, סטטיסטיקות ודוחות למעקב אחר הביצועים",
-  },
 ];
 
 // Tips data
@@ -92,20 +87,22 @@ const PROCESS_STEPS = [
   },
   {
     number: "2",
-    title: "הוסף תמונות",
-    description: "העלה תמונות איכותיות של הרכב מזוויות שונות",
-    color: "bg-green-100 text-green-800",
-  },
-  {
-    number: "3",
     title: "כתוב תיאור",
     description: "תאר את הרכב, מצבו, שירותים וכל מידע רלוונטי",
     color: "bg-purple-100 text-purple-800",
   },
   {
+    number: "3",
+    title: "הוסף תמונות",
+    description: "העלה תמונות איכותיות של הרכב מזוויות שונות",
+    color: "bg-green-100 text-green-800",
+  },
+
+  {
     number: "4",
     title: "פרסם והמתן",
-    description: "הרכב יהיה זמין מיד וקונים יוכלו ליצור איתך קשר",
+    description:
+      "המודעה מתפרסמת באופן מיידי וקונים פוטנציאלים יכולים להשאיר לך פניות",
     color: "bg-yellow-100 text-yellow-800",
   },
 ];
@@ -147,15 +144,6 @@ export default function NewCarPage() {
 
   return (
     <div className="container mx-auto px-4 py-6 space-y-8">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-600">
-        <Link href="/dealer/cars" className="hover:text-blue-600">
-          המלאי שלי
-        </Link>
-        <ChevronLeft className="w-4 h-4" />
-        <span className="text-gray-900">הוספת רכב חדש</span>
-      </nav>
-
       {/* Page Header */}
       <div className="text-center space-y-4">
         <div className="flex justify-center">
@@ -163,9 +151,7 @@ export default function NewCarPage() {
             <CarIcon className="w-8 h-8 text-purple-600" />
           </div>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">
-          הוספת רכב חדש למלאי
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900">הוספת רכב למכירה</h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
           פרסם את הרכב שלך ותן לקונים איכותיים למצוא אותו בקלות. המערכת שלנו
           מבטיחה חשיפה מקסימלית ומכירה מהירה.
@@ -174,11 +160,6 @@ export default function NewCarPage() {
 
       {/* Benefits Section */}
       <Card className="bg-gradient-to-r from-purple-50 to-blue-50 border-0">
-        <CardHeader>
-          <CardTitle className="text-center text-xl">
-            למה לפרסם אצלנו?
-          </CardTitle>
-        </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {BENEFITS.map((benefit, index) => (
@@ -278,14 +259,14 @@ export default function NewCarPage() {
               <Link href="/dealer/cars" className="block">
                 <Button variant="outline" className="w-full justify-start">
                   <ArrowRight className="w-4 h-4 mr-2" />
-                  חזור למלאי
+                  חזור לרכבים שלי
                 </Button>
               </Link>
 
               <Link href="/dealer/home" className="block">
                 <Button variant="outline" className="w-full justify-start">
                   <TrendingUp className="w-4 h-4 mr-2" />
-                  לוח בקרה
+                  לדף הבית
                 </Button>
               </Link>
             </CardContent>

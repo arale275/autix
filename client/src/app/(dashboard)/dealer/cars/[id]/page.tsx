@@ -302,7 +302,7 @@ export default function DealerCarDetailsPage() {
       <div className="container mx-auto px-4 py-6 space-y-6">
         <nav className="flex items-center gap-2 text-sm text-gray-600">
           <Link href="/dealer/cars" className="hover:text-blue-600">
-            המלאי שלי
+            הרכבים שלי
           </Link>
           <ChevronLeft className="w-4 h-4" />
           <Link href={`/dealer/cars/${car.id}`} className="hover:text-blue-600">
@@ -338,17 +338,6 @@ export default function DealerCarDetailsPage() {
   // View Mode
   return (
     <div className="container mx-auto px-4 py-6 space-y-6">
-      {/* Breadcrumb */}
-      <nav className="flex items-center gap-2 text-sm text-gray-600">
-        <Link href="/dealer/cars" className="hover:text-blue-600">
-          המלאי שלי
-        </Link>
-        <ChevronLeft className="w-4 h-4" />
-        <span className="text-gray-900">
-          {formatCarTitle(car.make, car.model, car.year)}
-        </span>
-      </nav>
-
       {/* Car Header */}
       <Card>
         <CardContent className="p-6">
@@ -519,10 +508,6 @@ export default function DealerCarDetailsPage() {
               {/* Description */}
               {car.description && (
                 <div className="pt-4 border-t border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <MessageSquare className="w-4 h-4" />
-                    תיאור הרכב
-                  </h3>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                       {car.description}
