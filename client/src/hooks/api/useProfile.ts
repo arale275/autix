@@ -1,4 +1,3 @@
-// hooks/api/useProfile.ts - Profile Management Hook
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

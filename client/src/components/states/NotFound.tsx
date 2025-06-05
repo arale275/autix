@@ -1,4 +1,3 @@
-// components/states/NotFound.tsx
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Home, Search, AlertCircle } from "lucide-react";

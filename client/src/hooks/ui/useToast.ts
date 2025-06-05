@@ -1,4 +1,3 @@
-// hooks/ui/useToast.ts - Toast notifications hook
 "use client";
 
 import {

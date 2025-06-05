@@ -1,4 +1,3 @@
-// lib/events/carEvents.ts - Enhanced with Auto Cache Invalidation
 "use client";
 
 // ✅ Import cache invalidation directly

@@ -1,4 +1,3 @@
-// hooks/api/useInquiries.ts - Inquiries Hook
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

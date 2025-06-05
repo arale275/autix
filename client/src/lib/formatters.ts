@@ -1,4 +1,3 @@
-// lib/formatters.ts - Enhanced formatting utilities
 export const formatPrice = (price: number): string => {
   return new Intl.NumberFormat("he-IL", {
     style: "currency",
@@ -45,8 +44,8 @@ export const formatCarTitle = (
   return `${make} ${model} ${year}`;
 };
 
-export const formatEngineSize = (engineSize?: number): string => {
-  return engineSize ? `${engineSize}L` : "לא צוין";
+export const formatEngineSize = (engineSize?: string): string => {
+  return engineSize || "לא צוין";
 };
 
 export const formatTransmission = (transmission?: string): string => {

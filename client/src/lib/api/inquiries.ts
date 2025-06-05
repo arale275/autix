@@ -1,4 +1,3 @@
-// lib/api/inquiries.ts - Inquiries API Functions
 "use client";
 
 import { apiClient } from "./client";

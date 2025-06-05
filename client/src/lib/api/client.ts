@@ -1,4 +1,3 @@
-// lib/api/client.ts - API Client ראשי
 "use client";
 
 import { storage } from "../localStorage";

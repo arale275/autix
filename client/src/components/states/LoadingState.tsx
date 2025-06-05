@@ -1,4 +1,3 @@
-// components/states/LoadingState.tsx - Loading Component (Fixed)
 "use client";
 
 import React from "react";

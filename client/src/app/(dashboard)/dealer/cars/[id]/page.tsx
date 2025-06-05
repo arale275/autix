@@ -1,4 +1,3 @@
-// app/(dashboard)/dealer/cars/[id]/page.tsx - Car Details Page for Dealers (View Only)
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -35,7 +34,6 @@ import { CarStatusBadge } from "@/components/features/CarStatusBadge";
 import { CarActions } from "@/components/features/CarActions";
 import { useCar } from "@/hooks/api/useCars";
 import { useImages } from "@/hooks/useImages";
-import { useAuth } from "@/contexts/AuthContext";
 import { carsApi } from "@/lib/api/cars";
 import {
   formatPrice,
@@ -48,11 +46,12 @@ import {
 import { normalizeImages } from "@/lib/car-utils";
 import type { Car } from "@/lib/api/types";
 import { carEvents } from "@/lib/events/carEvents";
+import ErrorBoundary from "@/components/ui/error-boundary";
+import { useCarRoute } from "@/hooks/auth/useProtectedRoute";
 
 export default function DealerCarDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
 
   const carId = parseInt(params.id as string);
 
@@ -66,14 +65,9 @@ export default function DealerCarDetailsPage() {
   const { setMainImage, deleteImage, uploadMultipleImages } = useImages();
 
   // Check ownership
-  useEffect(() => {
-    if (car && user) {
-      if (user.userType === "dealer" && car.dealer_user_id !== user.id) {
-        toast.error("אין לך הרשאה לצפות ברכב זה");
-        router.push("/dealer/cars");
-      }
-    }
-  }, [car, user, router]);
+  const { hasAccess, isLoading: authLoading } = useCarRoute(car, {
+    checkOwnership: true,
+  });
 
   // פונקציות לניהול תמונות
   const handleSetMainImage = async (imageId: number) => {
@@ -228,7 +222,8 @@ export default function DealerCarDetailsPage() {
   };
 
   // Loading state
-  if (loading) {
+  // Loading state - כולל בדיקת הרשאות
+  if (loading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center py-12">
@@ -236,6 +231,11 @@ export default function DealerCarDetailsPage() {
         </div>
       </div>
     );
+  }
+
+  // בדיקת הרשאות
+  if (!hasAccess) {
+    return null; // useCarRoute כבר טיפל בredirect ובשגיאה
   }
 
   // Error state
@@ -342,18 +342,26 @@ export default function DealerCarDetailsPage() {
                   </Dialog>
                 </div>
               )}
-
-              <ImageGallery
-                images={normalizeImages(car.images, car.id)}
-                isOwner={car.status === "active"}
-                onSetMain={
-                  car.status === "active" ? handleSetMainImage : undefined
+              <ErrorBoundary
+                fallback={
+                  <div className="text-center py-8">
+                    <AlertTriangle className="w-8 h-8 text-red-400 mx-auto mb-2" />
+                    <p className="text-red-600">שגיאה בטעינת התמונות</p>
+                  </div>
                 }
-                onDelete={
-                  car.status === "active" ? handleDeleteImage : undefined
-                }
-                className="space-y-4"
-              />
+              >
+                <ImageGallery
+                  images={normalizeImages(car.images, car.id)}
+                  isOwner={car.status === "active"}
+                  onSetMain={
+                    car.status === "active" ? handleSetMainImage : undefined
+                  }
+                  onDelete={
+                    car.status === "active" ? handleDeleteImage : undefined
+                  }
+                  className="space-y-4"
+                />
+              </ErrorBoundary>
             </CardContent>
           </Card>
 
@@ -388,7 +396,7 @@ export default function DealerCarDetailsPage() {
                   <CarIcon className="w-5 h-5 text-gray-600 mx-auto mb-2" />
                   <div className="text-xs text-gray-600 mb-1">יד</div>
                   <div className="font-semibold text-gray-900">
-                    {(car as any).hand || "לא צוין"}
+                    {car.hand || "לא צוין"}
                   </div>
                 </div>
 
@@ -396,7 +404,7 @@ export default function DealerCarDetailsPage() {
                   <Settings className="w-5 h-5 text-gray-600 mx-auto mb-2" />
                   <div className="text-xs text-gray-600 mb-1">נפח מנוע</div>
                   <div className="font-semibold text-gray-900">
-                    {formatEngineSize((car as any).engineSize)}
+                    {formatEngineSize(car.engineSize)}
                   </div>
                 </div>
 

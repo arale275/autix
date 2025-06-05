@@ -1,4 +1,3 @@
-// lib/api/normalizers.ts
 import type { Car } from "./types";
 
 export interface CarFromAPI {

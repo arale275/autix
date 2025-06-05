@@ -1,4 +1,3 @@
-// hooks/api/useRequests.ts - Car Requests Hook
 "use client";
 
 import { useState, useEffect, useCallback } from "react";

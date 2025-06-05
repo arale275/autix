@@ -1,4 +1,3 @@
-// lib/api/auth.ts - Auth API Functions
 "use client";
 
 import { apiClient } from "./client";

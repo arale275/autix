@@ -1,4 +1,3 @@
-// lib/api/requests.ts - Car Requests API Functions
 "use client";
 
 import { apiClient } from "./client";

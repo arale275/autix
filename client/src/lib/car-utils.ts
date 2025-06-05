@@ -1,4 +1,3 @@
-// lib/car-utils.ts - Car-related utilities extracted from pages
 import type { Car, CarImage } from "@/lib/api/types";
 
 // Status Options - moved from pages

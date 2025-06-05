@@ -1,4 +1,3 @@
-// src/hooks/useImages.ts - קוד מלא ומתוקן
 "use client";
 
 import { useState, useCallback } from "react";

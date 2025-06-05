@@ -1,4 +1,3 @@
-// app/(dashboard)/dealer/cars/new/page.tsx - Enhanced New Car Page
 "use client";
 
 import React, { useState, useEffect } from "react";
@@ -25,8 +24,9 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import CarForm from "@/components/forms/CarForm";
 import LoadingSpinner from "@/components/ui/loading-spinner";
-import { useAuth } from "@/contexts/AuthContext";
 import { carEvents } from "@/lib/events/carEvents";
+import ErrorBoundary from "@/components/ui/error-boundary";
+import { useDealerRoute } from "@/hooks/auth/useProtectedRoute";
 
 // Benefits data
 const BENEFITS = [
@@ -121,7 +121,6 @@ const PROCESS_STEPS = [
 
 export default function NewCarPage() {
   const router = useRouter();
-  const { user } = useAuth();
 
   // Enhanced loading states
   const [isPublishing, setIsPublishing] = useState(false);
@@ -188,31 +187,20 @@ export default function NewCarPage() {
   }, [error]);
 
   // Authorization check with enhanced error
-  if (!user || user.userType !== "dealer") {
+  const { hasAccess, isLoading: authLoading } = useDealerRoute();
+
+  if (authLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-6 text-center">
-            <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <div className="text-red-600 mb-2 font-semibold">גישה מוגבלת</div>
-            <p className="text-red-500 mb-4">
-              רק סוחרי רכב יכולים להוסיף רכבים חדשים למערכת
-            </p>
-            <div className="flex gap-2 justify-center">
-              <Link href="/dealer/home">
-                <Button>
-                  <ArrowRight className="w-4 h-4 mr-2" />
-                  חזור לדף הבית
-                </Button>
-              </Link>
-              <Link href="/dealer/cars">
-                <Button variant="outline">רשימת הרכבים</Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="flex justify-center py-12">
+          <LoadingSpinner size="lg" />
+        </div>
       </div>
     );
+  }
+
+  if (!hasAccess) {
+    return null; // useDealerRoute כבר טיפל בredirect
   }
 
   return (
@@ -297,7 +285,14 @@ export default function NewCarPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Enhanced Form Column */}
         <div className="lg:col-span-2">
-          <CarForm onSuccess={handleSuccess} />
+          <ErrorBoundary
+            onError={(error, errorInfo) => {
+              console.error("Car form error:", error);
+              // כאן תוכל לשלוח לשירות reporting
+            }}
+          >
+            <CarForm onSuccess={handleSuccess} />
+          </ErrorBoundary>
         </div>
 
         {/* Enhanced Sidebar */}

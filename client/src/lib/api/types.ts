@@ -1,4 +1,3 @@
-// lib/api/types.ts - API Types עם השדות החדשים
 "use client";
 export interface CarImage {
   id: number;

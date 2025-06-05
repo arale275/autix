@@ -1,4 +1,3 @@
-// components/cards/CarCard.tsx - Fixed Images Display
 "use client";
 
 import React from "react";

@@ -1,4 +1,3 @@
-// components/states/ErrorState.tsx - Error Component (Fixed)
 "use client";
 
 import React from "react";

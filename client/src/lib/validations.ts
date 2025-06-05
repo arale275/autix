@@ -1,4 +1,3 @@
-// lib/validations.ts - Zod schemas ו-validation functions
 "use client";
 
 import { z } from "zod";

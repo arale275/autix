@@ -1,4 +1,3 @@
-// components/cards/DealerCarCard.tsx - Enhanced Car Card for Dealer Management (Fixed Images)
 import React from "react";
 import Link from "next/link";
 import { Star, ImageIcon, Clock } from "lucide-react";

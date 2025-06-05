@@ -1,4 +1,3 @@
-// app/(dashboard)/dealer/cars/[id]/edit/page.tsx - Car Edit Page
 "use client";
 
 import React from "react";
@@ -11,14 +10,14 @@ import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import CarForm from "@/components/forms/CarForm";
 import { useCar } from "@/hooks/api/useCars";
-import { useAuth } from "@/contexts/AuthContext";
 import { formatCarTitle } from "@/lib/formatters";
 import { carEvents } from "@/lib/events/carEvents";
+import ErrorBoundary from "@/components/ui/error-boundary";
+import { useCarRoute } from "@/hooks/auth/useProtectedRoute";
 
 export default function DealerCarEditPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
 
   const carId = parseInt(params.id as string);
 
@@ -26,20 +25,10 @@ export default function DealerCarEditPage() {
   const { car, loading, error, refetch } = useCar(carId);
 
   // Check ownership
-  React.useEffect(() => {
-    if (car && user) {
-      if (user.userType === "dealer" && car.dealer_user_id !== user.id) {
-        toast.error("אין לך הרשאה לערוך רכב זה");
-        router.push("/dealer/cars");
-      }
-
-      // בדיקה שהרכב פעיל (ניתן לעריכה)
-      if (car.status !== "active") {
-        toast.error("לא ניתן לערוך רכב שאינו פעיל");
-        router.push(`/dealer/cars/${carId}`);
-      }
-    }
-  }, [car, user, router, carId]);
+  const { hasAccess, isLoading: authLoading } = useCarRoute(car, {
+    checkOwnership: true,
+    requiredStatus: "active",
+  });
 
   // פונקציות
   const handleSaveSuccess = () => {
@@ -65,8 +54,8 @@ export default function DealerCarEditPage() {
     }
   };
 
-  // Loading state
-  if (loading) {
+  // Loading state - כולל בדיקת הרשאות
+  if (loading || authLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center py-12">
@@ -74,6 +63,11 @@ export default function DealerCarEditPage() {
         </div>
       </div>
     );
+  }
+
+  // בדיקת הרשאות
+  if (!hasAccess) {
+    return null; // useCarRoute כבר טיפל בredirect
   }
 
   // Error state
@@ -94,23 +88,6 @@ export default function DealerCarEditPage() {
                 <ArrowRight className="w-4 h-4 mr-2" />
                 חזור למלאי
               </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Authorization check
-  if (user?.userType !== "dealer") {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="p-6 text-center">
-            <div className="text-red-600 mb-2">גישה מוגבלת</div>
-            <p className="text-red-500 mb-4">רק סוחרי רכב יכולים לערוך רכבים</p>
-            <Link href="/dealer/home">
-              <Button>חזור לדף הבית</Button>
             </Link>
           </CardContent>
         </Card>
@@ -158,12 +135,14 @@ export default function DealerCarEditPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Form */}
         <div className="lg:col-span-3">
-          <CarForm
-            car={car}
-            onSuccess={handleSaveSuccess}
-            mode="edit"
-            // props נוספים אם צריך
-          />
+          <ErrorBoundary>
+            <CarForm
+              car={car}
+              onSuccess={handleSaveSuccess}
+              mode="edit"
+              // props נוספים אם צריך
+            />
+          </ErrorBoundary>
         </div>
 
         {/* Sidebar */}

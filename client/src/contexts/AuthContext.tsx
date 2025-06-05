@@ -1,4 +1,3 @@
-// client/src/contexts/AuthContext.tsx
 "use client";
 
 import React, {

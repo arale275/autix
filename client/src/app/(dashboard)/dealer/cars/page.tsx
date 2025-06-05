@@ -1,4 +1,3 @@
-// app/(dashboard)/dealer/cars/page.tsx - Refactored Cars Management Page
 "use client";
 
 import React, { useState, useCallback, useMemo, useEffect } from "react";
@@ -29,8 +28,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { filterCars, calculateCarStats } from "@/lib/car-utils";
 import { carEvents } from "@/lib/events/carEvents";
 import type { Car } from "@/lib/api/types";
+import ErrorBoundary from "@/components/ui/error-boundary";
+import { useDealerRoute } from "@/hooks/auth/useProtectedRoute";
 
 export default function DealerCarsPage() {
+  const { hasAccess, isLoading: authLoading } = useDealerRoute();
   const { user } = useAuth();
   const router = useRouter();
 
@@ -39,6 +41,20 @@ export default function DealerCarsPage() {
   const [filterStatus, setFilterStatus] = useState("all");
   const [filterAvailability, setFilterAvailability] = useState("all");
   const [sortBy, setSortBy] = useState("created_at:desc");
+
+  if (authLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-center py-12">
+          <LoadingSpinner size="lg" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return null;
+  }
 
   // Cars Hook
   const {
@@ -51,10 +67,6 @@ export default function DealerCarsPage() {
     markAsSold,
     toggleAvailability,
   } = useDealerCars();
-  console.log(
-    "✅ After normalization - Car 9:",
-    cars.find((car) => car.id === 9)?.isAvailable
-  );
 
   // Filtered and sorted cars
   const filteredCars = useMemo(() => {
@@ -310,19 +322,21 @@ export default function DealerCarsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredCars.map((car) => (
-            <DealerCarCard
-              key={car.id}
-              car={car}
-              onEdit={handleViewCarDetails}
-              onDelete={handleDelete}
-              onMarkSold={handleMarkSold}
-              onToggleAvailability={handleToggleAvailability}
-              actionLoading={actionLoading[car.id] || false}
-            />
-          ))}
-        </div>
+        <ErrorBoundary>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCars.map((car) => (
+              <DealerCarCard
+                key={car.id}
+                car={car}
+                onEdit={handleViewCarDetails}
+                onDelete={handleDelete}
+                onMarkSold={handleMarkSold}
+                onToggleAvailability={handleToggleAvailability}
+                actionLoading={actionLoading[car.id] || false}
+              />
+            ))}
+          </div>
+        </ErrorBoundary>
       )}
 
       {/* Performance Tips */}

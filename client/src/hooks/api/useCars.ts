@@ -1,4 +1,3 @@
-// hooks/api/useCars.ts - Cars Data Hook עם Cache Invalidation
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";

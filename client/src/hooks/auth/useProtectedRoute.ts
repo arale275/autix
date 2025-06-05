@@ -1,4 +1,3 @@
-// hooks/auth/useProtectedRoute.ts - Protected Route Hook
 "use client";
 
 import { useEffect } from "react";
@@ -6,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClientStorage } from "@/lib/localStorage";
 import { ROUTES } from "@/lib/constants";
+import type { Car } from "@/lib/api/types";
 
 type UserType = "buyer" | "dealer" | "any";
 
@@ -43,6 +43,23 @@ interface ProtectedRouteOptions {
    * @default false
    */
   skipRedirect?: boolean;
+
+  // ✨ הוסף את השדות החדשים:
+  /**
+   * Car to check ownership/status for
+   */
+  car?: Car | null;
+
+  /**
+   * Check if user owns the car (for dealers)
+   * @default false
+   */
+  checkCarOwnership?: boolean;
+
+  /**
+   * Required car status
+   */
+  requiredCarStatus?: "active" | "sold" | "deleted";
 }
 
 interface ProtectedRouteReturn {
@@ -109,6 +126,9 @@ export const useProtectedRoute = (
     showLoading = true,
     onAccessDenied,
     skipRedirect = false,
+    car,
+    checkCarOwnership = false,
+    requiredCarStatus,
   } = options;
 
   const router = useRouter();
@@ -159,6 +179,30 @@ export const useProtectedRoute = (
         hasAccess: false,
         reason: `wrong_user_type_expected_${requiredUserType}_got_${user.userType}`,
       };
+    }
+    // Check car ownership
+    if (
+      checkCarOwnership &&
+      car &&
+      isAuthenticated &&
+      user?.userType === "dealer"
+    ) {
+      if (car.dealer_user_id !== user.id) {
+        return {
+          hasAccess: false,
+          reason: "not_car_owner",
+        };
+      }
+    }
+
+    // Check car status
+    if (requiredCarStatus && car) {
+      if (car.status !== requiredCarStatus) {
+        return {
+          hasAccess: false,
+          reason: `wrong_car_status_expected_${requiredCarStatus}_got_${car.status}`,
+        };
+      }
     }
 
     return { hasAccess: true };
@@ -291,6 +335,28 @@ export const usePermissions = () => {
     canSendInquiries: isAuthenticated && user?.userType === "buyer",
     canReceiveInquiries: isAuthenticated && user?.userType === "dealer",
   };
+};
+
+/**
+Hook for car-specific route protection
+ */
+export const useCarRoute = (
+  car: Car | null,
+  options: {
+    checkOwnership?: boolean;
+    requiredStatus?: "active" | "sold" | "deleted";
+    redirectTo?: string;
+  } = {}
+) => {
+  const { checkOwnership = false, requiredStatus, redirectTo } = options;
+
+  return useProtectedRoute({
+    requiredUserType: "dealer",
+    car,
+    checkCarOwnership: checkOwnership,
+    requiredCarStatus: requiredStatus,
+    redirectTo: redirectTo || "/dealer/cars",
+  });
 };
 
 export default useProtectedRoute;

@@ -1,4 +1,3 @@
-// lib/constants.ts - קבועים למערכת (מעודכן ומורחב)
 "use client";
 
 // API Endpoints
