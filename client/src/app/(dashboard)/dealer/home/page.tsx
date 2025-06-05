@@ -461,20 +461,6 @@ export default function DealerHomePage() {
           />
 
           <StatCard
-            title="ערך מלאי"
-            value={
-              stats.totalValue > 0 ? `${formatPrice(stats.totalValue)}₪` : "0₪"
-            }
-            icon={DollarSign}
-            color="green"
-            subtitle={
-              stats.avgPrice > 0
-                ? `ממוצע: ${formatPrice(stats.avgPrice)}₪`
-                : "אין נתונים"
-            }
-          />
-
-          <StatCard
             title="פניות מקונים"
             value={stats.totalInquiries}
             icon={MessageSquare}
@@ -491,21 +477,6 @@ export default function DealerHomePage() {
             }
             onClick={() => (window.location.href = "/dealer/inquiries")}
           />
-
-          <StatCard
-            title="אחוז מענה"
-            value={`${stats.responseRate}%`}
-            icon={Clock}
-            color={
-              stats.responseRate >= 80
-                ? "green"
-                : stats.responseRate >= 60
-                ? "orange"
-                : "red"
-            }
-            subtitle="תגובה לפניות"
-            progress={stats.responseRate}
-          />
         </div>
       </div>
 
@@ -518,35 +489,6 @@ export default function DealerHomePage() {
           color="green"
           subtitle={`${stats.soldRate}% מהמלאי`}
           progress={stats.soldRate}
-        />
-
-        <StatCard
-          title="זקוק לתמונות"
-          value={stats.carsWithoutImages}
-          icon={ImageIcon}
-          color={stats.carsWithoutImages > 0 ? "orange" : "green"}
-          subtitle={stats.carsWithoutImages > 0 ? "הוסף תמונות" : "מעולה!"}
-          onClick={() => (window.location.href = "/dealer/cars")}
-        />
-
-        <StatCard
-          title="ביצועים כלליים"
-          value={
-            stats.responseRate >= 80 && stats.carsWithoutImages === 0
-              ? "מעולה"
-              : stats.responseRate >= 60
-              ? "טוב"
-              : "צריך שיפור"
-          }
-          icon={Award}
-          color={
-            stats.responseRate >= 80 && stats.carsWithoutImages === 0
-              ? "green"
-              : stats.responseRate >= 60
-              ? "yellow"
-              : "orange"
-          }
-          subtitle="דירוג איכות"
         />
       </div>
 
@@ -779,13 +721,6 @@ export default function DealerHomePage() {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-green-700">אחוז מענה</span>
-                <span className="font-semibold text-green-800">
-                  {stats.responseRate}%
-                </span>
-              </div>
-
               <div className="pt-3 border-t border-green-200">
                 <div className="flex items-center gap-2 text-green-700">
                   <Star className="w-4 h-4" />
@@ -803,220 +738,6 @@ export default function DealerHomePage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Enhanced Business Tips */}
-      <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-amber-800">
-            <Zap className="h-5 w-5" />
-            💡 טיפים להגדלת מכירות והצלחה
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Dynamic tips based on current stats */}
-            {stats.carsWithoutImages > 0 && (
-              <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
-                <div className="flex items-center gap-2">
-                  <ImageIcon className="w-5 h-5 text-amber-600" />
-                  <h4 className="font-medium text-amber-800">
-                    תמונות איכותיות
-                  </h4>
-                </div>
-                <p className="text-sm text-amber-700">
-                  יש לך {stats.carsWithoutImages} רכבים ללא תמונות. הוספת תמונות
-                  מגדילה פניות ב-300%!
-                </p>
-                <Link href="/dealer/cars">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-amber-700 border-amber-300"
-                  >
-                    הוסף תמונות עכשיו
-                  </Button>
-                </Link>
-              </div>
-            )}
-
-            {stats.newInquiries > 0 && (
-              <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
-                <div className="flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-amber-600" />
-                  <h4 className="font-medium text-amber-800">מענה מהיר</h4>
-                </div>
-                <p className="text-sm text-amber-700">
-                  יש לך {stats.newInquiries} פניות חדשות! מענה תוך שעה מגדיל
-                  סיכויי מכירה ב-50%
-                </p>
-                <Link href="/dealer/inquiries">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-amber-700 border-amber-300"
-                  >
-                    ענה עכשיו
-                  </Button>
-                </Link>
-              </div>
-            )}
-
-            <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
-                <h4 className="font-medium text-amber-800">תיאור מפורט</h4>
-              </div>
-              <p className="text-sm text-amber-700">
-                רכבים עם תיאור מפורט נמכרים מהר יותר. ציין מצב, שירותים וציוד
-                נוסף
-              </p>
-            </div>
-
-            {stats.responseRate < 80 && (
-              <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
-                <div className="flex items-center gap-2">
-                  <Clock className="w-5 h-5 text-amber-600" />
-                  <h4 className="font-medium text-amber-800">שפר זמן תגובה</h4>
-                </div>
-                <p className="text-sm text-amber-700">
-                  אחוז המענה שלך: {stats.responseRate}%. המטרה היא מעל 80%
-                  לביצועים מעולים
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-5 h-5 text-amber-600" />
-                <h4 className="font-medium text-amber-800">תמחור תחרותי</h4>
-              </div>
-              <p className="text-sm text-amber-700">
-                השווה מחירים בשוק באופן קבוע. מחיר הוגן מושך יותר קונים
-              </p>
-            </div>
-
-            <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
-              <div className="flex items-center gap-2">
-                <RefreshCw className="w-5 h-5 text-amber-600" />
-                <h4 className="font-medium text-amber-800">עדכונים שוטפים</h4>
-              </div>
-              <p className="text-sm text-amber-700">
-                עדכן מלאי באופן קבוע וסמן רכבים שנמכרו לשמירה על אמינות
-              </p>
-            </div>
-          </div>
-
-          {/* Performance summary */}
-          <div className="mt-6 p-4 bg-white rounded-lg border border-amber-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Activity className="w-6 h-6 text-amber-600" />
-                <div>
-                  <h4 className="font-medium text-amber-800">סיכום ביצועים</h4>
-                  <p className="text-sm text-amber-700">
-                    {stats.totalCars === 0
-                      ? "התחל בפרסום הרכב הראשון שלך!"
-                      : stats.responseRate >= 80 &&
-                        stats.carsWithoutImages === 0
-                      ? "מעולה! אתה מנהל עסק מקצועי ויעיל"
-                      : stats.responseRate >= 60
-                      ? "ביצועים טובים, עם מקום לשיפור קטן"
-                      : "יש מקום לשיפור משמעותי בביצועים"}
-                  </p>
-                </div>
-              </div>
-
-              {stats.totalCars > 0 && (
-                <div className="text-right">
-                  <div className="text-2xl font-bold text-amber-800">
-                    {stats.responseRate >= 80 && stats.carsWithoutImages === 0
-                      ? "🏆"
-                      : stats.responseRate >= 60
-                      ? "📈"
-                      : "🎯"}
-                  </div>
-                  <div className="text-xs text-amber-600">
-                    {Math.round(
-                      ((stats.activeCars + stats.soldCars) / stats.totalCars) *
-                        100
-                    )}
-                    % יעילות
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Action Center */}
-      {(stats.newInquiries > 0 ||
-        stats.carsWithoutImages > 0 ||
-        stats.activeCars === 0) && (
-        <Card className="border-blue-200 bg-blue-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-blue-800">
-              <AlertCircle className="h-5 w-5" />
-              מרכז פעולות דחופות
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {stats.newInquiries > 0 && (
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                    <span className="text-sm font-medium text-blue-800">
-                      {stats.newInquiries} פניות חדשות ממתינות למענה
-                    </span>
-                  </div>
-                  <Link href="/dealer/inquiries">
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                      טפל עכשיו
-                    </Button>
-                  </Link>
-                </div>
-              )}
-
-              {stats.carsWithoutImages > 0 && (
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-3">
-                    <ImageIcon className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-800">
-                      {stats.carsWithoutImages} רכבים ללא תמונות
-                    </span>
-                  </div>
-                  <Link href="/dealer/cars">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-blue-600 border-blue-300"
-                    >
-                      הוסף תמונות
-                    </Button>
-                  </Link>
-                </div>
-              )}
-
-              {stats.activeCars === 0 && (
-                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-3">
-                    <Car className="w-4 h-4 text-blue-600" />
-                    <span className="text-sm font-medium text-blue-800">
-                      אין רכבים פעילים במלאי
-                    </span>
-                  </div>
-                  <Link href="/dealer/cars/new">
-                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                      פרסם רכב
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
