@@ -1,14 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProfileStats } from "@/hooks/api/useProfile";
+import { useDealerCars } from "@/hooks/api/useCars";
 import { useReceivedInquiries } from "@/hooks/api/useInquiries";
-import { useCars } from "@/hooks/api/useCars";
-import { DealerStatsCard } from "@/components/cards/StatsCard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import LoadingSpinner from "@/components/ui/loading-spinner";
+import ErrorState from "@/components/states/ErrorState";
+import { carEvents } from "@/lib/events/carEvents";
+import { cn } from "@/lib/utils";
 import {
   Plus,
   Car,
@@ -22,22 +25,239 @@ import {
   BarChart3,
   Star,
   Calendar,
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  Activity,
+  Target,
+  Zap,
+  Award,
+  ImageIcon,
+  ArrowRight,
+  PieChart,
+  TrendingDown,
+  Bell,
 } from "lucide-react";
+import { useDealerRoute } from "@/hooks/auth/useProtectedRoute";
+
+// Enhanced stats calculation hook
+const useProfileStats = () => {
+  const { cars, loading: carsLoading, error: carsError } = useDealerCars();
+  const {
+    inquiries,
+    loading: inquiriesLoading,
+    error: inquiriesError,
+  } = useReceivedInquiries();
+
+  const stats = useMemo(() => {
+    const totalCars = cars.length;
+    const activeCars = cars.filter(
+      (car) => car.status === "active" && car.isAvailable
+    ).length;
+    const soldCars = cars.filter((car) => car.status === "sold").length;
+    const deletedCars = cars.filter((car) => car.status === "deleted").length;
+    const carsWithoutImages = cars.filter(
+      (car) => !car.images || car.images.length === 0
+    ).length;
+
+    const totalInquiries = inquiries.length;
+    const newInquiries = inquiries.filter((inq) => inq.status === "new").length;
+    const respondedInquiries = inquiries.filter(
+      (inq) => inq.status === "responded"
+    ).length;
+
+    // Calculate total inventory value
+    const totalValue = cars
+      .filter((car) => car.status === "active" && car.isAvailable)
+      .reduce((sum, car) => sum + car.price, 0);
+
+    // Calculate average price
+    const avgPrice = activeCars > 0 ? Math.round(totalValue / activeCars) : 0;
+
+    // Response rate
+    const responseRate =
+      totalInquiries > 0
+        ? Math.round((respondedInquiries / totalInquiries) * 100)
+        : 0;
+
+    return {
+      totalCars,
+      activeCars,
+      soldCars,
+      deletedCars,
+      carsWithoutImages,
+      totalValue,
+      avgPrice,
+      totalInquiries,
+      newInquiries,
+      respondedInquiries,
+      responseRate,
+      // Performance indicators
+      soldRate: totalCars > 0 ? Math.round((soldCars / totalCars) * 100) : 0,
+      activeRate:
+        totalCars > 0 ? Math.round((activeCars / totalCars) * 100) : 0,
+    };
+  }, [cars, inquiries]);
+
+  return {
+    stats,
+    loading: carsLoading || inquiriesLoading,
+    error: carsError || inquiriesError,
+    cars,
+    inquiries,
+  };
+};
+
+// Enhanced stats card component
+const StatCard = ({
+  title,
+  value,
+  icon: Icon,
+  color = "blue",
+  subtitle,
+  trend,
+  progress,
+  onClick,
+  className,
+}: {
+  title: string;
+  value: number | string;
+  icon: React.ComponentType<any>;
+  color?: "blue" | "green" | "purple" | "orange" | "red" | "yellow";
+  subtitle?: string;
+  trend?: { value: number; isPositive: boolean; label: string };
+  progress?: number;
+  onClick?: () => void;
+  className?: string;
+}) => {
+  const colorClasses = {
+    blue: {
+      bg: "bg-blue-50",
+      text: "text-blue-600",
+      border: "border-blue-200",
+    },
+    green: {
+      bg: "bg-green-50",
+      text: "text-green-600",
+      border: "border-green-200",
+    },
+    purple: {
+      bg: "bg-purple-50",
+      text: "text-purple-600",
+      border: "border-purple-200",
+    },
+    orange: {
+      bg: "bg-orange-50",
+      text: "text-orange-600",
+      border: "border-orange-200",
+    },
+    red: { bg: "bg-red-50", text: "text-red-600", border: "border-red-200" },
+    yellow: {
+      bg: "bg-yellow-50",
+      text: "text-yellow-600",
+      border: "border-yellow-200",
+    },
+  };
+
+  const colors = colorClasses[color];
+
+  return (
+    <Card
+      className={cn(
+        "hover:shadow-md transition-all duration-200 cursor-pointer",
+        onClick && "hover:scale-105",
+        className
+      )}
+      onClick={onClick}
+    >
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <p className="text-sm font-medium text-gray-600">{title}</p>
+            <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
+
+            {subtitle && (
+              <p className="text-xs text-gray-500 mt-1">{subtitle}</p>
+            )}
+
+            {trend && (
+              <div className="flex items-center gap-1 mt-2">
+                <div
+                  className={cn(
+                    "flex items-center gap-1 text-xs px-2 py-1 rounded-full",
+                    trend.isPositive
+                      ? "bg-green-100 text-green-700"
+                      : "bg-red-100 text-red-700"
+                  )}
+                >
+                  {trend.isPositive ? "↗" : "↘"} {trend.value}%
+                </div>
+                <span className="text-xs text-gray-500">{trend.label}</span>
+              </div>
+            )}
+
+            {progress !== undefined && (
+              <div className="mt-2">
+                <div className="flex justify-between text-xs text-gray-500 mb-1">
+                  <span>השלמה</span>
+                  <span>{progress}%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div
+                    className={cn(
+                      "h-1.5 rounded-full transition-all",
+                      colors.text.replace("text-", "bg-")
+                    )}
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className={cn("p-3 rounded-full", colors.bg)}>
+            <Icon className={cn("h-6 w-6", colors.text)} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 export default function DealerHomePage() {
+  const { hasAccess, isLoading: authLoading } = useDealerRoute();
   const { user } = useAuth();
-  const { stats, loading: statsLoading } = useProfileStats();
-  const { inquiries, loading: inquiriesLoading } = useReceivedInquiries();
-  const { cars, loading: carsLoading } = useCars();
+  const { stats, loading, error, cars, inquiries } = useProfileStats();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const recentInquiries = inquiries?.slice(0, 3) || [];
-  const recentCars = cars?.slice(0, 3) || [];
+  // Real-time updates
+  useEffect(() => {
+    const handleCarUpdate = () => {
+      // Data will be automatically refreshed by hooks
+    };
 
+    const cleanup = carEvents.onCarUpdate(handleCarUpdate);
+    return cleanup;
+  }, []);
+
+  // Get recent data
+  const recentInquiries = useMemo(
+    () => inquiries?.slice(0, 3) || [],
+    [inquiries]
+  );
+
+  const recentCars = useMemo(() => cars?.slice(0, 3) || [], [cars]);
+
+  // Helper functions
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "בוקר טוב";
     if (hour < 18) return "צהריים טובים";
     return "ערב טוב";
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("he-IL").format(price);
   };
 
   const getStatusColor = (status: string) => {
@@ -74,22 +294,98 @@ export default function DealerHomePage() {
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat("he-IL").format(price);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    // The hooks will automatically refresh the data
+    setTimeout(() => setRefreshing(false), 1000);
   };
+
+  // Auth guard
+  if (authLoading) {
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return null;
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <ErrorState
+        title="שגיאה בטעינת הנתונים"
+        message={error}
+        onRetry={handleRefresh}
+        showRetry
+      />
+    );
+  }
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        {/* Header skeleton */}
+        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
+          <div className="animate-pulse">
+            <div className="h-8 bg-white/20 rounded w-64 mb-2"></div>
+            <div className="h-4 bg-white/20 rounded w-96 mb-4"></div>
+            <div className="flex gap-3">
+              <div className="h-8 bg-white/20 rounded w-32"></div>
+              <div className="h-8 bg-white/20 rounded w-32"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-4">
+                <div className="animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-20 mb-2"></div>
+                  <div className="h-8 bg-gray-200 rounded w-16 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-24"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
-      {/* Welcome Section */}
-      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">
-              {getGreeting()}, {user?.firstName}! 🚗
-            </h1>
+      {/* Enhanced Welcome Section */}
+      <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl p-6 text-white relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16"></div>
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12"></div>
+
+        <div className="relative flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <h1 className="text-2xl font-bold">
+                {getGreeting()}, {user?.firstName}! 🚗
+              </h1>
+              {stats.newInquiries > 0 && (
+                <Badge className="bg-yellow-400 text-yellow-900 animate-pulse">
+                  {stats.newInquiries} פניות חדשות
+                </Badge>
+              )}
+            </div>
+
             <p className="text-purple-100 mb-4">
-              ברוך הבא לפאנל הניהול שלך. בואו נגדיל את המכירות היום!
+              ברוך הבא לפאנל הניהול שלך.{" "}
+              {stats.activeCars > 0
+                ? `יש לך ${stats.activeCars} רכבים פעילים במלאי`
+                : "בואו נתחיל לפרסם רכבים!"}
             </p>
+
             <div className="flex flex-wrap gap-3">
               <Link href="/dealer/cars/new">
                 <Button
@@ -101,6 +397,7 @@ export default function DealerHomePage() {
                   פרסם רכב חדש
                 </Button>
               </Link>
+
               <Link href="/dealer/inquiries">
                 <Button
                   variant="outline"
@@ -109,85 +406,216 @@ export default function DealerHomePage() {
                 >
                   <MessageSquare className="w-4 h-4 mr-2" />
                   פניות מקונים
+                  {stats.newInquiries > 0 && (
+                    <Badge className="mr-2 bg-yellow-400 text-yellow-900">
+                      {stats.newInquiries}
+                    </Badge>
+                  )}
                 </Button>
               </Link>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshing}
+                className="text-white hover:bg-white/20"
+              >
+                <RefreshCw
+                  className={cn("w-4 h-4 mr-2", refreshing && "animate-spin")}
+                />
+                רענן
+              </Button>
             </div>
           </div>
-          <div className="hidden md:block">
-            <div className="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+
+          <div className="hidden md:block relative">
+            <div className="w-24 h-24 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm">
               <Car className="w-12 h-12 text-white" />
             </div>
           </div>
         </div>
       </div>
 
-      {/* Stats Overview */}
+      {/* Enhanced Statistics Overview */}
       <div>
-        <h2 className="text-xl font-semibold mb-4">סטטיסטיקות עסק</h2>
-        <DealerStatsCard stats={stats as any} loading={statsLoading} />
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold">סטטיסטיקות עסק</h2>
+          <Link href="/dealer/cars">
+            <Button variant="ghost" size="sm">
+              <Eye className="w-4 h-4 mr-2" />
+              צפה בפירוט
+            </Button>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="רכבים במלאי"
+            value={stats.totalCars}
+            icon={Car}
+            color="blue"
+            subtitle={`${stats.activeCars} פעילים`}
+            progress={stats.activeRate}
+            onClick={() => (window.location.href = "/dealer/cars")}
+          />
+
+          <StatCard
+            title="ערך מלאי"
+            value={
+              stats.totalValue > 0 ? `${formatPrice(stats.totalValue)}₪` : "0₪"
+            }
+            icon={DollarSign}
+            color="green"
+            subtitle={
+              stats.avgPrice > 0
+                ? `ממוצע: ${formatPrice(stats.avgPrice)}₪`
+                : "אין נתונים"
+            }
+          />
+
+          <StatCard
+            title="פניות מקונים"
+            value={stats.totalInquiries}
+            icon={MessageSquare}
+            color="purple"
+            subtitle={`${stats.newInquiries} חדשות`}
+            trend={
+              stats.newInquiries > 0
+                ? {
+                    value: stats.newInquiries,
+                    isPositive: true,
+                    label: "פניות חדשות",
+                  }
+                : undefined
+            }
+            onClick={() => (window.location.href = "/dealer/inquiries")}
+          />
+
+          <StatCard
+            title="אחוז מענה"
+            value={`${stats.responseRate}%`}
+            icon={Clock}
+            color={
+              stats.responseRate >= 80
+                ? "green"
+                : stats.responseRate >= 60
+                ? "orange"
+                : "red"
+            }
+            subtitle="תגובה לפניות"
+            progress={stats.responseRate}
+          />
+        </div>
+      </div>
+
+      {/* Performance Indicators */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <StatCard
+          title="רכבים נמכרו"
+          value={stats.soldCars}
+          icon={TrendingUp}
+          color="green"
+          subtitle={`${stats.soldRate}% מהמלאי`}
+          progress={stats.soldRate}
+        />
+
+        <StatCard
+          title="זקוק לתמונות"
+          value={stats.carsWithoutImages}
+          icon={ImageIcon}
+          color={stats.carsWithoutImages > 0 ? "orange" : "green"}
+          subtitle={stats.carsWithoutImages > 0 ? "הוסף תמונות" : "מעולה!"}
+          onClick={() => (window.location.href = "/dealer/cars")}
+        />
+
+        <StatCard
+          title="ביצועים כלליים"
+          value={
+            stats.responseRate >= 80 && stats.carsWithoutImages === 0
+              ? "מעולה"
+              : stats.responseRate >= 60
+              ? "טוב"
+              : "צריך שיפור"
+          }
+          icon={Award}
+          color={
+            stats.responseRate >= 80 && stats.carsWithoutImages === 0
+              ? "green"
+              : stats.responseRate >= 60
+              ? "yellow"
+              : "orange"
+          }
+          subtitle="דירוג איכות"
+        />
       </div>
 
       {/* Quick Actions & Recent Activity */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Quick Actions */}
+        {/* Enhanced Quick Actions */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
+              <Target className="h-5 w-5" />
               פעולות מהירות
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <Link href="/dealer/cars/new" className="block">
-              <div className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <div className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
                     <Plus className="w-5 h-5 text-purple-600" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-medium">פרסם רכב חדש</h3>
                     <p className="text-sm text-gray-600">הוסף רכב למלאי שלך</p>
                   </div>
-                  <ArrowLeft className="w-4 h-4 text-gray-400 mr-auto rotate-180" />
+                  <ArrowLeft className="w-4 h-4 text-gray-400 rotate-180 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             </Link>
 
             <Link href="/dealer/cars" className="block">
-              <div className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <div className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                     <Car className="w-5 h-5 text-blue-600" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-medium">נהל מלאי</h3>
                     <p className="text-sm text-gray-600">
                       עדכן וערוך רכבים קיימים
                     </p>
                   </div>
-                  <ArrowLeft className="w-4 h-4 text-gray-400 mr-auto rotate-180" />
+                  <ArrowLeft className="w-4 h-4 text-gray-400 rotate-180 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             </Link>
 
             <Link href="/dealer/inquiries" className="block">
-              <div className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+              <div className="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors group">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
                     <MessageSquare className="w-5 h-5 text-green-600" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <h3 className="font-medium">פניות מקונים</h3>
                     <p className="text-sm text-gray-600">עקוב ותגיב לפניות</p>
                   </div>
-                  <ArrowLeft className="w-4 h-4 text-gray-400 mr-auto rotate-180" />
+                  {stats.newInquiries > 0 && (
+                    <Badge className="bg-green-100 text-green-800">
+                      {stats.newInquiries}
+                    </Badge>
+                  )}
+                  <ArrowLeft className="w-4 h-4 text-gray-400 rotate-180 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             </Link>
           </CardContent>
         </Card>
 
-        {/* Recent Inquiries */}
+        {/* Enhanced Recent Inquiries */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -204,21 +632,12 @@ export default function DealerHomePage() {
             </div>
           </CardHeader>
           <CardContent>
-            {inquiriesLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                ))}
-              </div>
-            ) : recentInquiries.length > 0 ? (
+            {recentInquiries.length > 0 ? (
               <div className="space-y-3">
                 {recentInquiries.map((inquiry) => (
                   <div
                     key={inquiry.id}
-                    className="p-3 border border-gray-200 rounded-lg"
+                    className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-sm">
@@ -260,7 +679,7 @@ export default function DealerHomePage() {
 
       {/* Recent Cars & Performance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Cars */}
+        {/* Enhanced Recent Cars */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -277,21 +696,15 @@ export default function DealerHomePage() {
             </div>
           </CardHeader>
           <CardContent>
-            {carsLoading ? (
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                ))}
-              </div>
-            ) : recentCars.length > 0 ? (
+            {recentCars.length > 0 ? (
               <div className="space-y-3">
                 {recentCars.map((car: any) => (
                   <div
                     key={car.id}
-                    className="p-3 border border-gray-200 rounded-lg"
+                    className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() =>
+                      (window.location.href = `/dealer/cars/${car.id}`)
+                    }
                   >
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="font-medium text-sm">
@@ -328,7 +741,7 @@ export default function DealerHomePage() {
           </CardContent>
         </Card>
 
-        {/* Performance Metrics */}
+        {/* Enhanced Performance Metrics */}
         <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-green-800">
@@ -341,25 +754,49 @@ export default function DealerHomePage() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-green-700">רכבים פעילים</span>
                 <span className="font-semibold text-green-800">
-                  {stats ? (stats as any).activeCars || 0 : "0"}
+                  {stats.activeCars}
                 </span>
               </div>
+
               <div className="flex items-center justify-between">
                 <span className="text-sm text-green-700">פניות חדשות</span>
-                <span className="font-semibold text-green-800">
-                  {stats ? (stats as any).newInquiries || 0 : "0"}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-green-800">
+                    {stats.newInquiries}
+                  </span>
+                  {stats.newInquiries > 0 && (
+                    <Badge className="bg-green-200 text-green-800 animate-pulse">
+                      חדש
+                    </Badge>
+                  )}
+                </div>
               </div>
+
               <div className="flex items-center justify-between">
                 <span className="text-sm text-green-700">רכבים שנמכרו</span>
                 <span className="font-semibold text-green-800">
-                  {stats ? (stats as any).soldCars || 0 : "0"}
+                  {stats.soldCars}
                 </span>
               </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-green-700">אחוז מענה</span>
+                <span className="font-semibold text-green-800">
+                  {stats.responseRate}%
+                </span>
+              </div>
+
               <div className="pt-3 border-t border-green-200">
                 <div className="flex items-center gap-2 text-green-700">
                   <Star className="w-4 h-4" />
-                  <span className="text-sm">דירוג איכות: מעולה</span>
+                  <span className="text-sm">
+                    דירוג איכות:{" "}
+                    {stats.responseRate >= 80 && stats.carsWithoutImages === 0
+                      ? "מעולה ⭐⭐⭐"
+                      : stats.responseRate >= 60
+                      ? "טוב ⭐⭐"
+                      : "צריך שיפור ⭐"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -367,37 +804,219 @@ export default function DealerHomePage() {
         </Card>
       </div>
 
-      {/* Business Tips */}
+      {/* Enhanced Business Tips */}
       <Card className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-amber-800">
-            <TrendingUp className="h-5 w-5" />
-            טיפים להגדלת מכירות
+            <Zap className="h-5 w-5" />
+            💡 טיפים להגדלת מכירות והצלחה
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="space-y-2">
-              <h4 className="font-medium text-amber-800">תמונות איכותיות</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Dynamic tips based on current stats */}
+            {stats.carsWithoutImages > 0 && (
+              <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-amber-600" />
+                  <h4 className="font-medium text-amber-800">
+                    תמונות איכותיות
+                  </h4>
+                </div>
+                <p className="text-sm text-amber-700">
+                  יש לך {stats.carsWithoutImages} רכבים ללא תמונות. הוספת תמונות
+                  מגדילה פניות ב-300%!
+                </p>
+                <Link href="/dealer/cars">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-amber-700 border-amber-300"
+                  >
+                    הוסף תמונות עכשיו
+                  </Button>
+                </Link>
+              </div>
+            )}
+
+            {stats.newInquiries > 0 && (
+              <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
+                <div className="flex items-center gap-2">
+                  <Bell className="w-5 h-5 text-amber-600" />
+                  <h4 className="font-medium text-amber-800">מענה מהיר</h4>
+                </div>
+                <p className="text-sm text-amber-700">
+                  יש לך {stats.newInquiries} פניות חדשות! מענה תוך שעה מגדיל
+                  סיכויי מכירה ב-50%
+                </p>
+                <Link href="/dealer/inquiries">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-amber-700 border-amber-300"
+                  >
+                    ענה עכשיו
+                  </Button>
+                </Link>
+              </div>
+            )}
+
+            <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
+                <h4 className="font-medium text-amber-800">תיאור מפורט</h4>
+              </div>
               <p className="text-sm text-amber-700">
-                הוסף תמונות ברורות מכל הזוויות לכל רכב
+                רכבים עם תיאור מפורט נמכרים מהר יותר. ציין מצב, שירותים וציוד
+                נוסף
               </p>
             </div>
-            <div className="space-y-2">
-              <h4 className="font-medium text-amber-800">תיאור מפורט</h4>
+
+            {stats.responseRate < 80 && (
+              <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-amber-600" />
+                  <h4 className="font-medium text-amber-800">שפר זמן תגובה</h4>
+                </div>
+                <p className="text-sm text-amber-700">
+                  אחוז המענה שלך: {stats.responseRate}%. המטרה היא מעל 80%
+                  לביצועים מעולים
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
+              <div className="flex items-center gap-2">
+                <DollarSign className="w-5 h-5 text-amber-600" />
+                <h4 className="font-medium text-amber-800">תמחור תחרותי</h4>
+              </div>
               <p className="text-sm text-amber-700">
-                ציין את כל הפרטים הטכניים והמצב של הרכב
+                השווה מחירים בשוק באופן קבוע. מחיר הוגן מושך יותר קונים
               </p>
             </div>
-            <div className="space-y-2">
-              <h4 className="font-medium text-amber-800">מענה מהיר</h4>
+
+            <div className="space-y-2 p-4 bg-white rounded-lg border border-amber-200">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="w-5 h-5 text-amber-600" />
+                <h4 className="font-medium text-amber-800">עדכונים שוטפים</h4>
+              </div>
               <p className="text-sm text-amber-700">
-                ענה לפניות בתוך 24 שעות להגדלת הסיכויים
+                עדכן מלאי באופן קבוע וסמן רכבים שנמכרו לשמירה על אמינות
               </p>
+            </div>
+          </div>
+
+          {/* Performance summary */}
+          <div className="mt-6 p-4 bg-white rounded-lg border border-amber-200">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Activity className="w-6 h-6 text-amber-600" />
+                <div>
+                  <h4 className="font-medium text-amber-800">סיכום ביצועים</h4>
+                  <p className="text-sm text-amber-700">
+                    {stats.totalCars === 0
+                      ? "התחל בפרסום הרכב הראשון שלך!"
+                      : stats.responseRate >= 80 &&
+                        stats.carsWithoutImages === 0
+                      ? "מעולה! אתה מנהל עסק מקצועי ויעיל"
+                      : stats.responseRate >= 60
+                      ? "ביצועים טובים, עם מקום לשיפור קטן"
+                      : "יש מקום לשיפור משמעותי בביצועים"}
+                  </p>
+                </div>
+              </div>
+
+              {stats.totalCars > 0 && (
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-amber-800">
+                    {stats.responseRate >= 80 && stats.carsWithoutImages === 0
+                      ? "🏆"
+                      : stats.responseRate >= 60
+                      ? "📈"
+                      : "🎯"}
+                  </div>
+                  <div className="text-xs text-amber-600">
+                    {Math.round(
+                      ((stats.activeCars + stats.soldCars) / stats.totalCars) *
+                        100
+                    )}
+                    % יעילות
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Action Center */}
+      {(stats.newInquiries > 0 ||
+        stats.carsWithoutImages > 0 ||
+        stats.activeCars === 0) && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-blue-800">
+              <AlertCircle className="h-5 w-5" />
+              מרכז פעולות דחופות
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {stats.newInquiries > 0 && (
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium text-blue-800">
+                      {stats.newInquiries} פניות חדשות ממתינות למענה
+                    </span>
+                  </div>
+                  <Link href="/dealer/inquiries">
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      טפל עכשיו
+                    </Button>
+                  </Link>
+                </div>
+              )}
+
+              {stats.carsWithoutImages > 0 && (
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <ImageIcon className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-800">
+                      {stats.carsWithoutImages} רכבים ללא תמונות
+                    </span>
+                  </div>
+                  <Link href="/dealer/cars">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-blue-600 border-blue-300"
+                    >
+                      הוסף תמונות
+                    </Button>
+                  </Link>
+                </div>
+              )}
+
+              {stats.activeCars === 0 && (
+                <div className="flex items-center justify-between p-3 bg-white rounded-lg border border-blue-200">
+                  <div className="flex items-center gap-3">
+                    <Car className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-800">
+                      אין רכבים פעילים במלאי
+                    </span>
+                  </div>
+                  <Link href="/dealer/cars/new">
+                    <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                      פרסם רכב
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
