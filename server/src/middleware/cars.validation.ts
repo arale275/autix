@@ -1,4 +1,4 @@
-// server/src/middleware/cars.validation.ts
+// server/src/middleware/cars.validation.ts - מתוקן
 import { Request, Response, NextFunction } from "express";
 
 // Validation פשוט ללא express-validator
@@ -84,32 +84,12 @@ export const validateAddCar = (
     errors.push("תמונות חייבות להיות מערך");
   }
 
-  if (errors.length > 0) {
-    return res.status(400).json({
-      success: false,
-      message: "נתונים לא תקינים",
-      errors: errors,
-    });
-  }
-  // ✅ הוסף validation עבור condition (מצב רכב)
-  if (
-    req.body.condition &&
-    ![
-      "new",
-      "demo",
-      "excellent",
-      "very_good",
-      "good",
-      "fair",
-      "needs_repair",
-      "accident",
-      "for_parts",
-    ].includes(req.body.condition)
-  ) {
-    errors.push("מצב הרכב לא תקין");
+  // ✅ תיקון - הוסף validation עבור engineSize (לא engine_size)
+  if (req.body.engineSize && typeof req.body.engineSize !== "string") {
+    errors.push("נפח מנוע לא תקין");
   }
 
-  // ✅ הוסף validation עבור bodyType (סוג מרכב)
+  // ✅ תיקון - הוסף validation עבור bodyType
   if (
     req.body.bodyType &&
     ![
@@ -133,6 +113,24 @@ export const validateAddCar = (
     errors.push("סוג מרכב לא תקין");
   }
 
+  // ✅ הוסף validation עבור condition (מצב רכב)
+  if (
+    req.body.condition &&
+    ![
+      "new",
+      "demo",
+      "excellent",
+      "very_good",
+      "good",
+      "fair",
+      "needs_repair",
+      "accident",
+      "for_parts",
+    ].includes(req.body.condition)
+  ) {
+    errors.push("מצב הרכב לא תקין");
+  }
+
   // ✅ הוסף validation עבור hand (יד מורחבת)
   if (
     req.body.hand &&
@@ -153,12 +151,13 @@ export const validateAddCar = (
   ) {
     errors.push("יד הרכב לא תקינה");
   }
-  // ✅ הוסף validation עבור features (תוספות)
+
+  // ✅ תיקון - הוסף validation מלא עבור features
   if (req.body.features) {
     if (!Array.isArray(req.body.features)) {
       errors.push("תוספות חייבות להיות מערך");
     } else {
-      // בדוק שכל תוספת היא string
+      // בדוק שכל תוספת היא string לא ריק
       const invalidFeatures = req.body.features.filter(
         (feature: any) =>
           typeof feature !== "string" || feature.trim().length === 0
@@ -168,11 +167,71 @@ export const validateAddCar = (
         errors.push("כל התוספות חייבות להיות טקסט לא ריק");
       }
 
-      if (req.body.features.length > 20) {
-        errors.push("מספר התוספות מוגבל ל-20");
+      if (req.body.features.length > 50) {
+        errors.push("מספר התוספות מוגבל ל-50");
+      }
+
+      // בדוק שהתוספות הן מהרשימה המאושרת (אופציונלי)
+      const validFeatures = [
+        "abs",
+        "airbags",
+        "esp",
+        "parking_sensors",
+        "reverse_camera",
+        "360_camera",
+        "blind_spot",
+        "lane_assist",
+        "cruise_control",
+        "adaptive_cruise",
+        "leather_seats",
+        "heated_seats",
+        "cooled_seats",
+        "electric_seats",
+        "sunroof",
+        "panoramic_roof",
+        "automatic_parking",
+        "keyless",
+        "remote_start",
+        "gps",
+        "bluetooth",
+        "usb",
+        "aux",
+        "wireless_charging",
+        "premium_audio",
+        "rear_entertainment",
+        "android_auto",
+        "apple_carplay",
+        "air_conditioning",
+        "dual_zone_ac",
+        "rear_ac",
+        "heated_steering",
+        "alloy_wheels",
+        "led_lights",
+        "xenon_lights",
+        "fog_lights",
+        "roof_rails",
+        "tow_bar",
+      ];
+
+      const invalidFeatureValues = req.body.features.filter(
+        (feature: string) => !validFeatures.includes(feature)
+      );
+
+      if (invalidFeatureValues.length > 0) {
+        console.warn("תוספות לא מוכרות:", invalidFeatureValues);
+        // לא נכשיל - רק warning
       }
     }
   }
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: "נתונים לא תקינים",
+      errors: errors,
+    });
+  }
+
   next();
 };
 
@@ -272,32 +331,12 @@ export const validateUpdateCar = (
     errors.push("תמונות חייבות להיות מערך");
   }
 
-  if (errors.length > 0) {
-    return res.status(400).json({
-      success: false,
-      message: "נתונים לא תקינים",
-      errors: errors,
-    });
-  }
-  // ✅ condition validation
-  if (
-    req.body.condition &&
-    ![
-      "new",
-      "demo",
-      "excellent",
-      "very_good",
-      "good",
-      "fair",
-      "needs_repair",
-      "accident",
-      "for_parts",
-    ].includes(req.body.condition)
-  ) {
-    errors.push("מצב הרכב לא תקין");
+  // ✅ תיקון - הוסף validation עבור engineSize
+  if (req.body.engineSize && typeof req.body.engineSize !== "string") {
+    errors.push("נפח מנוע לא תקין");
   }
 
-  // ✅ bodyType validation
+  // ✅ תיקון - הוסף validation עבור bodyType
   if (
     req.body.bodyType &&
     ![
@@ -321,6 +360,24 @@ export const validateUpdateCar = (
     errors.push("סוג מרכב לא תקין");
   }
 
+  // ✅ condition validation
+  if (
+    req.body.condition &&
+    ![
+      "new",
+      "demo",
+      "excellent",
+      "very_good",
+      "good",
+      "fair",
+      "needs_repair",
+      "accident",
+      "for_parts",
+    ].includes(req.body.condition)
+  ) {
+    errors.push("מצב הרכב לא תקין");
+  }
+
   // ✅ hand validation מורחב
   if (
     req.body.hand &&
@@ -341,6 +398,7 @@ export const validateUpdateCar = (
   ) {
     errors.push("יד הרכב לא תקינה");
   }
+
   // ✅ הוסף validation עבור features (תוספות)
   if (req.body.features) {
     if (!Array.isArray(req.body.features)) {
@@ -356,10 +414,19 @@ export const validateUpdateCar = (
         errors.push("כל התוספות חייבות להיות טקסט לא ריק");
       }
 
-      if (req.body.features.length > 20) {
-        errors.push("מספר התוספות מוגבל ל-20");
+      if (req.body.features.length > 50) {
+        errors.push("מספר התוספות מוגבל ל-50");
       }
     }
   }
+
+  if (errors.length > 0) {
+    return res.status(400).json({
+      success: false,
+      message: "נתונים לא תקינים",
+      errors: errors,
+    });
+  }
+
   next();
 };

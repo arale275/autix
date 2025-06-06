@@ -265,7 +265,7 @@ export class CarsController {
     }
   }
 
-  // הוספת רכב חדש (רק דילרים) - עם השדות החדשים
+  // הוספת רכב חדש (רק דילרים) - עם השדות החדשים - מתוקן
   async addCar(req: AuthRequest, res: Response) {
     try {
       const userId = req.user?.id;
@@ -298,19 +298,20 @@ export class CarsController {
         images,
         city,
         hand,
-        engineSize,
-        features,
-        condition,
-        body_type,
+        engineSize, // ✅ קיבל מהקליינט
+        features, // ✅ קיבל מהקליינט
+        condition, // ✅ קיבל מהקליינט
+        bodyType, // ✅ תיקון - השתמש בbodyType במקום body_type
       } = req.body;
 
+      // ✅ תיקון - המר את השדות לformat של הDB
       const carResult = await pool.query(
         `
         INSERT INTO cars (
           dealer_id, make, model, year, price, mileage, 
           fuel_type, transmission, color, description, images, city,
           hand, engine_size, features, condition, body_type
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
         RETURNING *
         `,
         [
@@ -327,17 +328,29 @@ export class CarsController {
           JSON.stringify(images || []),
           city,
           hand,
-          engineSize,
+          engineSize, // ✅ תיקון - השתמש בengineeSize
           JSON.stringify(features || []),
           condition,
-          body_type,
+          bodyType, // ✅ תיקון - השתמש בbodyType
         ]
       );
+
+      // ✅ תיקון - המר את התגובה לcamelCase
+      const transformedCar = {
+        ...carResult.rows[0],
+        isAvailable: carResult.rows[0].is_available,
+        fuelType: carResult.rows[0].fuel_type,
+        engineSize: carResult.rows[0].engine_size, // ✅ השדה החדש
+        bodyType: carResult.rows[0].body_type, // ✅ השדה החדש
+        createdAt: carResult.rows[0].created_at,
+        updatedAt: carResult.rows[0].updated_at,
+        dealerId: carResult.rows[0].dealer_id,
+      };
 
       res.status(201).json({
         success: true,
         message: "רכב נוסף בהצלחה",
-        data: carResult.rows[0],
+        data: transformedCar,
       });
     } catch (error) {
       console.error("Add car error:", error);
@@ -348,7 +361,7 @@ export class CarsController {
     }
   }
 
-  // עדכון רכב (רק הדילר שהוסיף אותו) - עם השדות החדשים
+  // עדכון רכב (רק הדילר שהוסיף אותו) - עם השדות החדשים - מתוקן
   async updateCar(req: AuthRequest, res: Response) {
     try {
       const { id } = req.params;
@@ -386,12 +399,13 @@ export class CarsController {
         city,
         status,
         hand,
-        engineSize,
-        features,
-        condition,
-        body_type,
+        engineSize, // ✅ קיבל מהקליינט
+        features, // ✅ קיבל מהקליינט
+        condition, // ✅ קיבל מהקליינט
+        bodyType, // ✅ תיקון - השתמש בbodyType במקום body_type
       } = req.body;
 
+      // ✅ תיקון - המר את השדות לformat של הDB
       const updateResult = await pool.query(
         `
         UPDATE cars SET
@@ -431,10 +445,10 @@ export class CarsController {
           city,
           status,
           hand,
-          engineSize,
+          engineSize, // ✅ תיקון - השתמש בengineeSize
           features ? JSON.stringify(features) : null,
-          condition, 
-          body_type, 
+          condition,
+          bodyType, // ✅ תיקון - השתמש בbodyType
         ]
       );
 
@@ -444,6 +458,7 @@ export class CarsController {
         isAvailable: updateResult.rows[0].is_available,
         fuelType: updateResult.rows[0].fuel_type,
         engineSize: updateResult.rows[0].engine_size, // ✅ השדה החדש
+        bodyType: updateResult.rows[0].body_type, // ✅ השדה החדש
         createdAt: updateResult.rows[0].created_at,
         updatedAt: updateResult.rows[0].updated_at,
         dealerId: updateResult.rows[0].dealer_id,
