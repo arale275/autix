@@ -39,11 +39,6 @@ export default function DealerCarEditPage() {
         carId: car.id,
       });
     }
-
-    toast.success("הרכב עודכן בהצלחה!", {
-      description: "השינויים נשמרו במערכת",
-    });
-
     // חזור לדף הצפייה
     router.push(`/dealer/cars/${carId}`);
   };
