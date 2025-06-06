@@ -81,6 +81,51 @@ const BODY_TYPE_MAPPING: Record<string, string> = {
   other: "other",
 };
 
+// ✅ מיפוי הפוך - מאנגלית לעברית (לתצוגה)
+const FUEL_TYPE_REVERSE_MAPPING: Record<string, string> = {
+  gasoline: "בנזין",
+  diesel: "דיזל",
+  hybrid: "היברידי",
+  electric: "חשמלי",
+  lpg: "גז",
+};
+
+const TRANSMISSION_REVERSE_MAPPING: Record<string, string> = {
+  manual: "ידני",
+  automatic: "אוטומטי",
+  cvt: "CVT",
+};
+
+const CONDITION_REVERSE_MAPPING: Record<string, string> = {
+  new: "חדש",
+  demo: "דמו",
+  excellent: "מעולה",
+  very_good: "טוב מאוד",
+  good: "טוב",
+  fair: "בינוני",
+  needs_repair: "דורש תיקון",
+  accident: "תאונה",
+  for_parts: "לחלקים",
+};
+
+const BODY_TYPE_REVERSE_MAPPING: Record<string, string> = {
+  sedan: "סדאן",
+  hatchback: "האצ'בק",
+  suv: "SUV",
+  crossover: "קרוסאובר",
+  station_wagon: "סטיישן",
+  coupe: "קופה",
+  convertible: "קבריולט",
+  pickup: "טנדר",
+  van: "ואן",
+  minivan: "מיניוואן",
+  mpv: "MPV",
+  roadster: "רודסטר",
+  targa: "טרגה",
+  limousine: "לימוזין",
+  other: "אחר",
+};
+
 export interface CarFromAPI {
   id: number;
   dealer_id: number;
@@ -107,7 +152,7 @@ export interface CarFromAPI {
   images?: any[];
 }
 
-// ✅ המרה מהשרת לקליינט (כמו שהיה)
+// ✅ המרה מהשרת לקליינט עם תרגום לעברית
 export function normalizeCarFromAPI(apiCar: CarFromAPI): Car {
   return {
     id: apiCar.id,
@@ -117,20 +162,25 @@ export function normalizeCarFromAPI(apiCar: CarFromAPI): Car {
     year: apiCar.year,
     price: apiCar.price,
     mileage: apiCar.mileage,
-    fuelType: apiCar.fuel_type, // snake_case → camelCase
-    transmission: apiCar.transmission,
+    fuelType:
+      FUEL_TYPE_REVERSE_MAPPING[apiCar.fuel_type || ""] || apiCar.fuel_type,
+    transmission:
+      TRANSMISSION_REVERSE_MAPPING[apiCar.transmission || ""] ||
+      apiCar.transmission,
     color: apiCar.color,
     description: apiCar.description,
     status: apiCar.status,
-    createdAt: apiCar.created_at, // snake_case → camelCase
-    updatedAt: apiCar.updated_at, // snake_case → camelCase
+    createdAt: apiCar.created_at,
+    updatedAt: apiCar.updated_at,
     city: apiCar.city,
-    engineSize: apiCar.engine_size, // snake_case → camelCase
-    isAvailable: apiCar.is_available, // snake_case → camelCase
-    isFeatured: apiCar.is_featured, // snake_case → camelCase
+    engineSize: apiCar.engine_size,
+    isAvailable: apiCar.is_available,
+    isFeatured: apiCar.is_featured,
     hand: apiCar.hand,
-    condition: apiCar.condition,
-    bodyType: apiCar.body_type, // snake_case → camelCase
+    condition:
+      CONDITION_REVERSE_MAPPING[apiCar.condition || ""] || apiCar.condition,
+    bodyType:
+      BODY_TYPE_REVERSE_MAPPING[apiCar.body_type || ""] || apiCar.body_type,
     features: apiCar.features,
     images: apiCar.images,
   };
@@ -143,7 +193,7 @@ export function normalizeCarsResponse(apiResponse: any) {
   };
 }
 
-// ✅ NEW: המרה מהקליינט לשרת עם תרגום מעברית לאנגלית
+// ✅ המרה מהקליינט לשרת עם תרגום מעברית לאנגלית
 export function normalizeCarForAPI(carData: any): any {
   return {
     make: carData.make,
@@ -151,25 +201,25 @@ export function normalizeCarForAPI(carData: any): any {
     year: carData.year,
     price: carData.price,
     mileage: carData.mileage,
-    fuel_type: FUEL_TYPE_MAPPING[carData.fuelType] || carData.fuelType, // ✅ תרגום
+    fuel_type: FUEL_TYPE_MAPPING[carData.fuelType] || carData.fuelType,
     transmission:
-      TRANSMISSION_MAPPING[carData.transmission] || carData.transmission, // ✅ תרגום
+      TRANSMISSION_MAPPING[carData.transmission] || carData.transmission,
     color: carData.color,
     description: carData.description,
     status: carData.status,
     city: carData.city,
-    engine_size: carData.engineSize, // camelCase → snake_case
-    is_available: carData.isAvailable, // camelCase → snake_case
-    is_featured: carData.isFeatured, // camelCase → snake_case
+    engine_size: carData.engineSize,
+    is_available: carData.isAvailable,
+    is_featured: carData.isFeatured,
     hand: carData.hand,
-    condition: CONDITION_MAPPING[carData.condition] || carData.condition, // ✅ תרגום
-    body_type: BODY_TYPE_MAPPING[carData.bodyType] || carData.bodyType, // ✅ תרגום
+    condition: CONDITION_MAPPING[carData.condition] || carData.condition,
+    body_type: BODY_TYPE_MAPPING[carData.bodyType] || carData.bodyType,
     features: carData.features,
     images: carData.images,
   };
 }
 
-// ✅ NEW: פונקציות עזר ספציפיות
+// ✅ פונקציות עזר ספציפיות
 export function normalizeCreateCarForAPI(carData: CreateCarRequest): any {
   return normalizeCarForAPI(carData);
 }

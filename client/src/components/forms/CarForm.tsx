@@ -37,6 +37,7 @@ import {
   CAR_FEATURES,
   DEFAULTS,
 } from "@/lib/constants";
+import { invalidateCarCache } from "@/hooks/api/useCars";
 
 interface CarFormProps {
   car?: Car;
@@ -173,9 +174,13 @@ export default function CarForm({
       if (mode === "edit" && car?.id) {
         carResult = await carsApi.updateCar(car.id, carData);
         toast.success("הרכב עודכן בהצלחה");
+        // ✅ הוסף את זה - רענון cache
+        invalidateCarCache(car.id);
       } else {
         carResult = await carsApi.addCar(carData);
         toast.success("הרכב נוסף בהצלחה");
+        // ✅ הוסף את זה - רענון cache
+        invalidateCarCache();
       }
 
       // העלאת תמונות לרכב חדש
