@@ -66,15 +66,15 @@ export default function CarForm({
     year: car?.year?.toString() || "",
     price: car?.price?.toString() || "",
     mileage: car?.mileage?.toString() || "",
-    fuelType: car?.fuelType || "",
-    transmission: car?.transmission || "",
-    condition: car?.condition || "",
+    fuelType: car?.fuelTypeOriginal || "", // ✅ ערך מקורי
+    transmission: car?.transmissionOriginal || "", // ✅ ערך מקורי
+    condition: car?.conditionOriginal || "", // ✅ ערך מקורי
     hand: car?.hand || "",
     color: car?.color || "",
     description: car?.description || "",
     city: car?.city || "",
     engineSize: car?.engineSize || "",
-    bodyType: car?.bodyType || "",
+    bodyType: car?.bodyTypeOriginal || "", // ✅ ערך מקורי
     features: car?.features || [],
   });
 

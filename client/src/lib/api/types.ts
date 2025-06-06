@@ -86,8 +86,19 @@ export interface Car {
   year: number;
   price: number;
   mileage?: number;
+
+  // שדות לתצוגה (עברית)
   fuelType?: string;
   transmission?: string;
+  condition?: string; // ✅ חדש - מצב הרכב (חדש/משומש/מעולה וכו')
+  bodyType?: string; // ✅ חדש - סוג מרכב (סדאן/SUV/האצ'בק וכו')
+
+  // ✅ שדות מקוריים לטפסים (אנגלית)
+  fuelTypeOriginal?: string;
+  transmissionOriginal?: string;
+  conditionOriginal?: string;
+  bodyTypeOriginal?: string;
+
   color?: string;
   description?: string;
   images?: string[] | CarImage[];
@@ -95,13 +106,12 @@ export interface Car {
   city?: string;
   engineSize?: string;
   hand?: string; // ✅ קיים - יד ראשונה/שנייה/שלישית+
-  condition?: string; // ✅ חדש - מצב הרכב (חדש/משומש/מעולה וכו')
-  bodyType?: string; // ✅ חדש - סוג מרכב (סדאן/SUV/האצ'בק וכו')
   isAvailable: boolean;
   isFeatured: boolean;
   createdAt: string;
   updatedAt?: string;
   features?: string[];
+
   // Joined data
   dealer?: {
     id: number;

@@ -152,7 +152,7 @@ export interface CarFromAPI {
   images?: any[];
 }
 
-// ✅ המרה מהשרת לקליינט עם תרגום לעברית
+// ✅ המרה מהשרת לקליינט עם תרגום לעברית + שמירת ערכים מקוריים
 export function normalizeCarFromAPI(apiCar: CarFromAPI): Car {
   return {
     id: apiCar.id,
@@ -162,11 +162,24 @@ export function normalizeCarFromAPI(apiCar: CarFromAPI): Car {
     year: apiCar.year,
     price: apiCar.price,
     mileage: apiCar.mileage,
+
+    // תצוגה (עברית)
     fuelType:
       FUEL_TYPE_REVERSE_MAPPING[apiCar.fuel_type || ""] || apiCar.fuel_type,
     transmission:
       TRANSMISSION_REVERSE_MAPPING[apiCar.transmission || ""] ||
       apiCar.transmission,
+    condition:
+      CONDITION_REVERSE_MAPPING[apiCar.condition || ""] || apiCar.condition,
+    bodyType:
+      BODY_TYPE_REVERSE_MAPPING[apiCar.body_type || ""] || apiCar.body_type,
+
+    // ✅ ערכים מקוריים לטפסים (אנגלית)
+    fuelTypeOriginal: apiCar.fuel_type,
+    transmissionOriginal: apiCar.transmission,
+    conditionOriginal: apiCar.condition,
+    bodyTypeOriginal: apiCar.body_type,
+
     color: apiCar.color,
     description: apiCar.description,
     status: apiCar.status,
@@ -177,10 +190,6 @@ export function normalizeCarFromAPI(apiCar: CarFromAPI): Car {
     isAvailable: apiCar.is_available,
     isFeatured: apiCar.is_featured,
     hand: apiCar.hand,
-    condition:
-      CONDITION_REVERSE_MAPPING[apiCar.condition || ""] || apiCar.condition,
-    bodyType:
-      BODY_TYPE_REVERSE_MAPPING[apiCar.body_type || ""] || apiCar.body_type,
     features: apiCar.features,
     images: apiCar.images,
   };
