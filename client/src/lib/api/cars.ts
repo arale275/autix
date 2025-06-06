@@ -2,7 +2,12 @@
 
 import { apiClient } from "./client";
 import { API_ENDPOINTS } from "../constants";
-import { normalizeCarsResponse, normalizeCarFromAPI } from "./normalizers";
+import {
+  normalizeCarsResponse,
+  normalizeCarFromAPI,
+  normalizeCreateCarForAPI, 
+  normalizeUpdateCarForAPI,
+} from "./normalizers";
 import type {
   Car,
   CarsResponse,
@@ -89,29 +94,35 @@ export const carsApi = {
    * Requires authentication and dealer role
    */
   addCar: async (carData: CreateCarRequest): Promise<Car> => {
-    const response = await apiClient.post<any>(API_ENDPOINTS.CARS, carData); // ← שנה ל-any
+  // ✅ נרמל את הנתונים לפני שליחה לשרת
+  const normalizedData = normalizeCreateCarForAPI(carData);
+  
+  const response = await apiClient.post<any>(API_ENDPOINTS.CARS, normalizedData);
 
-    console.log(`✅ Added new car: ${carData.make} ${carData.model}`);
+  console.log(`✅ Added new car: ${carData.make} ${carData.model}`);
 
-    // ✅ הוסף נרמול:
-    return normalizeCarFromAPI(response);
-  },
+  // ✅ נרמל את התגובה חזרה לקליינט
+  return normalizeCarFromAPI(response);
+},
 
   /**
    * Update existing car (dealer only)
    * Requires authentication and ownership
    */
   updateCar: async (id: number, carData: UpdateCarRequest): Promise<Car> => {
-    const response = await apiClient.put<any>( // ← שנה ל-any
-      API_ENDPOINTS.CAR_BY_ID(id),
-      carData
-    );
+  // ✅ נרמל את הנתונים לפני שליחה לשרת
+  const normalizedData = normalizeUpdateCarForAPI(carData);
+  
+  const response = await apiClient.put<any>(
+    API_ENDPOINTS.CAR_BY_ID(id),
+    normalizedData
+  );
 
-    console.log(`✅ Updated car ${id}`);
+  console.log(`✅ Updated car ${id}`);
 
-    // ✅ הוסף נרמול:
-    return normalizeCarFromAPI(response);
-  },
+  // ✅ נרמל את התגובה חזרה לקליינט
+  return normalizeCarFromAPI(response);
+},
 
   /**
    * Delete car (dealer only)
