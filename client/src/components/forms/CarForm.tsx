@@ -22,7 +22,6 @@ import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { carEvents } from "@/lib/events/carEvents";
 
-// ✅ Import from central constants file (מעודכן עם כל הנתונים החדשים)
 import {
   CAR_MANUFACTURERS_HEBREW,
   FUEL_TYPES,
@@ -39,11 +38,12 @@ import {
   DEFAULTS,
 } from "@/lib/constants";
 import { invalidateCarCache } from "@/hooks/api/useCars";
+import { Save } from "lucide-react";
 
 interface CarFormProps {
   car?: Car;
   mode?: "create" | "edit";
-  onSuccess?: (carId?: number) => void; // ✅ הוספת carId לcallback
+  onSuccess?: (carId?: number) => void;
 }
 
 // ✅ הסרת ההגדרות המקומיות - הכל מגיע מהקובץ המרכזי כעת
@@ -816,15 +816,22 @@ export default function CarForm({
             </div>
 
             {/* כפתורי פעולה */}
-            <div className="flex gap-4 pt-4">
-              <Button type="submit" disabled={loading} className="flex-1">
+            <div className="flex gap-4 pt-6 border-t-2 border-gray-200">
+              <Button
+                type="submit"
+                disabled={loading}
+                className="flex-1 h-12 text-lg font-bold bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg transform hover:scale-105 transition-all duration-200"
+              >
                 {loading ? (
                   <>
-                    <LoadingSpinner className="w-4 h-4 mr-2" />
+                    <LoadingSpinner className="w-5 h-5 mr-3" />
                     שומר...
                   </>
                 ) : mode === "edit" ? (
-                  "עדכן רכב"
+                  <>
+                    <Save className="w-5 h-5 mr-3" />
+                    עדכן רכב
+                  </>
                 ) : (
                   "המשך לתמונות"
                 )}
@@ -835,6 +842,7 @@ export default function CarForm({
                 variant="outline"
                 onClick={() => router.push("/dealer/cars")}
                 disabled={loading}
+                className="h-12 px-8 text-lg border-2"
               >
                 ביטול
               </Button>
