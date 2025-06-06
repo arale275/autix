@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import LoadingState from "@/components/states/LoadingState";
 import ErrorState from "@/components/states/ErrorState";
 import EmptyState from "@/components/states/EmptyState";
@@ -258,65 +258,55 @@ export default function DealerInquiriesPage() {
         </Card>
       )}
 
-      {/* ✅ Simple Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            הכל ({total})
-          </TabsTrigger>
-          <TabsTrigger value="new" className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4" />
-            חדשות
-            {newCount > 0 && (
-              <Badge variant="default" className="bg-blue-600 text-xs">
-                {newCount}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="responded" className="flex items-center gap-2">
-            <CheckCircle className="h-4 w-4" />
-            נענו ({respondedCount})
-          </TabsTrigger>
-        </TabsList>
+      {/* ✅ Simple Results Section */}
+      <div className="space-y-4">
+        {/* Current filter indicator */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">מציג:</span>
+          <Badge variant="outline" className="capitalize">
+            {activeTab === "all"
+              ? `כל הפניות (${total})`
+              : activeTab === "new"
+              ? `פניות חדשות (${newCount})`
+              : `פניות שנענו (${respondedCount})`}
+          </Badge>
+        </div>
 
-        {/* ✅ Content */}
-        <TabsContent value={activeTab} className="mt-6">
-          {filteredInquiries.length === 0 ? (
-            <EmptyState
-              variant="inquiries"
-              title={
-                activeTab === "new"
-                  ? "אין פניות חדשות"
-                  : activeTab === "responded"
-                  ? "אין פניות שנענו"
-                  : "אין פניות עדיין"
-              }
-              description={
-                activeTab === "new"
-                  ? "כל הפניות החדשות יופיעו כאן"
-                  : activeTab === "responded"
-                  ? "פניות שענית עליהן יופיעו כאן"
-                  : "כשתקבל פניות מקונים, הן יופיעו כאן"
-              }
-            />
-          ) : (
-            <div className="space-y-4">
-              {filteredInquiries.map((inquiry: any) => (
-                <InquiryCard
-                  key={inquiry.id}
-                  inquiry={inquiry}
-                  userType="dealer"
-                  onMarkAsResponded={markAsResponded}
-                  onClose={closeInquiry}
-                  onDelete={deleteInquiry}
-                  actionLoading={actionLoading[inquiry.id] || false}
-                />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+        {/* Results */}
+        {filteredInquiries.length === 0 ? (
+          <EmptyState
+            variant="inquiries"
+            title={
+              activeTab === "new"
+                ? "אין פניות חדשות"
+                : activeTab === "responded"
+                ? "אין פניות שנענו"
+                : "אין פניות עדיין"
+            }
+            description={
+              activeTab === "new"
+                ? "כל הפניות החדשות יופיעו כאן"
+                : activeTab === "responded"
+                ? "פניות שענית עליהן יופיעו כאן"
+                : "כשתקבל פניות מקונים, הן יופיעו כאן"
+            }
+          />
+        ) : (
+          <div className="space-y-4">
+            {filteredInquiries.map((inquiry: any) => (
+              <InquiryCard
+                key={inquiry.id}
+                inquiry={inquiry}
+                userType="dealer"
+                onMarkAsResponded={markAsResponded}
+                onClose={closeInquiry}
+                onDelete={deleteInquiry}
+                actionLoading={actionLoading[inquiry.id] || false}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
