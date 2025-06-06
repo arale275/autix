@@ -10,6 +10,7 @@ import type {
   InquiriesSearchParams,
   Pagination,
 } from "./types";
+import { inquiryEvents } from "../events/inquiryEvents";
 
 /**
  * Inquiries API Functions
@@ -27,6 +28,7 @@ export const inquiriesApi = {
     );
 
     console.log(`✅ Sent inquiry to dealer ${inquiryData.dealerId}`);
+    inquiryEvents.emitInquiryListUpdate("new_inquiry", response);
     return response;
   },
 
@@ -92,6 +94,9 @@ export const inquiriesApi = {
     );
 
     console.log(`✅ Updated inquiry ${id} status to ${statusData.status}`);
+    inquiryEvents.emitInquiryUpdate(id, "status_update", {
+      status: statusData.status,
+    });
     return response;
   },
 
@@ -116,6 +121,10 @@ export const inquiriesApi = {
     await apiClient.delete<void>(API_ENDPOINTS.INQUIRY_BY_ID(id));
 
     console.log(`✅ Deleted inquiry ${id}`);
+    inquiryEvents.emitInquiryUpdate(id, "delete", {
+      action: "inquiry_deleted",
+      inquiryId: id,
+    });
   },
 
   /**

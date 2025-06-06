@@ -1,18 +1,9 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import LoadingState from "@/components/states/LoadingState";
 import ErrorState from "@/components/states/ErrorState";
@@ -24,20 +15,14 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import {
   MessageSquare,
-  Search,
-  RefreshCw,
   Users,
   CheckCircle,
   AlertCircle,
   Bell,
-  Clock,
-  TrendingUp,
-  Star,
   Award,
 } from "lucide-react";
-import type { Inquiry } from "@/lib/api/types";
 
-// ✅ Simplified unified hook
+// ✅ Simplified hook - just the data we need
 const useInquiriesPage = () => {
   const {
     inquiries,
@@ -47,7 +32,6 @@ const useInquiriesPage = () => {
     markAsResponded,
     closeInquiry,
     deleteInquiry,
-    refetch,
     clearError,
   } = useReceivedInquiries();
 
@@ -56,24 +40,7 @@ const useInquiriesPage = () => {
     const respondedCount = inquiries.filter(
       (inq) => inq.status === "responded"
     ).length;
-    const closedCount = inquiries.filter(
-      (inq) => inq.status === "closed"
-    ).length;
-
-    // Simple stats calculation
-    const responseRate =
-      inquiries.length > 0
-        ? Math.round((respondedCount / inquiries.length) * 100)
-        : 100;
-
-    // Check for urgent inquiries (over 24 hours without response)
-    const now = new Date();
-    const urgentCount = inquiries.filter((inq) => {
-      if (inq.status !== "new") return false;
-      const hoursDiff =
-        (now.getTime() - new Date(inq.createdAt).getTime()) / (1000 * 3600);
-      return hoursDiff > 24;
-    }).length;
+    const total = inquiries.length;
 
     return {
       inquiries,
@@ -84,19 +51,14 @@ const useInquiriesPage = () => {
       markAsResponded,
       closeInquiry,
       deleteInquiry,
-      refetch,
       clearError,
       // Simple stats
-      total: inquiries.length,
+      total,
       newCount,
       respondedCount,
-      closedCount,
-      responseRate,
-      urgentCount,
       // Helper flags
-      hasInquiries: inquiries.length > 0,
+      hasInquiries: total > 0,
       hasNewInquiries: newCount > 0,
-      hasUrgentInquiries: urgentCount > 0,
     };
   }, [
     inquiries,
@@ -106,12 +68,11 @@ const useInquiriesPage = () => {
     markAsResponded,
     closeInquiry,
     deleteInquiry,
-    refetch,
     clearError,
   ]);
 };
 
-// ✅ Simplified stat card (reused from home page)
+// ✅ Simple stat card
 const StatCard = ({
   title,
   value,
@@ -122,7 +83,7 @@ const StatCard = ({
   onClick,
 }: {
   title: string;
-  value: number | string;
+  value: number;
   subtitle?: string;
   icon: React.ComponentType<any>;
   color?: string;
@@ -156,48 +117,18 @@ const StatCard = ({
   </Card>
 );
 
-// ✅ Simple filtering function
-const filterInquiries = (
-  inquiries: Inquiry[],
-  activeTab: string,
-  searchQuery: string
-) => {
-  let filtered = inquiries;
-
-  // Filter by status tab
-  if (activeTab !== "all") {
-    filtered = filtered.filter((inquiry) => inquiry.status === activeTab);
-  }
-
-  // Simple search filter
-  if (searchQuery.trim()) {
-    const query = searchQuery.toLowerCase();
-    filtered = filtered.filter(
-      (inquiry) =>
-        inquiry.message.toLowerCase().includes(query) ||
-        inquiry.buyer?.firstName?.toLowerCase().includes(query) ||
-        inquiry.buyer?.lastName?.toLowerCase().includes(query) ||
-        inquiry.buyer?.email?.toLowerCase().includes(query) ||
-        inquiry.car?.make?.toLowerCase().includes(query) ||
-        inquiry.car?.model?.toLowerCase().includes(query)
-    );
-  }
-
-  // Sort by date (newest first)
-  return filtered.sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  );
+// ✅ Filter inquiries by tab only
+const filterInquiriesByStatus = (inquiries: any[], activeTab: string) => {
+  if (activeTab === "all") return inquiries;
+  return inquiries.filter((inquiry) => inquiry.status === activeTab);
 };
 
 // ✅ Main component
 export default function DealerInquiriesPage() {
-  const router = useRouter();
   const { hasAccess, isLoading: authLoading } = useDealerRoute();
 
-  // ✅ Simplified state (only 3 variables)
+  // ✅ Only one state variable
   const [activeTab, setActiveTab] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // ✅ Single hook for all data
   const {
@@ -208,46 +139,19 @@ export default function DealerInquiriesPage() {
     markAsResponded,
     closeInquiry,
     deleteInquiry,
-    refetch,
     clearError,
     total,
     newCount,
     respondedCount,
-    closedCount,
-    responseRate,
-    urgentCount,
     hasInquiries,
     hasNewInquiries,
-    hasUrgentInquiries,
   } = useInquiriesPage();
 
   // ✅ Simple filtered inquiries
   const filteredInquiries = useMemo(
-    () => filterInquiries(inquiries, activeTab, searchQuery),
-    [inquiries, activeTab, searchQuery]
+    () => filterInquiriesByStatus(inquiries, activeTab),
+    [inquiries, activeTab]
   );
-
-  // ✅ Simple actions
-  const handleRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      await refetch();
-      toast.success("הנתונים עודכנו");
-    } catch (error) {
-      toast.error("שגיאה בעדכון הנתונים");
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [refetch]);
-
-  const handleClearSearch = useCallback(() => {
-    setSearchQuery("");
-  }, []);
-
-  const handleTabClick = useCallback((tab: string) => {
-    setActiveTab(tab);
-    setSearchQuery(""); // Clear search when switching tabs
-  }, []);
 
   // Auth guard
   if (authLoading) {
@@ -271,7 +175,7 @@ export default function DealerInquiriesPage() {
         message={error}
         onRetry={() => {
           clearError();
-          refetch();
+          window.location.reload();
         }}
         showRetry
       />
@@ -286,11 +190,6 @@ export default function DealerInquiriesPage() {
           <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
             <MessageSquare className="h-8 w-8 text-blue-600" />
             פניות מקונים
-            {hasUrgentInquiries && (
-              <Badge className="bg-red-100 text-red-800 animate-pulse">
-                {urgentCount} דחופות
-              </Badge>
-            )}
           </h1>
           <p className="text-gray-600 mt-1">
             ניהול וטיפול בפניות מהקונים שלך
@@ -298,28 +197,15 @@ export default function DealerInquiriesPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        {hasNewInquiries && (
           <Button
-            variant="outline"
-            size="sm"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
+            onClick={() => setActiveTab("new")}
+            className="flex items-center gap-2"
           >
-            <RefreshCw
-              className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")}
-            />
-            רענן
+            <Bell className="w-4 h-4" />
+            {newCount} חדשות
           </Button>
-          {hasNewInquiries && (
-            <Button
-              onClick={() => setActiveTab("new")}
-              className="flex items-center gap-2"
-            >
-              <Bell className="w-4 h-4" />
-              {newCount} חדשות
-            </Button>
-          )}
-        </div>
+        )}
       </div>
 
       {/* ✅ Simple Stats (only 3 cards) */}
@@ -330,7 +216,7 @@ export default function DealerInquiriesPage() {
           subtitle="דורשות מענה"
           icon={AlertCircle}
           color="blue"
-          urgent={hasUrgentInquiries}
+          urgent={newCount > 0}
           onClick={() => setActiveTab("new")}
         />
         <StatCard
@@ -342,16 +228,17 @@ export default function DealerInquiriesPage() {
           onClick={() => setActiveTab("responded")}
         />
         <StatCard
-          title="אחוז מענה"
-          value={`${responseRate}%`}
-          subtitle={responseRate >= 80 ? "מעולה!" : "ניתן לשפר"}
-          icon={responseRate >= 80 ? Star : Clock}
-          color={responseRate >= 80 ? "green" : "orange"}
+          title="סה״כ פניות"
+          value={total}
+          subtitle="כל הפניות"
+          icon={Users}
+          color="purple"
+          onClick={() => setActiveTab("all")}
         />
       </div>
 
-      {/* ✅ Performance Alert */}
-      {responseRate >= 90 && total > 5 && (
+      {/* ✅ Excellence Alert */}
+      {respondedCount >= 10 && newCount === 0 && (
         <Card className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
@@ -360,11 +247,10 @@ export default function DealerInquiriesPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-green-800">
-                  ביצועים מעולים! 🏆
+                  עבודה מעולה! 🏆
                 </h3>
                 <p className="text-sm text-green-700">
-                  אחוז המענה שלך הוא {responseRate}% - זה מעולה! קונים אוהבים
-                  סוחרים שעונים מהר.
+                  אין פניות ממתינות - כל הפניות טופלו! זה מעולה לשירות הלקוחות.
                 </p>
               </div>
             </div>
@@ -372,32 +258,9 @@ export default function DealerInquiriesPage() {
         </Card>
       )}
 
-      {/* ✅ Simple Search */}
-      <div className="mb-6">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          <Input
-            placeholder="חפש פניות לפי שם קונה, הודעה או רכב..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-          {searchQuery && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleClearSearch}
-              className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 px-2"
-            >
-              ✕
-            </Button>
-          )}
-        </div>
-      </div>
-
       {/* ✅ Simple Tabs */}
-      <Tabs value={activeTab} onValueChange={handleTabClick} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="all" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             הכל ({total})
@@ -415,98 +278,45 @@ export default function DealerInquiriesPage() {
             <CheckCircle className="h-4 w-4" />
             נענו ({respondedCount})
           </TabsTrigger>
-          <TabsTrigger value="closed" className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            סגורות ({closedCount})
-          </TabsTrigger>
         </TabsList>
 
-        {/* ✅ Simple Content */}
+        {/* ✅ Content */}
         <TabsContent value={activeTab} className="mt-6">
-          {loading && hasInquiries && (
-            <div className="flex justify-center py-4">
-              <div className="flex items-center gap-2 text-gray-600">
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span className="text-sm">מעדכן...</span>
-              </div>
-            </div>
-          )}
-
           {filteredInquiries.length === 0 ? (
             <EmptyState
               variant="inquiries"
               title={
-                searchQuery.trim()
-                  ? "לא נמצאו פניות מתאימות"
-                  : activeTab === "new"
+                activeTab === "new"
                   ? "אין פניות חדשות"
                   : activeTab === "responded"
                   ? "אין פניות שנענו"
-                  : activeTab === "closed"
-                  ? "אין פניות סגורות"
                   : "אין פניות עדיין"
               }
               description={
-                searchQuery.trim()
-                  ? "נסה לשנות את מילות החיפוש"
-                  : activeTab === "new"
+                activeTab === "new"
                   ? "כל הפניות החדשות יופיעו כאן"
+                  : activeTab === "responded"
+                  ? "פניות שענית עליהן יופיעו כאן"
                   : "כשתקבל פניות מקונים, הן יופיעו כאן"
               }
-              actionLabel={searchQuery.trim() ? "נקה חיפוש" : undefined}
-              onAction={searchQuery.trim() ? handleClearSearch : undefined}
             />
           ) : (
-            <>
-              {/* Results summary */}
-              {(searchQuery.trim() || activeTab !== "all") && (
-                <div className="mb-4 text-sm text-gray-600">
-                  מציג {filteredInquiries.length} פניות
-                  {searchQuery.trim() && ` עבור "${searchQuery}"`}
-                  {filteredInquiries.length !== total && ` מתוך ${total} סה"כ`}
-                </div>
-              )}
-
-              {/* ✅ Simple Inquiries List */}
-              <div className="space-y-4">
-                {filteredInquiries.map((inquiry) => (
-                  <InquiryCard
-                    key={inquiry.id}
-                    inquiry={inquiry}
-                    userType="dealer"
-                    onMarkAsResponded={markAsResponded}
-                    onClose={closeInquiry}
-                    onDelete={deleteInquiry}
-                    actionLoading={actionLoading[inquiry.id] || false}
-                  />
-                ))}
-              </div>
-            </>
+            <div className="space-y-4">
+              {filteredInquiries.map((inquiry: any) => (
+                <InquiryCard
+                  key={inquiry.id}
+                  inquiry={inquiry}
+                  userType="dealer"
+                  onMarkAsResponded={markAsResponded}
+                  onClose={closeInquiry}
+                  onDelete={deleteInquiry}
+                  actionLoading={actionLoading[inquiry.id] || false}
+                />
+              ))}
+            </div>
           )}
         </TabsContent>
       </Tabs>
-
-      {/* ✅ Simple Tips for Improvement */}
-      {responseRate < 80 && total > 0 && (
-        <Card className="mt-6 bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="w-8 h-8 text-amber-600" />
-              <div>
-                <h3 className="font-semibold text-amber-800 mb-2">
-                  💡 טיפים לשיפור אחוז המענה
-                </h3>
-                <div className="text-sm text-amber-700 space-y-1">
-                  <p>• ענה לפניות חדשות תוך 24 שעות</p>
-                  <p>• השתמש בתבניות מוכנות למענה מהיר</p>
-                  <p>• הפעל התראות לפניות חדשות</p>
-                  <p>• אחוז מענה גבוה משפר את הדירוג שלך</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }

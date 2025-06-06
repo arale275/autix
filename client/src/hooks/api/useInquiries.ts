@@ -11,6 +11,47 @@ import type {
   InquiriesSearchParams,
 } from "@/lib/api/types";
 
+// ✅ Global cache invalidation system (בדיוק כמו ברכבים)
+let globalInquiryListCallbacks: Array<() => void> = [];
+let globalInquiryCallbacks: Array<{ inquiryId: number; callback: () => void }> =
+  [];
+
+const registerInquiryListCallback = (callback: () => void) => {
+  globalInquiryListCallbacks.push(callback);
+  return () => {
+    globalInquiryListCallbacks = globalInquiryListCallbacks.filter(
+      (cb) => cb !== callback
+    );
+  };
+};
+
+const registerInquiryCallback = (inquiryId: number, callback: () => void) => {
+  globalInquiryCallbacks.push({ inquiryId, callback });
+  return () => {
+    globalInquiryCallbacks = globalInquiryCallbacks.filter(
+      (cb) => cb.callback !== callback
+    );
+  };
+};
+
+// ✅ Cache invalidation functions
+export const invalidateInquiryCache = (inquiryId?: number) => {
+  // רענון כל רשימות הפניות
+  globalInquiryListCallbacks.forEach((callback) => callback());
+
+  // רענון פנייה ספציפית אם יש ID
+  if (inquiryId) {
+    globalInquiryCallbacks
+      .filter((cb) => cb.inquiryId === inquiryId)
+      .forEach((cb) => cb.callback());
+  }
+};
+
+export const invalidateAllInquiryCaches = () => {
+  globalInquiryListCallbacks.forEach((callback) => callback());
+  globalInquiryCallbacks.forEach((cb) => cb.callback());
+};
+
 interface UseInquiriesOptions {
   /**
    * Auto-fetch on mount
@@ -302,6 +343,11 @@ export function useInquiries(
     (inquiry) => inquiry.status === "closed"
   ).length;
 
+  // ✅ Register for cache invalidation
+  useEffect(() => {
+    return registerInquiryListCallback(refetch);
+  }, [refetch]);
+
   return {
     inquiries,
     pagination,
@@ -339,7 +385,6 @@ export function useReceivedInquiries() {
   return useInquiries({
     type: "received",
     autoFetch: true,
-    refreshInterval: 30000, // Refresh every 30 seconds for new inquiries
   });
 }
 
@@ -377,6 +422,12 @@ export function useInquiry(inquiryId: number | null) {
     if (inquiryId) {
       fetchInquiry();
     }
+  }, [inquiryId, fetchInquiry]);
+
+  // ✅ Register for cache invalidation
+  useEffect(() => {
+    if (!inquiryId) return;
+    return registerInquiryCallback(inquiryId, fetchInquiry);
   }, [inquiryId, fetchInquiry]);
 
   return {
