@@ -69,6 +69,33 @@ export default function DealerCarDetailsPage() {
     checkOwnership: true,
   });
 
+  // ✅ NEW: האזנה ל-events לעדכון real-time
+  useEffect(() => {
+    if (!car) return;
+
+    const handleCarUpdate = (detail: any) => {
+      const { carId, updateType, data } = detail;
+
+      console.log("🔄 Car details page - received update:", {
+        carId,
+        updateType,
+        data,
+      });
+
+      // אם זה העדכון של הרכב הנוכחי, רענן את הנתונים
+      if (carId === car.id) {
+        console.log("🔄 Refreshing car details after update");
+        refetch();
+      }
+    };
+
+    // האזנה לevents
+    const cleanup = carEvents.onCarUpdate(handleCarUpdate);
+
+    // ניקוי בעת unmount
+    return cleanup;
+  }, [car?.id, refetch]);
+
   // פונקציות לניהול תמונות
   const handleSetMainImage = async (imageId: number) => {
     if (!car) return;

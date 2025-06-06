@@ -20,6 +20,7 @@ import { useImages } from "@/hooks/useImages";
 import { Car } from "@/lib/api/types";
 import { toast } from "sonner";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { carEvents } from "@/lib/events/carEvents";
 
 // ✅ Import from central constants file (מעודכן עם כל הנתונים החדשים)
 import {
@@ -174,12 +175,28 @@ export default function CarForm({
       if (mode === "edit" && car?.id) {
         carResult = await carsApi.updateCar(car.id, carData);
         toast.success("הרכב עודכן בהצלחה");
-        // ✅ הוסף את זה - רענון cache
+
+        // ✅ שלח event עם carId הנכון
+        carEvents.emitCarUpdate(car.id, "update", {
+          action: "car_updated",
+          carId: car.id,
+          updatedData: carResult,
+        });
+
+        // ✅ רענון cache
         invalidateCarCache(car.id);
       } else {
         carResult = await carsApi.addCar(carData);
         toast.success("הרכב נוסף בהצלחה");
-        // ✅ הוסף את זה - רענון cache
+
+        // ✅ שלח event לרכב חדש
+        carEvents.emitCarListUpdate("add", {
+          action: "car_added",
+          carId: carResult?.id,
+          newCar: carResult,
+        });
+
+        // ✅ רענון cache
         invalidateCarCache();
       }
 
