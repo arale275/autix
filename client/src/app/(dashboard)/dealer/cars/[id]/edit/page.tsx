@@ -114,13 +114,6 @@ export default function DealerCarEditPage() {
                 <X className="w-4 h-4" />
                 ביטול
               </Button>
-
-              <Link href={`/dealer/cars/${carId}`}>
-                <Button variant="ghost" size="sm">
-                  <ArrowRight className="w-4 h-4 mr-2" />
-                  חזור לצפייה
-                </Button>
-              </Link>
             </div>
           </div>
         </CardContent>
