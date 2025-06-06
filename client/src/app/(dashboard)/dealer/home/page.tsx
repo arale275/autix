@@ -11,27 +11,26 @@ import { Badge } from "@/components/ui/badge";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import ErrorState from "@/components/states/ErrorState";
 import { carEvents } from "@/lib/events/carEvents";
+import { inquiryEvents } from "@/lib/events/inquiryEvents";
 import { cn } from "@/lib/utils";
 import {
   Plus,
   Car,
   MessageSquare,
   TrendingUp,
-  Clock,
-  Eye,
-  RefreshCw,
   Activity,
-  Target,
-  Zap,
-  Award,
-  Image,
-  ArrowRight,
   Bell,
+  RefreshCw,
+  ArrowRight,
+  Users,
+  Clock,
+  CheckCircle,
 } from "lucide-react";
 import { useDealerRoute } from "@/hooks/auth/useProtectedRoute";
 
-// ✅ מחשבון סטטיסטיקות מקוצר
-const useProfileStats = () => {
+// ✅ Simplified stats calculation
+const useHomeStats = () => {
+  const { user } = useAuth();
   const { cars, loading: carsLoading, error: carsError } = useDealerCars();
   const {
     inquiries,
@@ -39,71 +38,75 @@ const useProfileStats = () => {
     error: inquiriesError,
   } = useReceivedInquiries();
 
-  const stats = useMemo(() => {
+  return useMemo(() => {
     const activeCars = cars.filter(
       (car) => car.status === "active" && car.isAvailable
     ).length;
     const soldCars = cars.filter((car) => car.status === "sold").length;
-    const carsWithoutImages = cars.filter(
-      (car) => !car.images || car.images.length === 0
-    ).length;
     const newInquiries = inquiries.filter((inq) => inq.status === "new").length;
-    const respondedInquiries = inquiries.filter(
-      (inq) => inq.status === "responded"
-    ).length;
+    const totalInquiries = inquiries.length;
 
-    const totalValue = cars
-      .filter((car) => car.status === "active" && car.isAvailable)
-      .reduce((sum, car) => sum + car.price, 0);
-
-    const responseRate =
-      inquiries.length > 0
-        ? Math.round((respondedInquiries / inquiries.length) * 100)
-        : 100;
+    // ✅ Simple business activity (latest 4 items)
+    const recentActivity = [
+      ...cars.slice(0, 2).map((car) => ({
+        id: `car-${car.id}`,
+        title: car.status === "sold" ? "רכב נמכר" : "רכב נוסף למכירה",
+        description: `${car.make} ${car.model} ${car.year}`,
+        date: car.updatedAt || car.createdAt,
+        icon: car.status === "sold" ? TrendingUp : Car,
+        color: car.status === "sold" ? "text-green-600" : "text-blue-600",
+      })),
+      ...inquiries.slice(0, 2).map((inquiry) => ({
+        id: `inquiry-${inquiry.id}`,
+        title: inquiry.status === "new" ? "פנייה חדשה התקבלה" : "פנייה נענתה",
+        description: `מ-${inquiry.buyer?.firstName} ${inquiry.buyer?.lastName}`,
+        date: inquiry.createdAt,
+        icon: MessageSquare,
+        color: inquiry.status === "new" ? "text-orange-600" : "text-green-600",
+      })),
+    ]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 4);
 
     return {
       activeCars,
       soldCars,
-      carsWithoutImages,
-      totalValue,
       newInquiries,
-      responseRate,
-      urgentCount: newInquiries + carsWithoutImages,
-      qualityScore:
-        responseRate >= 80 && carsWithoutImages === 0
-          ? 90
-          : responseRate >= 60 && carsWithoutImages <= 2
-          ? 70
-          : 50,
+      totalInquiries,
+      recentActivity,
+      loading: carsLoading || inquiriesLoading,
+      error: carsError || inquiriesError,
+      hasNewInquiries: newInquiries > 0,
+      hasActivity: recentActivity.length > 0,
     };
-  }, [cars, inquiries]);
-
-  return {
-    stats,
-    loading: carsLoading || inquiriesLoading,
-    error: carsError || inquiriesError,
-    recentInquiries: inquiries.slice(0, 3),
-    recentCars: cars.slice(0, 3),
-  };
+  }, [
+    user,
+    cars,
+    inquiries,
+    carsLoading,
+    inquiriesLoading,
+    carsError,
+    inquiriesError,
+  ]);
 };
 
-// ✅ רכיב סטט פשוט
+// ✅ Simple stat card component (consistent with other pages)
 const StatCard = ({
   title,
   value,
+  subtitle,
   icon: Icon,
   color = "blue",
   urgent = false,
   onClick,
-  children,
 }: {
   title: string;
   value: number | string;
+  subtitle?: string;
   icon: React.ComponentType<any>;
   color?: string;
   urgent?: boolean;
   onClick?: () => void;
-  children?: React.ReactNode;
 }) => (
   <Card
     className={cn(
@@ -122,7 +125,7 @@ const StatCard = ({
             )}
           </div>
           <p className="text-2xl font-bold text-gray-900">{value}</p>
-          {children}
+          {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
         </div>
         <div
           className={cn("p-3 rounded-full", `bg-${color}-50 text-${color}-600`)}
@@ -134,7 +137,7 @@ const StatCard = ({
   </Card>
 );
 
-// ✅ פעולה מהירה
+// ✅ Quick action component
 const QuickAction = ({
   href,
   icon: Icon,
@@ -185,53 +188,58 @@ const QuickAction = ({
 export default function DealerHomePage() {
   const { hasAccess, isLoading: authLoading } = useDealerRoute();
   const { user } = useAuth();
-  const { stats, loading, error, recentInquiries, recentCars } =
-    useProfileStats();
+  const stats = useHomeStats();
   const [refreshing, setRefreshing] = useState(false);
 
-  // Real-time updates
+  // ✅ Real-time updates for both cars and inquiries
   useEffect(() => {
-    const cleanup = carEvents.onCarUpdate(() => {});
-    return cleanup;
-  }, []);
+    const cleanupCars = carEvents.onCarUpdate(() => {
+      console.log("🚗 Car updated - refreshing home stats");
+    });
 
-  const formatPrice = (price: number): string => {
-    if (price >= 1000000) return `${(price / 1000000).toFixed(1)}M₪`;
-    if (price >= 1000) return `${(price / 1000).toFixed(0)}K₪`;
-    return new Intl.NumberFormat("he-IL").format(price) + "₪";
-  };
+    const cleanupInquiries = inquiryEvents.onInquiryUpdate(() => {
+      console.log("💬 Inquiry updated - refreshing home stats");
+    });
 
-  const getStatusBadge = (status: string): string => {
-    const statusMap: Record<string, string> = {
-      new: "bg-blue-100 text-blue-800",
-      responded: "bg-green-100 text-green-800",
-      active: "bg-green-100 text-green-800",
-      sold: "bg-purple-100 text-purple-800",
+    return () => {
+      cleanupCars();
+      cleanupInquiries();
     };
-    return statusMap[status] || "bg-gray-100 text-gray-800";
-  };
+  }, []);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
     return hour < 12 ? "בוקר טוב" : hour < 18 ? "צהריים טובים" : "ערב טוב";
   };
 
-  if (authLoading)
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  };
+
+  if (authLoading) {
     return (
       <div className="flex justify-center py-12">
         <LoadingSpinner size="lg" />
       </div>
     );
+  }
+
   if (!hasAccess) return null;
-  if (error)
+
+  if (stats.error) {
     return (
       <ErrorState
         title="שגיאה"
-        message={error}
+        message={stats.error}
         onRetry={() => window.location.reload()}
       />
     );
-  if (loading)
+  }
+
+  if (stats.loading) {
     return (
       <div className="space-y-6 animate-pulse">
         <div className="h-40 bg-gray-200 rounded-xl"></div>
@@ -242,10 +250,11 @@ export default function DealerHomePage() {
         </div>
       </div>
     );
+  }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* ✅ Simple Header */}
       <div className="relative bg-gradient-to-r from-purple-600 to-blue-600 rounded-xl p-6 text-white overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-16 translate-x-16 animate-pulse"></div>
 
@@ -255,9 +264,9 @@ export default function DealerHomePage() {
               <h1 className="text-2xl font-bold">
                 {getGreeting()}, {user?.firstName}!
               </h1>
-              {stats.urgentCount > 0 && (
+              {stats.hasNewInquiries && (
                 <Badge className="bg-yellow-400 text-yellow-900 animate-bounce">
-                  {stats.urgentCount} דרוש טיפול
+                  {stats.newInquiries} פניות חדשות
                 </Badge>
               )}
             </div>
@@ -279,7 +288,7 @@ export default function DealerHomePage() {
                 </Button>
               </Link>
 
-              {stats.newInquiries > 0 && (
+              {stats.hasNewInquiries && (
                 <Link href="/dealer/inquiries">
                   <Button
                     variant="outline"
@@ -294,11 +303,9 @@ export default function DealerHomePage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  setRefreshing(true);
-                  setTimeout(() => setRefreshing(false), 1000);
-                }}
+                onClick={handleRefresh}
                 className="text-white hover:bg-white/20"
+                disabled={refreshing}
               >
                 <RefreshCw
                   className={cn("w-4 h-4 mr-2", refreshing && "animate-spin")}
@@ -309,88 +316,59 @@ export default function DealerHomePage() {
           </div>
 
           <div className="hidden md:flex w-20 h-20 bg-white/20 rounded-full items-center justify-center backdrop-blur-sm">
-            {stats.qualityScore >= 80 ? (
-              <Award className="w-10 h-10 text-yellow-300" />
-            ) : stats.newInquiries > 0 ? (
+            {stats.hasNewInquiries ? (
               <Bell className="w-10 h-10 text-white animate-pulse" />
             ) : (
               <Car className="w-10 h-10 text-white" />
             )}
           </div>
         </div>
-
-        {/* Quick stats */}
-        {stats.activeCars > 0 && (
-          <div className="grid grid-cols-3 gap-4 bg-white/10 rounded-lg p-3 backdrop-blur-sm mt-4">
-            <div className="text-center">
-              <div className="text-xl font-bold">{stats.qualityScore}</div>
-              <div className="text-xs text-purple-100">ציון איכות</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl font-bold">
-                {formatPrice(stats.totalValue)}
-              </div>
-              <div className="text-xs text-purple-100">ערך מלאי</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl font-bold">{stats.responseRate}%</div>
-              <div className="text-xs text-purple-100">אחוז מענה</div>
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Stats */}
+      {/* ✅ Simple Stats (only 4 basic cards) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="רכבים פעילים"
           value={stats.activeCars}
+          subtitle="מוכנים למכירה"
           icon={Car}
           onClick={() => (window.location.href = "/dealer/cars")}
-        >
-          <p className="text-xs text-gray-500">מוכנים למכירה</p>
-        </StatCard>
+        />
 
         <StatCard
           title="פניות חדשות"
           value={stats.newInquiries}
+          subtitle="דורשות מענה"
           icon={MessageSquare}
           color="purple"
-          urgent={stats.newInquiries > 0}
+          urgent={stats.hasNewInquiries}
           onClick={() => (window.location.href = "/dealer/inquiries")}
-        >
-          <p className="text-xs text-gray-500">דורשות מענה</p>
-        </StatCard>
+        />
 
         <StatCard
           title="נמכרו"
           value={stats.soldCars}
+          subtitle="השבוע"
           icon={TrendingUp}
           color="green"
-        >
-          <p className="text-xs text-gray-500">השבוע</p>
-        </StatCard>
+        />
 
         <StatCard
-          title="ללא תמונות"
-          value={stats.carsWithoutImages}
-          icon={Image}
-          color={stats.carsWithoutImages > 0 ? "orange" : "green"}
-          urgent={stats.carsWithoutImages > 0}
-        >
-          <p className="text-xs text-gray-500">
-            {stats.carsWithoutImages > 0 ? "דרוש עדכון" : "הכל מעולה"}
-          </p>
-        </StatCard>
+          title="סה״כ פניות"
+          value={stats.totalInquiries}
+          subtitle="כל הפניות"
+          icon={Users}
+          color="blue"
+        />
       </div>
 
-      {/* Actions & Activity */}
+      {/* ✅ Main Content */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Quick Actions */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" />
+              <Plus className="h-5 w-5" />
               פעולות מומלצות
             </CardTitle>
           </CardHeader>
@@ -408,33 +386,20 @@ export default function DealerHomePage() {
               title="פניות מקונים"
               description="עקוב ותגיב לפניות"
               badge={stats.newInquiries}
-              urgent={stats.newInquiries > 0}
-            />
-
-            <QuickAction
-              href="/dealer/cars"
-              icon={Car}
-              title="נהל מלאי"
-              description={
-                stats.carsWithoutImages > 0
-                  ? `${stats.carsWithoutImages} רכבים ללא תמונות`
-                  : "עדכן וערוך רכבים"
-              }
-              badge={stats.carsWithoutImages}
-              urgent={stats.carsWithoutImages > 0}
+              urgent={stats.hasNewInquiries}
             />
           </CardContent>
         </Card>
 
-        {/* Recent Activity */}
+        {/* ✅ Business Activity */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Activity className="h-5 w-5" />
-                פעילות אחרונה
+                פעילות עסקית אחרונה
               </CardTitle>
-              <Link href="/dealer/inquiries">
+              <Link href="/dealer/cars">
                 <Button variant="ghost" size="sm">
                   הצג הכל
                 </Button>
@@ -442,88 +407,41 @@ export default function DealerHomePage() {
             </div>
           </CardHeader>
           <CardContent>
-            {recentInquiries.length > 0 ? (
+            {stats.hasActivity ? (
               <div className="space-y-3">
-                {recentInquiries.map((inquiry) => (
+                {stats.recentActivity.map((activity: any) => (
                   <div
-                    key={inquiry.id}
+                    key={activity.id}
                     className="p-3 border rounded-lg hover:bg-gray-50"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium text-sm">
-                        {inquiry.buyer?.firstName} {inquiry.buyer?.lastName}
-                      </h4>
-                      <Badge className={getStatusBadge(inquiry.status)}>
-                        {inquiry.status === "new" ? "חדשה" : "נענתה"}
-                      </Badge>
-                    </div>
-                    <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                      {inquiry.message}
-                    </p>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(inquiry.createdAt).toLocaleDateString(
-                          "he-IL"
-                        )}
+                    <div className="flex items-center gap-3">
+                      <div className={activity.color}>
+                        <activity.icon className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm">
+                          {activity.title}
+                        </h4>
+                        <p className="text-xs text-gray-600">
+                          {activity.description}
+                        </p>
+                      </div>
+                      <span className="text-xs text-gray-500">
+                        {new Date(activity.date).toLocaleDateString("he-IL")}
                       </span>
-                      {inquiry.car && (
-                        <span>
-                          {inquiry.car.make} {inquiry.car.model}
-                        </span>
-                      )}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8">
-                <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500">אין פעילות אחרונה</p>
+                <Activity className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500">אין פעילות עסקית אחרונה</p>
               </div>
             )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Tips */}
-      {stats.qualityScore < 80 && (
-        <Card className="bg-gradient-to-r from-yellow-50 to-orange-50 border-yellow-200">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-orange-800">
-              <Zap className="h-5 w-5" />
-              טיפים לשיפור הביצועים
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {stats.carsWithoutImages > 0 && (
-                <div className="flex items-start gap-3">
-                  <Image className="w-5 h-5 text-orange-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-orange-800">הוסף תמונות</h4>
-                    <p className="text-sm text-orange-700">
-                      {stats.carsWithoutImages} רכבים זקוקים לתמונות איכותיות
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {stats.responseRate < 80 && (
-                <div className="flex items-start gap-3">
-                  <MessageSquare className="w-5 h-5 text-orange-600 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-orange-800">שפר מענה</h4>
-                    <p className="text-sm text-orange-700">
-                      ענה לפניות תוך 24 שעות להגדלת המכירות
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
