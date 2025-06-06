@@ -48,6 +48,7 @@ import type { Car } from "@/lib/api/types";
 import { carEvents } from "@/lib/events/carEvents";
 import ErrorBoundary from "@/components/ui/error-boundary";
 import { useCarRoute } from "@/hooks/auth/useProtectedRoute";
+import { getFeatureLabel } from "@/lib/features";
 
 export default function DealerCarDetailsPage() {
   const params = useParams();
@@ -403,78 +404,149 @@ export default function DealerCarDetailsPage() {
                 <div className="text-sm text-blue-500 mt-1">מחיר המכירה</div>
               </div>
 
-              {/* Specifications Grid */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-gray-50 rounded-lg border">
-                  <Calendar className="w-5 h-5 text-gray-600 mx-auto mb-2" />
-                  <div className="text-xs text-gray-600 mb-1">שנתון</div>
-                  <div className="font-semibold text-gray-900">{car.year}</div>
-                </div>
-
-                <div className="text-center p-4 bg-gray-50 rounded-lg border">
-                  <Gauge className="w-5 h-5 text-gray-600 mx-auto mb-2" />
-                  <div className="text-xs text-gray-600 mb-1">קילומטראז'</div>
-                  <div className="font-semibold text-gray-900">
-                    {car.mileage ? formatMileage(car.mileage) : "לא צוין"}
+              {/* 1. פרטים בסיסיים */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+                  פרטים בסיסיים
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                    <Calendar className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                    <div className="text-xs text-gray-600 mb-1">שנתון</div>
+                    <div className="font-semibold text-gray-900">
+                      {car.year}
+                    </div>
                   </div>
-                </div>
 
-                <div className="text-center p-4 bg-gray-50 rounded-lg border">
-                  <CarIcon className="w-5 h-5 text-gray-600 mx-auto mb-2" />
-                  <div className="text-xs text-gray-600 mb-1">יד</div>
-                  <div className="font-semibold text-gray-900">
-                    {car.hand || "לא צוין"}
+                  <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                    <Gauge className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                    <div className="text-xs text-gray-600 mb-1">קילומטראז'</div>
+                    <div className="font-semibold text-gray-900">
+                      {car.mileage ? formatMileage(car.mileage) : "לא צוין"}
+                    </div>
                   </div>
-                </div>
 
-                <div className="text-center p-4 bg-gray-50 rounded-lg border">
-                  <Settings className="w-5 h-5 text-gray-600 mx-auto mb-2" />
-                  <div className="text-xs text-gray-600 mb-1">נפח מנוע</div>
-                  <div className="font-semibold text-gray-900">
-                    {formatEngineSize(car.engineSize)}
+                  <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                    <CarIcon className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                    <div className="text-xs text-gray-600 mb-1">יד</div>
+                    <div className="font-semibold text-gray-900">
+                      {car.hand || "לא צוין"}
+                    </div>
                   </div>
-                </div>
 
-                <div className="text-center p-4 bg-gray-50 rounded-lg border">
-                  <Fuel className="w-5 h-5 text-gray-600 mx-auto mb-2" />
-                  <div className="text-xs text-gray-600 mb-1">סוג דלק</div>
-                  <div className="font-semibold text-gray-900">
-                    {formatFuelType(car.fuelType)}
-                  </div>
-                </div>
-
-                <div className="text-center p-4 bg-gray-50 rounded-lg border">
-                  <Settings className="w-5 h-5 text-gray-600 mx-auto mb-2" />
-                  <div className="text-xs text-gray-600 mb-1">תיבת הילוכים</div>
-                  <div className="font-semibold text-gray-900">
-                    {formatTransmission(car.transmission)}
-                  </div>
-                </div>
-
-                <div className="text-center p-4 bg-gray-50 rounded-lg border">
-                  <MapPin className="w-5 h-5 text-gray-600 mx-auto mb-2" />
-                  <div className="text-xs text-gray-600 mb-1">עיר</div>
-                  <div className="font-semibold text-gray-900">
-                    {car.city || "לא צוין"}
-                  </div>
-                </div>
-
-                <div className="text-center p-4 bg-gray-50 rounded-lg border">
-                  <div className="w-5 h-5 mx-auto mb-2 rounded-full bg-gray-400"></div>
-                  <div className="text-xs text-gray-600 mb-1">צבע</div>
-                  <div className="font-semibold text-gray-900">
-                    {car.color || "לא צוין"}
+                  <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                    <Settings className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                    <div className="text-xs text-gray-600 mb-1">נפח מנוע</div>
+                    <div className="font-semibold text-gray-900">
+                      {formatEngineSize(car.engineSize)}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Description */}
+              {/* 2. מאפיינים טכניים */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+                  מאפיינים טכניים
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                    <Fuel className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                    <div className="text-xs text-gray-600 mb-1">סוג דלק</div>
+                    <div className="font-semibold text-gray-900">
+                      {formatFuelType(car.fuelType)}
+                    </div>
+                  </div>
+
+                  <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                    <Settings className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                    <div className="text-xs text-gray-600 mb-1">
+                      תיבת הילוכים
+                    </div>
+                    <div className="font-semibold text-gray-900">
+                      {formatTransmission(car.transmission)}
+                    </div>
+                  </div>
+
+                  {car.condition && (
+                    <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                      <CheckCircle className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                      <div className="text-xs text-gray-600 mb-1">מצב הרכב</div>
+                      <div className="font-semibold text-gray-900">
+                        {car.condition}
+                      </div>
+                    </div>
+                  )}
+
+                  {car.bodyType && (
+                    <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                      <CarIcon className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                      <div className="text-xs text-gray-600 mb-1">סוג מרכב</div>
+                      <div className="font-semibold text-gray-900">
+                        {car.bodyType}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 3. מיקום ומראה */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+                  מיקום ומראה
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                    <MapPin className="w-5 h-5 text-gray-600 mx-auto mb-2" />
+                    <div className="text-xs text-gray-600 mb-1">עיר</div>
+                    <div className="font-semibold text-gray-900">
+                      {car.city || "לא צוין"}
+                    </div>
+                  </div>
+
+                  <div className="text-center p-4 bg-gray-50 rounded-lg border">
+                    <div className="w-5 h-5 mx-auto mb-2 rounded-full bg-gray-400"></div>
+                    <div className="text-xs text-gray-600 mb-1">צבע</div>
+                    <div className="font-semibold text-gray-900">
+                      {car.color || "לא צוין"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4. תיאור */}
               {car.description && (
-                <div className="pt-4 border-t border-gray-200">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+                    תיאור הרכב
+                  </h3>
                   <div className="bg-gray-50 rounded-lg p-4">
                     <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                       {car.description}
                     </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 5. תוספות ואביזרים */}
+              {car.features && car.features.length > 0 && (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 border-b pb-2">
+                    תוספות ואביזרים
+                  </h3>
+
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                    {car.features.map((feature: string) => (
+                      <div
+                        key={feature}
+                        className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                      >
+                        <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <span className="text-sm text-blue-800 font-medium">
+                          {getFeatureLabel(feature)}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
