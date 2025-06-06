@@ -20,7 +20,6 @@ import {
   TrendingUp,
   Activity,
   Bell,
-  RefreshCw,
   ArrowRight,
   Users,
   Clock,
@@ -189,7 +188,6 @@ export default function DealerHomePage() {
   const { hasAccess, isLoading: authLoading } = useDealerRoute();
   const { user } = useAuth();
   const stats = useHomeStats();
-  const [refreshing, setRefreshing] = useState(false);
 
   // ✅ Real-time updates for both cars and inquiries
   useEffect(() => {
@@ -210,13 +208,6 @@ export default function DealerHomePage() {
   const getGreeting = () => {
     const hour = new Date().getHours();
     return hour < 12 ? "בוקר טוב" : hour < 18 ? "צהריים טובים" : "ערב טוב";
-  };
-
-  const handleRefresh = async () => {
-    setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
   };
 
   if (authLoading) {
@@ -299,19 +290,6 @@ export default function DealerHomePage() {
                   </Button>
                 </Link>
               )}
-
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleRefresh}
-                className="text-white hover:bg-white/20"
-                disabled={refreshing}
-              >
-                <RefreshCw
-                  className={cn("w-4 h-4 mr-2", refreshing && "animate-spin")}
-                />
-                רענן
-              </Button>
             </div>
           </div>
 
@@ -394,17 +372,10 @@ export default function DealerHomePage() {
         {/* ✅ Business Activity */}
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                פעילות עסקית אחרונה
-              </CardTitle>
-              <Link href="/dealer/cars">
-                <Button variant="ghost" size="sm">
-                  הצג הכל
-                </Button>
-              </Link>
-            </div>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              פעילות עסקית אחרונה
+            </CardTitle>
           </CardHeader>
           <CardContent>
             {stats.hasActivity ? (
